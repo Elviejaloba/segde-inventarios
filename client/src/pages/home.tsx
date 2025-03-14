@@ -65,8 +65,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
-  const maxRetries = 3;
-  const retryDelay = 1000; // 1 segundo base para backoff exponencial
+  const maxRetries = 2; // Reducido de 3 a 2
+  const retryDelay = 300; // Reducido de 1000ms a 300ms
 
   const loadBranchData = async (branch: Branch, isRetry = false) => {
     if (!loading) setSelectedBranch(branch);
@@ -88,7 +88,7 @@ export default function Home() {
       console.error("Error al cargar datos de la sucursal:", error);
 
       if (retryCount < maxRetries) {
-        const nextRetryDelay = retryDelay * Math.pow(1.5, retryCount); // Backoff más suave
+        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
         setRetryCount(prev => prev + 1);
         setTimeout(() => loadBranchData(branch, true), nextRetryDelay);
       } else {
@@ -214,7 +214,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -322,7 +322,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
           >
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
               <LineChart className="h-6 w-6" />
@@ -335,9 +335,9 @@ export default function Home() {
           </motion.div>
         )}
         {loading && !Object.keys(items).length && (
-          <div className="flex flex-col items-center justify-center p-8 space-y-4">
+          <div className="flex flex-col items-center justify-center p-4 space-y-2">
             <LoadingSpinner />
-            <p className="text-muted-foreground">Cargando datos de la sucursal...</p>
+            <p className="text-muted-foreground text-sm">Cargando datos...</p>
           </div>
         )}
       </AnimatePresence>
