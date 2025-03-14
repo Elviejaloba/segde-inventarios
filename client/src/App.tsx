@@ -27,9 +27,10 @@ function Router() {
 
   useEffect(() => {
     let retryTimeout: NodeJS.Timeout;
+    let mounted = true;
 
     const loadUserRole = async () => {
-      if (!user) {
+      if (!user || !mounted) {
         setLoading(false);
         return;
       }
@@ -38,32 +39,54 @@ function Router() {
         console.log("Loading user role for:", user.uid);
         const userDoc = await getDoc(doc(db, "users", user.uid));
 
+        if (!mounted) return;
+
         if (userDoc.exists()) {
           const role = userDoc.data().role as Role;
           console.log("User role loaded:", role);
           setUserRole(role);
-          setRetryCount(0); // Reset retry count on success
+          setRetryCount(0);
+          setLoading(false);
         } else {
           console.warn("User document not found:", user.uid);
           throw new Error("No se encontró tu información de usuario");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error loading user role:", error);
 
+        // Handle offline state specifically
+        if (error?.message?.includes('offline')) {
+          console.log('Detected offline state, retrying...');
+          if (retryCount < MAX_RETRIES) {
+            setRetryCount(prev => prev + 1);
+            retryTimeout = setTimeout(loadUserRole, RETRY_DELAY * (retryCount + 1));
+          } else {
+            if (mounted) {
+              toast({
+                title: "Error de conexión",
+                description: "No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.",
+                variant: "destructive",
+              });
+              setLoading(false);
+            }
+          }
+          return;
+        }
+
+        // Handle other errors
         if (retryCount < MAX_RETRIES) {
           console.log(`Retrying role load... (${retryCount + 1}/${MAX_RETRIES})`);
           setRetryCount(prev => prev + 1);
           retryTimeout = setTimeout(loadUserRole, RETRY_DELAY);
         } else {
-          toast({
-            title: "Error de acceso",
-            description: "No se pudo cargar tu información después de varios intentos. Por favor, cierra sesión y vuelve a intentarlo.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (retryCount >= MAX_RETRIES) {
-          setLoading(false);
+          if (mounted) {
+            toast({
+              title: "Error de acceso",
+              description: "No se pudo cargar tu información después de varios intentos. Por favor, cierra sesión y vuelve a intentarlo.",
+              variant: "destructive",
+            });
+            setLoading(false);
+          }
         }
       }
     };
@@ -75,6 +98,7 @@ function Router() {
     }
 
     return () => {
+      mounted = false;
       if (retryTimeout) {
         clearTimeout(retryTimeout);
       }
