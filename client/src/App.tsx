@@ -10,109 +10,67 @@ import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { Role } from "@shared/schema";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
-
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 500; // Start with a shorter delay
 
 function Router() {
   const [user, authLoading] = useAuthState(auth);
   const [userRole, setUserRole] = useState<Role>();
   const [loading, setLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let retryTimeout: NodeJS.Timeout;
     let mounted = true;
 
-    const setupUserRoleListener = () => {
+    const loadUserRole = async () => {
       if (!user || !mounted) {
         setLoading(false);
         return;
       }
 
-      console.log("Loading user role for:", user.uid);
-
       try {
-        // Cleanup previous listener if exists
-        if (unsubscribe) {
-          unsubscribe();
-        }
+        console.log("Loading user role for:", user.uid);
+        const userDoc = await getDoc(doc(db, "users", user.uid));
 
-        unsubscribe = onSnapshot(
-          doc(db, "users", user.uid),
-          {
-            next: (snapshot) => {
-              if (!mounted) return;
+        if (!mounted) return;
 
-              if (snapshot.exists()) {
-                const role = snapshot.data().role as Role;
-                setUserRole(role);
-                setRetryCount(0);
-                setLoading(false);
-              } else {
-                console.warn("User document not found:", user.uid);
-                setLoading(false);
-                toast({
-                  title: "Error de acceso",
-                  description: "No se encontró tu información de usuario",
-                  variant: "destructive",
-                });
-              }
-            },
-            error: (error) => {
-              console.error("Error in user role listener:", error);
-
-              if (retryCount < MAX_RETRIES) {
-                const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
-                console.log(`Retrying in ${delay}ms... (${retryCount + 1}/${MAX_RETRIES})`);
-                setRetryCount(prev => prev + 1);
-                retryTimeout = setTimeout(setupUserRoleListener, delay);
-              } else {
-                if (mounted) {
-                  setLoading(false);
-                  toast({
-                    title: "Error de conexión",
-                    description: "No se pudo cargar tu información. Por favor, verifica tu conexión.",
-                    variant: "destructive",
-                  });
-                }
-              }
-            }
-          }
-        );
-      } catch (error) {
-        console.error("Error setting up listener:", error);
-        if (mounted) {
-          setLoading(false);
+        if (userDoc.exists()) {
+          const role = userDoc.data().role as Role;
+          setUserRole(role);
+        } else {
+          console.warn("User document not found:", user.uid);
           toast({
-            title: "Error de conexión",
-            description: "Hubo un problema al cargar tu información.",
+            title: "Error de acceso",
+            description: "No se encontró tu información de usuario",
             variant: "destructive",
           });
+        }
+      } catch (error) {
+        console.error("Error loading user role:", error);
+        if (mounted) {
+          toast({
+            title: "Error de conexión",
+            description: "No se pudo cargar tu información. Por favor, verifica tu conexión.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
     };
 
     if (user) {
-      setupUserRoleListener();
+      loadUserRole();
     } else if (!authLoading) {
       setLoading(false);
     }
 
     return () => {
       mounted = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-      }
     };
   }, [user, authLoading, toast]);
 
@@ -122,13 +80,8 @@ function Router() {
         <div className="text-center">
           <LoadingSpinner />
           <p className="mt-4 text-muted-foreground">
-            {loading ? `Cargando información...` : "Verificando autenticación..."}
+            {loading ? "Cargando información..." : "Verificando autenticación..."}
           </p>
-          {loading && retryCount > 0 && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Reintentando... ({retryCount}/{MAX_RETRIES})
-            </p>
-          )}
         </div>
       </div>
     );

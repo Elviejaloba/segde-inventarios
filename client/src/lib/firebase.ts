@@ -28,26 +28,10 @@ setPersistence(auth, browserLocalPersistence)
     console.log('Firebase auth persistence set to LOCAL successfully');
   })
   .catch((error) => {
-    console.error('Error setting auth persistence:', {
-      code: error?.code,
-      message: error?.message,
-      details: 'Session persistence might not work as expected'
-    });
+    console.error('Error setting auth persistence:', error);
   });
 
 // Set language to match browser
 auth.useDeviceLanguage();
-
-// Log auth state changes
-auth.onAuthStateChanged((user) => {
-  console.log('Auth state changed:', {
-    timestamp: new Date().toISOString(),
-    isSignedIn: !!user,
-    uid: user?.uid,
-    email: user?.email,
-    metadata: user?.metadata,
-    providerId: user?.providerId
-  });
-});
 
 export { app, auth, db };
