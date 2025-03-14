@@ -86,8 +86,12 @@ export default function Home() {
     const newItems = {
       ...items,
       [code]: {
-        ...(items[code] || { completed: false, hasStock: false }),
-        [field]: !items[code]?.[field]
+        ...(items[code] || { completed: false, hasStock: true }),
+        [field]: !items[code]?.[field],
+        // Si se marca como completado, asegurarse de que tenga stock
+        // Si se marca sin stock, asegurarse de que no esté completado
+        ...(field === 'completed' ? { hasStock: true } : 
+            field === 'hasStock' ? { completed: false } : {})
       }
     };
 
@@ -107,7 +111,7 @@ export default function Home() {
       }, { merge: true });
 
       // Notificaciones de progreso para items completados
-      if (field === 'completed') {
+      if (field === 'completed' && newItems[code].completed) {
         if (completedPercentage === 25) {
           toast({
             title: "¡Buen comienzo! 🌟",
