@@ -175,7 +175,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <Progress value={branch.totalCompleted} className="w-24 h-2" />
-                  <span className="text-sm">{branch.totalCompleted}%</span>
+                  <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
                 </div>
               </TableCell>
               <TableCell>
