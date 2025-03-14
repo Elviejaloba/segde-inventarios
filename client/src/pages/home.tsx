@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Branch } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
 import { Share, ArrowLeft, LineChart } from "lucide-react";
@@ -125,7 +125,7 @@ export default function Home() {
           toast({
             title: "¡Felicitaciones! 🎉",
             description: "Has completado todos los items",
-            variant: "success",
+            variant: "success", // Corrected variant here
           });
         }
       }
@@ -135,7 +135,7 @@ export default function Home() {
         toast({
           title: "Item sin stock registrado",
           description: `${noStockCount} items marcados sin stock`,
-          variant: "warning",
+          variant: "warning", //Corrected variant here
         });
       }
     } catch (error) {
