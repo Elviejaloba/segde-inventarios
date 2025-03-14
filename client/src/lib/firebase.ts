@@ -1,11 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { 
-  initializeFirestore, 
-  CACHE_SIZE_UNLIMITED,
-  enableNetwork,
-  disableNetwork,
-  enableMultiTabIndexedDbPersistence
-} from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Your web app's Firebase configuration
@@ -28,24 +22,6 @@ const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   experimentalForceLongPolling: true, // Usar long polling para conexiones más estables
 });
-
-console.log('Enabling Firestore persistence...');
-enableMultiTabIndexedDbPersistence(db)
-  .then(() => {
-    console.log('Firestore persistence enabled successfully');
-  })
-  .catch((err) => {
-    console.error('Error enabling Firestore persistence:', {
-      code: err?.code,
-      message: err?.message,
-      details: 'Offline functionality might be limited'
-    });
-
-    // Si falla la persistencia, intentar reconectar
-    disableNetwork(db)
-      .then(() => enableNetwork(db))
-      .catch(console.error);
-  });
 
 console.log('Initializing Firebase Auth...');
 const auth = getAuth(app);
