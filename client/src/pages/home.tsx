@@ -65,23 +65,40 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
-  const maxRetries = 2; // Reducido de 3 a 2
-  const retryDelay = 300; // Reducido de 1000ms a 300ms
+  const maxRetries = 2;
+  const retryDelay = 300;
 
   const loadBranchData = async (branch: Branch, isRetry = false) => {
-    if (!loading) setSelectedBranch(branch);
-    setLoading(true);
+    // Limpiar el estado anterior antes de cargar nuevos datos
+    if (!isRetry) {
+      setItems({});
+      setSelectedBranch(branch);
+    }
+
+    if (!loading) setLoading(true);
     setError(null);
 
     try {
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
 
+      // Verificar que estamos cargando la sucursal correcta
+      if (branch !== selectedBranch) {
+        return; // Evitar actualizar si el usuario ya seleccionó otra sucursal
+      }
+
       if (branchDoc.exists()) {
-        setItems(branchDoc.data().items || {});
+        const branchData = branchDoc.data();
+        if (branchData && branchData.items) {
+          setItems(branchData.items);
+        } else {
+          setItems({});
+        }
         setRetryCount(0);
       } else {
+        // Si la sucursal no existe, inicializarla con items vacíos
         setItems({});
+        await setDoc(branchRef, { items: {}, totalCompleted: 0, noStock: 0 });
       }
       setLoading(false);
     } catch (error) {
@@ -193,7 +210,10 @@ export default function Home() {
           {selectedBranch && (
             <Button
               variant="outline"
-              onClick={() => setSelectedBranch(undefined)}
+              onClick={() => {
+                setSelectedBranch(undefined);
+                setItems({}); // Limpiar items al volver al dashboard
+              }}
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

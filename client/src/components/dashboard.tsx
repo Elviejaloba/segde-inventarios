@@ -30,8 +30,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2; // Reducido de 3 a 2
-  const retryDelay = 300; // Reducido de 500ms a 300ms
+  const maxRetries = 2;
+  const retryDelay = 300;
 
   const fetchData = async (isRetry = false) => {
     try {
@@ -41,12 +41,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       const branchesRef = collection(db, "branches");
       const snapshot = await getDocs(branchesRef);
 
-      const branchData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        totalCompleted: doc.data().totalCompleted || 0,
-        noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
-        items: doc.data().items || {}
-      }));
+      const branchData = snapshot.docs
+        .filter(doc => AVAILABLE_BRANCHES.includes(doc.id)) // Solo incluir sucursales válidas
+        .map(doc => ({
+          id: doc.id,
+          totalCompleted: doc.data().totalCompleted || 0,
+          noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
+          items: doc.data().items || {}
+        }));
 
       setData(branchData);
       setRetryCount(0);
@@ -54,7 +56,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     } catch (err) {
       console.error("Error loading data:", err);
       if (retryCount < maxRetries) {
-        const nextRetryDelay = retryDelay * Math.pow(2, retryCount); // Backoff más agresivo
+        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
         setRetryCount(prev => prev + 1);
         setTimeout(() => fetchData(true), nextRetryDelay);
       } else {
