@@ -1,5 +1,5 @@
-import { useCollectionData } from "react-firebase-hooks/firestore";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Table,
@@ -12,24 +12,38 @@ import {
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
-import { Branch, branchSchema, codeSchema } from "@shared/schema";
+import { Branch, AVAILABLE_BRANCHES } from "@/lib/store";
 
 export function Dashboard() {
-  console.log('Dashboard: Initializing...');
+  const [branchesData, setBranchesData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const branchesQuery = query(
-    collection(db, "branches"),
-    orderBy("totalCompleted", "desc"),
-    limit(20) // Limit the number of branches to prevent excessive data fetching
-  );
+  useEffect(() => {
+    const loadBranchesData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const [branchesData, loading, error] = useCollectionData(branchesQuery);
+        const branchesRef = collection(db, "branches");
+        const snapshot = await getDocs(branchesRef);
 
-  console.log('Dashboard: Data state', {
-    loading,
-    hasError: !!error,
-    branchesCount: branchesData?.length
-  });
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setBranchesData(data);
+      } catch (err) {
+        console.error('Error loading branches data:', err);
+        setError('Error cargando datos. Por favor, intenta nuevamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBranchesData();
+  }, []);
 
   if (loading) {
     return (
@@ -40,20 +54,17 @@ export function Dashboard() {
   }
 
   if (error) {
-    console.error('Dashboard: Error loading data:', error);
     return (
       <div className="text-center p-8 text-destructive">
-        <p>Error cargando el dashboard: Por favor, intenta nuevamente.</p>
+        <p>{error}</p>
       </div>
     );
   }
 
-  const totalCodes = Object.keys(codeSchema.enum).length;
-  const branches = Object.values(branchSchema.enum);
-
-  const sortedBranches = branches
+  const totalCodes = 10; // Valor fijo para ejemplo
+  const sortedBranches = AVAILABLE_BRANCHES
     .map(branch => {
-      const branchDoc = branchesData?.find(d => d.id === branch);
+      const branchDoc = branchesData.find(d => d.id === branch);
       return {
         branch,
         data: {
@@ -101,7 +112,9 @@ export function Dashboard() {
                   index + 1
                 )}
               </TableCell>
-              <TableCell className="font-medium">{branch}</TableCell>
+              <TableCell className="font-medium">
+                Sucursal {branch.substring(3)}
+              </TableCell>
               <TableCell className="text-right">
                 {data.totalCompleted} de {totalCodes}
               </TableCell>
