@@ -119,18 +119,38 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         </TableHeader>
         <TableBody>
           {sortedBranches.map((branch, index) => (
-            <TableRow 
+            <motion.tr
               key={branch.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
+                index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
+                index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
+              }`}
               onClick={() => onBranchSelect && onBranchSelect(branch.id)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
               <TableCell>
                 {index < 3 ? (
-                  <Trophy className={`h-4 w-4 ${
-                    index === 0 ? 'text-yellow-500' :
-                    index === 1 ? 'text-gray-400' :
-                    'text-amber-600'
-                  }`} />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ 
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                      delay: index * 0.1 
+                    }}
+                  >
+                    <Trophy className={`h-5 w-5 ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-gray-400' :
+                      'text-amber-600'
+                    }`} />
+                  </motion.div>
                 ) : (
                   index + 1
                 )}
@@ -150,7 +170,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <span className="text-sm">{branch.noStock} items</span>
                 </div>
               </TableCell>
-            </TableRow>
+            </motion.tr>
           ))}
         </TableBody>
       </Table>

@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 // Lista actualizada de códigos solicitados
 const CODES = [
@@ -59,6 +60,7 @@ interface ItemState {
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
+  const { toast } = useToast();
 
   const loadBranchData = async (branch: Branch) => {
     setSelectedBranch(branch);
@@ -90,15 +92,59 @@ export default function Home() {
     setItems(newItems);
 
     const completedCount = Object.values(newItems).filter(i => i.completed).length;
+    const noStockCount = Object.values(newItems).filter(i => !i.hasStock).length;
+    const completedPercentage = (completedCount / CODES.length) * 100;
+    const noStockPercentage = (noStockCount / CODES.length) * 100;
 
     try {
       const branchRef = doc(db, "branches", selectedBranch);
       await setDoc(branchRef, {
         items: newItems,
-        totalCompleted: completedCount,
+        totalCompleted: completedPercentage,
+        noStock: noStockCount,
       }, { merge: true });
+
+      // Notificaciones de progreso para items completados
+      if (field === 'completed') {
+        if (completedPercentage === 25) {
+          toast({
+            title: "¡Buen comienzo! 🌟",
+            description: "Has completado el 25% de los items",
+          });
+        } else if (completedPercentage === 50) {
+          toast({
+            title: "¡Medio camino recorrido! 🎯",
+            description: "Has completado el 50% de los items",
+          });
+        } else if (completedPercentage === 75) {
+          toast({
+            title: "¡Excelente progreso! 🚀",
+            description: "Solo te falta el último tramo",
+          });
+        } else if (completedPercentage === 100) {
+          toast({
+            title: "¡Felicitaciones! 🎉",
+            description: "Has completado todos los items",
+            variant: "success",
+          });
+        }
+      }
+
+      // Notificaciones para items sin stock
+      if (field === 'hasStock' && !newItems[code].hasStock) {
+        toast({
+          title: "Item sin stock registrado",
+          description: `${noStockCount} items marcados sin stock`,
+          variant: "warning",
+        });
+      }
     } catch (error) {
       console.error("Error al guardar datos:", error);
+      toast({
+        title: "Error al guardar",
+        description: "No se pudieron guardar los cambios",
+        variant: "destructive",
+      });
     }
   };
 
@@ -152,14 +198,43 @@ export default function Home() {
                 <div className="sticky top-36 bg-background pt-2 pb-4 z-30 space-y-4">
                   <div>
                     <h3 className="text-sm font-medium mb-2">Progreso Completados</h3>
-                    <Progress value={progress.completed} className="h-2" />
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.completed}%` }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Progress 
+                        value={progress.completed} 
+                        className="h-2"
+                        // Cambia el color basado en el progreso
+                        style={{
+                          background: progress.completed === 100 ? 'var(--success)' :
+                                     progress.completed >= 75 ? 'var(--primary)' :
+                                     progress.completed >= 50 ? 'var(--warning)' :
+                                     'var(--muted)'
+                        }}
+                      />
+                    </motion.div>
                     <div className="text-sm text-muted-foreground mt-2">
                       {Math.round(progress.completed)}% completado
                     </div>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                    <Progress value={progress.noStock} className="h-2" />
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.noStock}%` }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Progress 
+                        value={progress.noStock} 
+                        className="h-2"
+                        // Color rojo para items sin stock
+                        style={{
+                          background: 'var(--destructive)'
+                        }}
+                      />
+                    </motion.div>
                     <div className="text-sm text-muted-foreground mt-2">
                       {Math.round(progress.noStock)}% sin stock
                     </div>
@@ -173,23 +248,37 @@ export default function Home() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="flex items-center gap-4 p-2 rounded hover:bg-accent"
+                      className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
+                        items[code]?.completed ? 'bg-primary/10' : ''
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <span className="flex-1 font-mono">{code}</span>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Completado</span>
-                          <Checkbox
-                            checked={items[code]?.completed || false}
-                            onCheckedChange={() => handleToggle(code, 'completed')}
-                          />
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Checkbox
+                              checked={items[code]?.completed || false}
+                              onCheckedChange={() => handleToggle(code, 'completed')}
+                            />
+                          </motion.div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Sin Stock</span>
-                          <Checkbox
-                            checked={!items[code]?.hasStock}
-                            onCheckedChange={() => handleToggle(code, 'hasStock')}
-                          />
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Checkbox
+                              checked={!items[code]?.hasStock}
+                              onCheckedChange={() => handleToggle(code, 'hasStock')}
+                            />
+                          </motion.div>
                         </div>
                       </div>
                     </motion.div>
