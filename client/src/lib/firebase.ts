@@ -24,6 +24,11 @@ console.log('Initializing Firestore...');
 // Initialize Firestore with specific settings for better stability
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  retry: {
+    initialDelayMs: 1000,
+    maxDelayMs: 5000,
+    backoffFactor: 1.5
+  }
 });
 
 // Enable offline persistence after initialization
