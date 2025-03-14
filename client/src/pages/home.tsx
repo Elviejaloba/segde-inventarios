@@ -297,7 +297,7 @@ export default function Home() {
           >
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
               <LineChart className="h-6 w-6" />
-              Ranking de Sucursales
+              Ranking de Sucursales por Inventarios Completados
             </h2>
             <p className="text-muted-foreground mb-6">
               Para visualizar los códigos solicitados, toque cada sucursal para ver su detalle
