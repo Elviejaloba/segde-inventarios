@@ -14,7 +14,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container flex items-center justify-between h-16">
-          <h1 className="text-xl font-bold">Winter Sampling Tracker</h1>
+          <h1 className="text-xl font-bold">Seguimiento de muestreo de invierno</h1>
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
