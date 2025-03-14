@@ -106,6 +106,9 @@ export default function Home() {
     completed: selectedBranch
       ? (Object.values(items).filter(i => i.completed).length / CODES.length) * 100
       : 0,
+    noStock: selectedBranch
+      ? (Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100
+      : 0,
   };
 
   return (
@@ -142,15 +145,24 @@ export default function Home() {
               <CardHeader>
                 <CardTitle>Checklist de {selectedBranch}</CardTitle>
                 <CardDescription className="text-muted-foreground mt-2">
-                  Marque los items completados y si hay stock disponible
+                  Marque los items completados y los que no tienen stock disponible
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
-                  <h3 className="text-sm font-medium mb-2">Progreso</h3>
-                  <Progress value={progress.completed} className="h-2" />
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {progress.completed.toFixed(0)}% completado
+                <div className="sticky top-36 bg-background pt-2 pb-4 z-30 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Progreso Completados</h3>
+                    <Progress value={progress.completed} className="h-2" />
+                    <div className="text-sm text-muted-foreground mt-2">
+                      {Math.round(progress.completed)}% completado
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
+                    <Progress value={progress.noStock} className="h-2" />
+                    <div className="text-sm text-muted-foreground mt-2">
+                      {Math.round(progress.noStock)}% sin stock
+                    </div>
                   </div>
                 </div>
 
@@ -173,9 +185,9 @@ export default function Home() {
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Stock</span>
+                          <span className="text-sm text-muted-foreground">Sin Stock</span>
                           <Checkbox
-                            checked={items[code]?.hasStock || false}
+                            checked={!items[code]?.hasStock}
                             onCheckedChange={() => handleToggle(code, 'hasStock')}
                           />
                         </div>
