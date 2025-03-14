@@ -14,14 +14,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
-  const [items, setItems] = useState<Record<Code, { completed: boolean; communicated: boolean }>>({});
+  const [items, setItems] = useState<Record<Code, { completed: boolean }>>({});
 
   const progress = {
     completed: selectedBranch
       ? (Object.values(items).filter((i) => i.completed).length / Object.keys(codeSchema.enum).length) * 100
-      : 0,
-    communicated: selectedBranch
-      ? (Object.values(items).filter((i) => i.communicated).length / Object.keys(codeSchema.enum).length) * 100
       : 0,
   };
 
@@ -37,12 +34,12 @@ export default function Home() {
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
-  const handleToggle = (code: Code, field: 'completed' | 'communicated') => {
+  const handleToggle = (code: Code) => {
     setItems(prev => ({
       ...prev,
       [code]: {
         ...prev[code],
-        [field]: !prev[code]?.[field]
+        completed: !prev[code]?.completed
       }
     }));
   };
@@ -71,10 +68,6 @@ export default function Home() {
               <div className="text-sm text-muted-foreground">
                 {progress.completed.toFixed(0)}% completado
               </div>
-              <Progress value={progress.communicated} />
-              <div className="text-sm text-muted-foreground">
-                {progress.communicated.toFixed(0)}% comunicado
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -83,11 +76,7 @@ export default function Home() {
                   <span className="flex-1 font-mono">{code}</span>
                   <Checkbox
                     checked={items[code]?.completed || false}
-                    onCheckedChange={() => handleToggle(code, 'completed')}
-                  />
-                  <Checkbox
-                    checked={items[code]?.communicated || false}
-                    onCheckedChange={() => handleToggle(code, 'communicated')}
+                    onCheckedChange={() => handleToggle(code)}
                   />
                 </div>
               ))}
