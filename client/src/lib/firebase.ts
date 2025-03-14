@@ -16,9 +16,12 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with optimized settings
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
+    tabManager: persistentSingleTabManager({
+      forceOwnership: true // Forzar propiedad de la caché en esta pestaña
+    })
   }),
   experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
+  cacheSizeBytes: 40000000, // Aproximadamente 40MB de caché
 });
 
 export { app, db };

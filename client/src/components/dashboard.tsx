@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, enableNetwork, disableNetwork } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Table,
@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
-import { Trophy, AlertCircle } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCcw } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -28,53 +29,54 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 segundo
+
+  const fetchData = async (isRetry = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (isRetry) {
+        // En caso de reintento, reiniciar la conexión
+        await disableNetwork(db);
+        await enableNetwork(db);
+      }
+
+      const branchesRef = collection(db, "branches");
+      const snapshot = await getDocs(branchesRef);
+
+      const branchData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        totalCompleted: doc.data().totalCompleted || 0,
+        noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
+        items: doc.data().items || {}
+      }));
+
+      setData(branchData);
+      setRetryCount(0); // Reset retry count on success
+    } catch (err) {
+      console.error("Error loading data:", err);
+      if (retryCount < maxRetries) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchData(true), retryDelay * (retryCount + 1));
+      } else {
+        setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let mounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 segundo
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const branchesRef = collection(db, "branches");
-        const snapshot = await getDocs(branchesRef);
-
-        if (!mounted) return;
-
-        const branchData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          totalCompleted: doc.data().totalCompleted || 0,
-          noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
-          items: doc.data().items || {}
-        }));
-
-        setData(branchData);
-        retryCount = 0; // Reset retry count on success
-      } catch (err) {
-        console.error("Error loading data:", err);
-        if (mounted) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(fetchData, retryDelay * retryCount);
-          } else {
-            setError("No se pudieron cargar los datos. Por favor, actualiza la página.");
-          }
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     fetchData();
 
     return () => {
-      mounted = false;
+      // Cleanup
+      setData([]);
+      setLoading(false);
+      setError(null);
     };
   }, []);
 
@@ -93,6 +95,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <div className="text-center space-y-4">
           <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
           <p className="text-destructive">{error}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => fetchData(true)}
+            className="gap-2"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Reintentar
+          </Button>
         </div>
       </div>
     );
