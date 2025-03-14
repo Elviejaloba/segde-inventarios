@@ -125,7 +125,7 @@ export default function Home() {
           toast({
             title: "¡Felicitaciones! 🎉",
             description: "Has completado todos los items",
-            variant: "success", // Corrected variant here
+            variant: "success",
           });
         }
       }
@@ -135,7 +135,7 @@ export default function Home() {
         toast({
           title: "Item sin stock registrado",
           description: `${noStockCount} items marcados sin stock`,
-          variant: "warning", //Corrected variant here
+          variant: "warning",
         });
       }
     } catch (error) {
@@ -162,8 +162,8 @@ export default function Home() {
       <div className="flex items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
         <div className="flex items-center gap-4">
           {selectedBranch && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setSelectedBranch(undefined)}
               className="gap-2"
             >
@@ -171,9 +171,9 @@ export default function Home() {
               Ver Ranking
             </Button>
           )}
-          <BranchSelector 
-            value={selectedBranch} 
-            onChange={loadBranchData} 
+          <BranchSelector
+            value={selectedBranch}
+            onChange={loadBranchData}
           />
         </div>
       </div>
@@ -203,15 +203,15 @@ export default function Home() {
                       animate={{ width: `${progress.completed}%` }}
                       transition={{ duration: 0.5 }}
                     >
-                      <Progress 
-                        value={progress.completed} 
+                      <Progress
+                        value={progress.completed}
                         className="h-2"
                         // Cambia el color basado en el progreso
                         style={{
                           background: progress.completed === 100 ? 'var(--success)' :
-                                     progress.completed >= 75 ? 'var(--primary)' :
-                                     progress.completed >= 50 ? 'var(--warning)' :
-                                     'var(--muted)'
+                            progress.completed >= 75 ? 'var(--primary)' :
+                              progress.completed >= 50 ? 'var(--warning)' :
+                                'var(--muted)'
                         }}
                       />
                     </motion.div>
@@ -226,8 +226,8 @@ export default function Home() {
                       animate={{ width: `${progress.noStock}%` }}
                       transition={{ duration: 0.5 }}
                     >
-                      <Progress 
-                        value={progress.noStock} 
+                      <Progress
+                        value={progress.noStock}
                         className="h-2"
                         // Color rojo para items sin stock
                         style={{
@@ -295,10 +295,13 @@ export default function Home() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
               <LineChart className="h-6 w-6" />
               Ranking de Sucursales
             </h2>
+            <p className="text-muted-foreground mb-6">
+              Para visualizar los códigos solicitados, toque cada sucursal para ver su detalle
+            </p>
             <Dashboard onBranchSelect={loadBranchData} />
           </motion.div>
         )}
