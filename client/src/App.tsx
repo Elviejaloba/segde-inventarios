@@ -8,12 +8,36 @@ import { HandleAuth } from "@/components/handle-auth";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { Role } from "@shared/schema";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function Router() {
-  const [user, loading] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
+  const [userRole, setUserRole] = useState<Role>();
+  const [loading, setLoading] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    const loadUserRole = async () => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role as Role);
+        }
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadUserRole();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
+  if (authLoading || loading) {
     return <HandleAuth />;
   }
 
@@ -23,7 +47,9 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/">
+        <Home userRole={userRole} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

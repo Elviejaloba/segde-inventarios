@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Branch, Code, codeSchema } from "@shared/schema";
+import { Branch, Code, codeSchema, Role } from "@shared/schema";
 import { BranchSelector } from "@/components/branch-selector";
-import { Share, ArrowLeft, LineChart } from "lucide-react";
+import { Share, ArrowLeft, LineChart, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import {
@@ -18,7 +18,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 
-export default function Home() {
+interface HomeProps {
+  userRole?: Role;
+}
+
+export default function Home({ userRole }: HomeProps) {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<Code, { completed: boolean }>>({});
   const { toast } = useToast();
@@ -56,6 +60,16 @@ export default function Home() {
   };
 
   const handleToggle = async (code: Code) => {
+    // Solo permitir edición si el usuario es de tipo "branch"
+    if (userRole !== "branch") {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo las sucursales pueden editar los items",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedBranch) return;
 
     const newItems = {
@@ -101,6 +115,19 @@ export default function Home() {
       });
     }
   };
+
+  // Mostrar siempre el dashboard para los dueños
+  if (userRole === "owner") {
+    return (
+      <div className="space-y-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <LineChart className="h-6 w-6" />
+          Ranking de Sucursales
+        </h2>
+        <Dashboard />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -169,10 +196,14 @@ export default function Home() {
                       className="flex items-center gap-4 p-2 rounded hover:bg-accent"
                     >
                       <span className="flex-1 font-mono">{code}</span>
-                      <Checkbox
-                        checked={items[code]?.completed || false}
-                        onCheckedChange={() => handleToggle(code)}
-                      />
+                      {userRole === "branch" ? (
+                        <Checkbox
+                          checked={items[code]?.completed || false}
+                          onCheckedChange={() => handleToggle(code)}
+                        />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </motion.div>
                   ))}
                 </div>

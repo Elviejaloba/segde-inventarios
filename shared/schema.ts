@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const roleSchema = z.enum(["owner", "branch"]);
+export type Role = z.infer<typeof roleSchema>;
+
 export const branchSchema = z.enum([
   "T.Mza",
   "T.SJuan", 
@@ -13,6 +16,15 @@ export const branchSchema = z.enum([
 ]);
 
 export type Branch = z.infer<typeof branchSchema>;
+
+export const userSchema = z.object({
+  email: z.string().email(),
+  role: roleSchema,
+  branch: branchSchema.optional(), 
+  createdAt: z.string(),
+});
+
+export type User = z.infer<typeof userSchema>;
 
 export const codeSchema = z.enum([
   "TI114F", "TI505", "138P", "118M", "400I", "505X", "506M", "305K",
