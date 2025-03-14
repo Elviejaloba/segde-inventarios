@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BranchSelector } from "@/components/branch-selector";
 import { Branch } from "@shared/schema";
+import { LoadingSpinner } from "./ui/loading-spinner";
 
 export function Auth() {
   const [email, setEmail] = useState("");
@@ -65,7 +66,7 @@ export function Auth() {
       } else if (error?.code === 'auth/configuration-not-found') {
         errorMessage = "Error de configuración. Por favor contacta al administrador.";
       } else if (error?.code === 'auth/unauthorized-domain') {
-        errorMessage = "Este dominio no está autorizado para el envío de emails.";
+        errorMessage = "Este dominio no está autorizado para el envío de emails. Por favor espera mientras se configura.";
       }
 
       toast({
@@ -106,10 +107,18 @@ export function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Enviando..." : "Enviar Link de Acceso"}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner />
+                  <span>Enviando enlace...</span>
+                </div>
+              ) : (
+                "Enviar Link de Acceso"
+              )}
             </Button>
           </form>
         </CardContent>
