@@ -64,9 +64,13 @@ export function Auth() {
       } else if (error?.code === 'auth/network-request-failed') {
         errorMessage = "Error de conexión. Verifica tu internet";
       } else if (error?.code === 'auth/configuration-not-found') {
-        errorMessage = "Error de configuración. Por favor contacta al administrador.";
+        errorMessage = "Error de configuración. Por favor contacta al administrador. Es necesario habilitar la autenticación por email sin contraseña (Email link sign-in) en Firebase.";
       } else if (error?.code === 'auth/unauthorized-domain') {
-        errorMessage = "Este dominio no está autorizado para el envío de emails. Por favor espera mientras se configura.";
+        errorMessage = "Este dominio no está autorizado para el envío de emails. Es necesario agregar el dominio en la configuración de Firebase.";
+      } else if (error?.code === 'auth/operation-not-allowed') {
+        errorMessage = "La autenticación por email no está habilitada en Firebase. Por favor contacta al administrador.";
+      } else if (error?.code === 'auth/requires-recent-login') {
+        errorMessage = "Por favor, inicia sesión nuevamente para continuar.";
       }
 
       toast({
