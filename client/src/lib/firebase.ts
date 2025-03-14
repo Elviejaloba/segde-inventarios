@@ -19,8 +19,27 @@ console.log('Firebase config loaded with:', {
   hasAppId: !!firebaseConfig.appId
 });
 
-// Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+let app;
+let auth;
+let db;
+let googleProvider;
+
+try {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig);
+  console.log('Firebase app initialized successfully');
+
+  // Initialize Firestore
+  db = getFirestore(app);
+  console.log('Firestore initialized successfully');
+
+  // Initialize Auth
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  console.log('Firebase auth initialized successfully');
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  throw error;
+}
+
+export { app, auth, db, googleProvider };
