@@ -14,15 +14,12 @@ import { motion } from "framer-motion";
 import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
-import { ExportButton } from "@/components/export-button";
-import { exportToCSV } from "@/lib/export";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
-  showExport?: boolean;
 }
 
-export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
+export function Dashboard({ onBranchSelect }: DashboardProps) {
   const [data, setData] = useState<Array<{
     id: string,
     totalCompleted: number,
@@ -113,17 +110,6 @@ export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
-  const handleExport = async () => {
-    try {
-      exportToCSV({
-        timestamp: new Date().toISOString(),
-        data: sortedBranches
-      });
-    } catch (error) {
-      console.error("Error exporting data:", error);
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -131,11 +117,6 @@ export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
       transition={{ duration: 0.5 }}
       className="rounded-md border bg-card"
     >
-      {showExport && (
-        <div className="p-4 border-b">
-          <ExportButton onExport={handleExport} />
-        </div>
-      )}
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">

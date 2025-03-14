@@ -17,8 +17,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { ExportButton } from "@/components/export-button";
-import { exportToCSV } from "@/lib/export";
 
 // Lista actualizada de códigos solicitados
 const CODES = [
@@ -90,8 +88,8 @@ export default function Home() {
         [field]: !items[code]?.[field],
         // Si se marca como completado, asegurarse de que tenga stock
         // Si se marca sin stock, asegurarse de que no esté completado
-        ...(field === 'completed' ? { hasStock: true } : 
-            field === 'hasStock' ? { completed: false } : {})
+        ...(field === 'completed' ? { hasStock: true } :
+          field === 'hasStock' ? { completed: false } : {}),
       }
     };
 
@@ -163,24 +161,6 @@ export default function Home() {
       : 0,
   };
 
-  const handleExport = async () => {
-    if (!selectedBranch) return;
-
-    try {
-      exportToCSV({
-        timestamp: new Date().toISOString(),
-        branch: selectedBranch,
-        data: { items }
-      });
-    } catch (error) {
-      console.error("Error exporting data:", error);
-      toast({
-        title: "Error al exportar",
-        description: "No se pudo generar el reporte",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -220,7 +200,6 @@ export default function Home() {
                     Marque los items completados y los que no tienen stock disponible
                   </CardDescription>
                 </div>
-                <ExportButton onExport={handleExport} />
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="sticky top-36 bg-background pt-2 pb-4 z-30 space-y-4">
@@ -330,7 +309,7 @@ export default function Home() {
             <p className="text-muted-foreground mb-6">
               Para visualizar los códigos solicitados, toque cada sucursal para ver su detalle
             </p>
-            <Dashboard onBranchSelect={loadBranchData} showExport={true} />
+            <Dashboard onBranchSelect={loadBranchData} />
           </motion.div>
         )}
       </AnimatePresence>
