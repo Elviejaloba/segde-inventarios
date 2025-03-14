@@ -75,7 +75,18 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     };
   }, []);
 
-  // Solo mostrar loading en la carga inicial
+  const sortedBranches = AVAILABLE_BRANCHES
+    .map(branchId => {
+      const branchData = data.find(d => d.id === branchId);
+      return {
+        id: branchId,
+        totalCompleted: branchData?.totalCompleted || 0,
+        noStock: branchData?.noStock || 0,
+        items: branchData?.items || {}
+      };
+    })
+    .sort((a, b) => b.totalCompleted - a.totalCompleted);
+
   if (loading && !data.length) {
     return (
       <div className="flex flex-col items-center justify-center p-4 space-y-2">
@@ -103,18 +114,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       </div>
     );
   }
-
-  const sortedBranches = AVAILABLE_BRANCHES
-    .map(branchId => {
-      const branchData = data.find(d => d.id === branchId);
-      return {
-        id: branchId,
-        totalCompleted: branchData?.totalCompleted || 0,
-        noStock: branchData?.noStock || 0,
-        items: branchData?.items || {}
-      };
-    })
-    .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   return (
     <motion.div

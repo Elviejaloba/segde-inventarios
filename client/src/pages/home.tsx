@@ -89,11 +89,7 @@ export default function Home() {
 
       if (branchDoc.exists()) {
         const branchData = branchDoc.data();
-        if (branchData && branchData.items) {
-          setItems(branchData.items);
-        } else {
-          setItems({});
-        }
+        setItems(branchData?.items || {});
         setRetryCount(0);
       } else {
         // Si la sucursal no existe, inicializarla con items vacíos
@@ -147,7 +143,6 @@ export default function Home() {
         noStock: noStockCount,
       }, { merge: true });
 
-      // Notificaciones de progreso para items completados
       if (field === 'completed' && newItems[code].completed) {
         if (completedPercentage === 25) {
           toast({
@@ -173,7 +168,6 @@ export default function Home() {
         }
       }
 
-      // Notificaciones para items sin stock
       if (field === 'hasStock' && !newItems[code].hasStock) {
         toast({
           title: "Item sin stock registrado",
@@ -228,7 +222,17 @@ export default function Home() {
       </div>
 
       <AnimatePresence mode="wait">
-        {selectedBranch ? (
+        {loading && !Object.keys(items).length ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center p-4 space-y-2"
+          >
+            <LoadingSpinner />
+            <p className="text-muted-foreground text-sm">Cargando datos...</p>
+          </motion.div>
+        ) : selectedBranch ? (
           <motion.div
             key="checklist"
             initial={{ opacity: 0, y: 20 }}
@@ -252,7 +256,7 @@ export default function Home() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progress.completed}%` }}
-                      transition={{ duration: 0.5 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <Progress
                         value={progress.completed}
@@ -274,7 +278,7 @@ export default function Home() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progress.noStock}%` }}
-                      transition={{ duration: 0.5 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <Progress
                         value={progress.noStock}
@@ -296,7 +300,7 @@ export default function Home() {
                       key={code}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
                       className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
                         items[code]?.completed ? 'bg-primary/10' : ''
                       }`}
@@ -353,12 +357,6 @@ export default function Home() {
             </p>
             <Dashboard onBranchSelect={loadBranchData} />
           </motion.div>
-        )}
-        {loading && !Object.keys(items).length && (
-          <div className="flex flex-col items-center justify-center p-4 space-y-2">
-            <LoadingSpinner />
-            <p className="text-muted-foreground text-sm">Cargando datos...</p>
-          </div>
         )}
       </AnimatePresence>
     </div>
