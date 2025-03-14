@@ -15,8 +15,8 @@ import { Role } from "@shared/schema";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 500; // Start with a shorter delay
 
 function Router() {
   const [user, authLoading] = useAuthState(auth);
@@ -36,9 +36,14 @@ function Router() {
         return;
       }
 
-      console.log("Setting up user role listener for:", user.uid);
+      console.log("Loading user role for:", user.uid);
 
       try {
+        // Cleanup previous listener if exists
+        if (unsubscribe) {
+          unsubscribe();
+        }
+
         unsubscribe = onSnapshot(
           doc(db, "users", user.uid),
           {
@@ -47,49 +52,49 @@ function Router() {
 
               if (snapshot.exists()) {
                 const role = snapshot.data().role as Role;
-                console.log("User role updated:", role);
                 setUserRole(role);
                 setRetryCount(0);
                 setLoading(false);
               } else {
                 console.warn("User document not found:", user.uid);
-                throw new Error("No se encontró tu información de usuario");
+                setLoading(false);
+                toast({
+                  title: "Error de acceso",
+                  description: "No se encontró tu información de usuario",
+                  variant: "destructive",
+                });
               }
             },
             error: (error) => {
               console.error("Error in user role listener:", error);
 
-              if (error.message.includes('transport errored') && retryCount < MAX_RETRIES) {
-                console.log(`Retrying listener setup... (${retryCount + 1}/${MAX_RETRIES})`);
+              if (retryCount < MAX_RETRIES) {
+                const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+                console.log(`Retrying in ${delay}ms... (${retryCount + 1}/${MAX_RETRIES})`);
                 setRetryCount(prev => prev + 1);
-
-                // Cleanup current listener before retrying
-                if (unsubscribe) {
-                  unsubscribe();
+                retryTimeout = setTimeout(setupUserRoleListener, delay);
+              } else {
+                if (mounted) {
+                  setLoading(false);
+                  toast({
+                    title: "Error de conexión",
+                    description: "No se pudo cargar tu información. Por favor, verifica tu conexión.",
+                    variant: "destructive",
+                  });
                 }
-
-                // Retry after delay
-                retryTimeout = setTimeout(setupUserRoleListener, RETRY_DELAY);
-              } else if (mounted) {
-                toast({
-                  title: "Error de conexión",
-                  description: "Hubo un problema al cargar tu información. Por favor, verifica tu conexión a internet.",
-                  variant: "destructive",
-                });
-                setLoading(false);
               }
             }
           }
         );
       } catch (error) {
         console.error("Error setting up listener:", error);
-        if (mounted && retryCount >= MAX_RETRIES) {
+        if (mounted) {
+          setLoading(false);
           toast({
-            title: "Error de acceso",
-            description: "No se pudo establecer la conexión. Por favor, intenta nuevamente más tarde.",
+            title: "Error de conexión",
+            description: "Hubo un problema al cargar tu información.",
             variant: "destructive",
           });
-          setLoading(false);
         }
       }
     };
@@ -109,7 +114,7 @@ function Router() {
         clearTimeout(retryTimeout);
       }
     };
-  }, [user, authLoading, retryCount, toast]);
+  }, [user, authLoading, toast]);
 
   if (authLoading || loading) {
     return (
@@ -117,8 +122,13 @@ function Router() {
         <div className="text-center">
           <LoadingSpinner />
           <p className="mt-4 text-muted-foreground">
-            {loading ? `Cargando información de usuario... (Intento ${retryCount + 1}/${MAX_RETRIES})` : "Verificando autenticación..."}
+            {loading ? `Cargando información...` : "Verificando autenticación..."}
           </p>
+          {loading && retryCount > 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Reintentando... ({retryCount}/{MAX_RETRIES})
+            </p>
+          )}
         </div>
       </div>
     );
@@ -136,9 +146,9 @@ function Router() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-bold mb-2">Error de acceso</h2>
+          <h2 className="text-xl font-bold mb-2">Error de conexión</h2>
           <p className="text-muted-foreground">
-            No se pudo cargar tu información. Por favor, verifica tu conexión a internet y vuelve a intentarlo.
+            No se pudo cargar tu información. Por favor, verifica tu conexión e intenta nuevamente.
           </p>
         </div>
       </div>
