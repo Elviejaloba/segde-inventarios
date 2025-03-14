@@ -64,7 +64,7 @@ export function HandleAuth() {
           // Notificar éxito
           toast({
             title: "¡Bienvenido! 👋",
-            description: `Has iniciado sesión como ${role === "owner" ? "dueño" : "sucursal"}`,
+            description: `Has iniciado sesión como ${role === "owner" ? "supervisor" : "sucursal"}`,
           });
 
           // Limpiar la URL

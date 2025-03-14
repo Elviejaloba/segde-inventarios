@@ -108,7 +108,7 @@ export function Auth() {
                   <SelectValue placeholder="Selecciona tu rol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Dueño (Solo visualización)</SelectItem>
+                  <SelectItem value="owner">Supervisor (Solo visualización)</SelectItem>
                   <SelectItem value="branch">Sucursal (Edición)</SelectItem>
                 </SelectContent>
               </Select>
