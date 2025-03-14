@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Branch, Code, codeSchema } from "@shared/schema";
 import { BranchSelector } from "@/components/branch-selector";
 import { Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dashboard } from "@/components/dashboard";
 import {
   Card,
   CardContent,
@@ -12,16 +13,35 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { db } from "@/lib/firebase";
+import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<Code, { completed: boolean }>>({});
+  const { toast } = useToast();
 
   const progress = {
     completed: selectedBranch
       ? (Object.values(items).filter((i) => i.completed).length / Object.keys(codeSchema.enum).length) * 100
       : 0,
   };
+
+  useEffect(() => {
+    if (!selectedBranch) return;
+
+    const loadBranchData = async () => {
+      const branchRef = doc(db, "branches", selectedBranch);
+      const branchDoc = await getDoc(branchRef);
+      if (branchDoc.exists()) {
+        setItems(branchDoc.data().items || {});
+      }
+    };
+
+    loadBranchData();
+  }, [selectedBranch]);
 
   const handleShare = () => {
     if (!selectedBranch) return;
@@ -35,14 +55,51 @@ export default function Home() {
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
-  const handleToggle = (code: Code) => {
-    setItems(prev => ({
-      ...prev,
+  const handleToggle = async (code: Code) => {
+    if (!selectedBranch) return;
+
+    const newItems = {
+      ...items,
       [code]: {
-        ...prev[code],
-        completed: !prev[code]?.completed
+        completed: !items[code]?.completed
       }
-    }));
+    };
+
+    setItems(newItems);
+
+    const completedCount = Object.values(newItems).filter(i => i.completed).length;
+    const totalItems = Object.keys(codeSchema.enum).length;
+    const percentage = (completedCount / totalItems) * 100;
+
+    // Actualizar Firestore
+    const branchRef = doc(db, "branches", selectedBranch);
+    await setDoc(branchRef, {
+      items: newItems,
+      totalCompleted: completedCount,
+    }, { merge: true });
+
+    // Mostrar notificaciones según el progreso
+    if (percentage === 25) {
+      toast({
+        title: "¡Buen comienzo! 🌟",
+        description: "Has completado el 25% de tu checklist",
+      });
+    } else if (percentage === 50) {
+      toast({
+        title: "¡Excelente progreso! 🎯",
+        description: "¡Ya vas por la mitad del camino!",
+      });
+    } else if (percentage === 75) {
+      toast({
+        title: "¡Casi allí! 🚀",
+        description: "Solo te falta un pequeño esfuerzo más",
+      });
+    } else if (percentage === 100) {
+      toast({
+        title: "¡Felicitaciones! 🎉",
+        description: "Has completado todos los códigos",
+      });
+    }
   };
 
   return (
@@ -57,43 +114,63 @@ export default function Home() {
         )}
       </div>
 
-      {selectedBranch && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Checklist de {selectedBranch}</CardTitle>
-            <CardDescription className="text-muted-foreground mt-2">
-              Por favor seleccione los códigos que fueron realizados y comunicados vía mail
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
-              <h3 className="text-sm font-medium mb-2">Progreso</h3>
-              <Progress value={progress.completed} className="h-2" />
-              <div className="text-sm text-muted-foreground mt-2">
-                {progress.completed.toFixed(0)}% completado
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {Object.values(codeSchema.enum).map((code) => (
-                <div key={code} className="flex items-center gap-4 p-2 rounded hover:bg-accent">
-                  <span className="flex-1 font-mono">{code}</span>
-                  <Checkbox
-                    checked={items[code]?.completed || false}
-                    onCheckedChange={() => handleToggle(code)}
-                  />
+      {selectedBranch ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Checklist de {selectedBranch}</CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Por favor seleccione los códigos que fueron realizados y comunicados vía mail
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
+                <h3 className="text-sm font-medium mb-2">Progreso</h3>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Progress value={progress.completed} className="h-2" />
+                </motion.div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  {progress.completed.toFixed(0)}% completado
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </div>
 
-      {!selectedBranch && (
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-4">Bienvenido al Seguimiento de Muestreos</h2>
-          <p className="text-muted-foreground">Por favor seleccione una sucursal para comenzar</p>
-        </div>
+              <div className="space-y-4">
+                {Object.values(codeSchema.enum).map((code, index) => (
+                  <motion.div
+                    key={code}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="flex items-center gap-4 p-2 rounded hover:bg-accent"
+                  >
+                    <span className="flex-1 font-mono">{code}</span>
+                    <Checkbox
+                      checked={items[code]?.completed || false}
+                      onCheckedChange={() => handleToggle(code)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold mb-6">Ranking de Sucursales</h2>
+          <Dashboard />
+        </motion.div>
       )}
     </div>
   );
