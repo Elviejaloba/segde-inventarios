@@ -1,18 +1,31 @@
-import { useState, useCallback } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { Branch } from "@shared/schema";
+import { useState } from "react";
+import { Branch, Code, codeSchema } from "@shared/schema";
 import { BranchSelector } from "@/components/branch-selector";
-import { Checklist } from "@/components/checklist";
-import { Dashboard } from "@/components/dashboard";
-import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
 import { Share } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Home() {
-  const [user] = useAuthState(auth);
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
+  const [items, setItems] = useState<Record<Code, { completed: boolean; communicated: boolean }>>({});
 
-  const handleShare = useCallback(() => {
+  const progress = {
+    completed: selectedBranch
+      ? (Object.values(items).filter((i) => i.completed).length / Object.keys(codeSchema.enum).length) * 100
+      : 0,
+    communicated: selectedBranch
+      ? (Object.values(items).filter((i) => i.communicated).length / Object.keys(codeSchema.enum).length) * 100
+      : 0,
+  };
+
+  const handleShare = () => {
     if (!selectedBranch) return;
 
     const message = encodeURIComponent(
@@ -22,16 +35,17 @@ export default function Home() {
     );
 
     window.open(`https://wa.me/?text=${message}`, '_blank');
-  }, [selectedBranch]);
+  };
 
-  if (!user) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-4">Welcome to Winter Sampling Tracker</h2>
-        <p className="text-muted-foreground">Please sign in to continue</p>
-      </div>
-    );
-  }
+  const handleToggle = (code: Code, field: 'completed' | 'communicated') => {
+    setItems(prev => ({
+      ...prev,
+      [code]: {
+        ...prev[code],
+        [field]: !prev[code]?.[field]
+      }
+    }));
+  };
 
   return (
     <div className="space-y-8">
@@ -40,15 +54,53 @@ export default function Home() {
         {selectedBranch && (
           <Button onClick={handleShare}>
             <Share className="mr-2 h-4 w-4" />
-            Share on WhatsApp
+            Compartir en WhatsApp
           </Button>
         )}
       </div>
 
-      {selectedBranch ? (
-        <Checklist branch={selectedBranch} />
-      ) : (
-        <Dashboard />
+      {selectedBranch && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Checklist de {selectedBranch}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Progreso</h3>
+              <Progress value={progress.completed} className="mb-2" />
+              <div className="text-sm text-muted-foreground">
+                {progress.completed.toFixed(0)}% completado
+              </div>
+              <Progress value={progress.communicated} />
+              <div className="text-sm text-muted-foreground">
+                {progress.communicated.toFixed(0)}% comunicado
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {Object.values(codeSchema.enum).map((code) => (
+                <div key={code} className="flex items-center gap-4 p-2 rounded hover:bg-accent">
+                  <span className="flex-1 font-mono">{code}</span>
+                  <Checkbox
+                    checked={items[code]?.completed || false}
+                    onCheckedChange={() => handleToggle(code, 'completed')}
+                  />
+                  <Checkbox
+                    checked={items[code]?.communicated || false}
+                    onCheckedChange={() => handleToggle(code, 'communicated')}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!selectedBranch && (
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold mb-4">Bienvenido al Seguimiento de Muestreos</h2>
+          <p className="text-muted-foreground">Por favor seleccione una sucursal para comenzar</p>
+        </div>
       )}
     </div>
   );
