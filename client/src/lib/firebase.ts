@@ -4,11 +4,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyCPAvMINyDHyo7-KElEBhP1buZAbfBfqdU",
+  authDomain: "check-d1753.firebaseapp.com",
+  projectId: "check-d1753",
+  storageBucket: "check-d1753.firebasestorage.app",
+  messagingSenderId: "374297020151",
+  appId: "1:374297020151:web:d4a8325ef1171b43e6f5f2",
+  measurementId: "G-KL2NYT9BQE"
 };
 
 // Debug: Log config (without sensitive values)
