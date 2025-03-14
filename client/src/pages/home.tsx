@@ -36,7 +36,7 @@ export default function Home() {
   const [items, setItems] = useState<Record<string, { completed: boolean }>>({});
 
   // Cargar datos cuando se selecciona una sucursal
-  const handleBranchSelect = async (branch: Branch) => {
+  const loadBranchData = async (branch: Branch) => {
     setSelectedBranch(branch);
     try {
       const branchRef = doc(db, "branches", branch);
@@ -100,7 +100,7 @@ export default function Home() {
           )}
           <BranchSelector 
             value={selectedBranch} 
-            onChange={handleBranchSelect} 
+            onChange={loadBranchData} 
           />
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function Home() {
               <LineChart className="h-6 w-6" />
               Ranking de Sucursales
             </h2>
-            <Dashboard />
+            <Dashboard onBranchSelect={loadBranchData} />
           </motion.div>
         )}
       </AnimatePresence>

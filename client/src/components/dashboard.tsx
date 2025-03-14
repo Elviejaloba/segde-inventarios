@@ -13,8 +13,13 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
 import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 
-export function Dashboard() {
+interface DashboardProps {
+  onBranchSelect?: (branch: string) => void;
+}
+
+export function Dashboard({ onBranchSelect }: DashboardProps) {
   const [data, setData] = useState<Array<{id: string, totalCompleted: number}>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +109,11 @@ export function Dashboard() {
         </TableHeader>
         <TableBody>
           {sortedBranches.map((branch, index) => (
-            <TableRow key={branch.id}>
+            <TableRow 
+              key={branch.id}
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => onBranchSelect && onBranchSelect(branch.id)}
+            >
               <TableCell>
                 {index < 3 ? (
                   <Trophy className={`h-4 w-4 ${
