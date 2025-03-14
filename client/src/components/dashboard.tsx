@@ -14,14 +14,17 @@ import { motion } from "framer-motion";
 import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
+import { ExportButton } from "@/components/export-button";
+import { exportToCSV } from "@/lib/export";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
+  showExport?: boolean;
 }
 
-export function Dashboard({ onBranchSelect }: DashboardProps) {
+export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
   const [data, setData] = useState<Array<{
-    id: string, 
+    id: string,
     totalCompleted: number,
     noStock: number,
     items: Record<string, { completed: boolean, hasStock: boolean }>
@@ -101,6 +104,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
+  const handleExport = async () => {
+    try {
+      exportToCSV({
+        timestamp: new Date().toISOString(),
+        data: sortedBranches
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -108,6 +122,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       transition={{ duration: 0.5 }}
       className="rounded-md border bg-card"
     >
+      {showExport && (
+        <div className="p-4 border-b">
+          <ExportButton onExport={handleExport} />
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
@@ -126,8 +145,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               transition={{ duration: 0.3, delay: index * 0.1 }}
               className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                 index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
-                index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
-                index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
+                  index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
+                    index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
               }`}
               onClick={() => onBranchSelect && onBranchSelect(branch.id)}
               whileHover={{ scale: 1.01 }}
@@ -138,17 +157,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ 
+                    transition={{
                       type: "spring",
                       stiffness: 260,
                       damping: 20,
-                      delay: index * 0.1 
+                      delay: index * 0.1
                     }}
                   >
                     <Trophy className={`h-5 w-5 ${
                       index === 0 ? 'text-yellow-500' :
-                      index === 1 ? 'text-gray-400' :
-                      'text-amber-600'
+                        index === 1 ? 'text-gray-400' :
+                          'text-amber-600'
                     }`} />
                   </motion.div>
                 ) : (

@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { ExportButton } from "@/components/export-button";
+import { exportToCSV } from "@/lib/export";
 
 // Lista actualizada de códigos solicitados
 const CODES = [
@@ -157,6 +159,25 @@ export default function Home() {
       : 0,
   };
 
+  const handleExport = async () => {
+    if (!selectedBranch) return;
+
+    try {
+      exportToCSV({
+        timestamp: new Date().toISOString(),
+        branch: selectedBranch,
+        data: { items }
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({
+        title: "Error al exportar",
+        description: "No se pudo generar el reporte",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
@@ -188,11 +209,14 @@ export default function Home() {
             transition={{ duration: 0.5 }}
           >
             <Card>
-              <CardHeader>
-                <CardTitle>Checklist de {selectedBranch}</CardTitle>
-                <CardDescription className="text-muted-foreground mt-2">
-                  Marque los items completados y los que no tienen stock disponible
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Checklist de {selectedBranch}</CardTitle>
+                  <CardDescription className="text-muted-foreground mt-2">
+                    Marque los items completados y los que no tienen stock disponible
+                  </CardDescription>
+                </div>
+                <ExportButton onExport={handleExport} />
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="sticky top-36 bg-background pt-2 pb-4 z-30 space-y-4">
@@ -302,7 +326,7 @@ export default function Home() {
             <p className="text-muted-foreground mb-6">
               Para visualizar los códigos solicitados, toque cada sucursal para ver su detalle
             </p>
-            <Dashboard onBranchSelect={loadBranchData} />
+            <Dashboard onBranchSelect={loadBranchData} showExport={true} />
           </motion.div>
         )}
       </AnimatePresence>
