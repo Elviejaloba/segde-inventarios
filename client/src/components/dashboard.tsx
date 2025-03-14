@@ -1,7 +1,6 @@
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { BranchData, Branch, branchSchema, codeSchema } from "@shared/schema";
 import {
   Table,
   TableBody,
@@ -13,11 +12,24 @@ import {
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
+import { Branch, branchSchema, codeSchema } from "@shared/schema";
 
 export function Dashboard() {
-  const [branchesData, loading, error] = useCollectionData(
-    query(collection(db, "branches"), orderBy("totalCompleted", "desc"))
+  console.log('Dashboard: Initializing...');
+
+  const branchesQuery = query(
+    collection(db, "branches"),
+    orderBy("totalCompleted", "desc"),
+    limit(20) // Limit the number of branches to prevent excessive data fetching
   );
+
+  const [branchesData, loading, error] = useCollectionData(branchesQuery);
+
+  console.log('Dashboard: Data state', {
+    loading,
+    hasError: !!error,
+    branchesCount: branchesData?.length
+  });
 
   if (loading) {
     return (
@@ -28,14 +40,18 @@ export function Dashboard() {
   }
 
   if (error) {
+    console.error('Dashboard: Error loading data:', error);
     return (
       <div className="text-center p-8 text-destructive">
-        <p>Error loading dashboard: {error.message}</p>
+        <p>Error cargando el dashboard: Por favor, intenta nuevamente.</p>
       </div>
     );
   }
 
-  const sortedBranches = Object.values(branchSchema.enum)
+  const totalCodes = Object.keys(codeSchema.enum).length;
+  const branches = Object.values(branchSchema.enum);
+
+  const sortedBranches = branches
     .map(branch => {
       const branchDoc = branchesData?.find(d => d.id === branch);
       return {
@@ -46,8 +62,6 @@ export function Dashboard() {
       };
     })
     .sort((a, b) => b.data.totalCompleted - a.data.totalCompleted);
-
-  const totalCodes = Object.keys(codeSchema.enum).length;
 
   return (
     <motion.div
@@ -77,14 +91,15 @@ export function Dashboard() {
               }`}
             >
               <TableCell className="font-medium">
-                {index < 3 && (
+                {index < 3 ? (
                   <Trophy className={`h-4 w-4 ${
                     index === 0 ? 'text-yellow-500' :
                     index === 1 ? 'text-gray-400' :
                     'text-amber-600'
                   }`} />
+                ) : (
+                  index + 1
                 )}
-                {index >= 3 && (index + 1)}
               </TableCell>
               <TableCell className="font-medium">{branch}</TableCell>
               <TableCell className="text-right">
