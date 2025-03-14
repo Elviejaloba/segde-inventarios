@@ -1,0 +1,49 @@
+Prompt para Replit (React + Firebase + Tailwind)
+Crea una aplicación en React con Tailwind CSS y Firebase que permita gestionar un checklist de seguimiento de pedidos de muestreos para la temporada de invierno.
+
+Requisitos principales:
+Interfaz responsive y elegante.
+Animaciones:
+Indicar progreso cuando un checklist esté completo o vaya por la mitad.
+Selección de sucursal:
+Antes de acceder, el usuario debe seleccionar su sucursal de una lista desplegable.
+Sistema multiusuario:
+Varios usuarios pueden editar el checklist sin afectar otras sucursales.
+Ranking de cumplimiento:
+Las sucursales deben ordenarse por cantidad de artículos enviados y comunicados.
+Checklists interactivos:
+Cada sucursal tiene su propio checklist con códigos solicitados.
+Guardado en tiempo real:
+Firestore para almacenar cambios sin interferencias entre usuarios.
+Filtros y búsqueda:
+Opción de buscar códigos específicos dentro del checklist.
+Dashboard de visualización:
+Cuadro de seguimiento con progreso en tiempo real.
+Edición abierta:
+Cualquier usuario con acceso puede modificar el checklist de su sucursal sin afectar a otras sucursales.
+Botón de comunicación vía WhatsApp:
+Agregar un botón al final de la aplicación que permita compartir el seguimiento del pedido vía WhatsApp.
+El botón debe generar un mensaje con la información del checklist y redirigir a WhatsApp.
+Incluir la siguiente leyenda:
+"Esta es una herramienta de seguimiento. La comunicación debe realizarse vía mail adjuntando el comprobante de toma de inventario del artículo solicitado."
+
+Sucursales disponibles:
+T.Mza
+T.SJuan
+T.SLuis
+Crisa2
+T.SRafael
+T.SMartin
+T.Maipu
+T.Tunuyan
+T.Lujan
+Lista de códigos solicitados:
+TI114F, TI505, 138P, 118M, 400I, 505X, 506M, 305K, 605E, 605T, 510M, 506C, TI90, 507M, 98KS00, TI99, TI125, TI98KM, TI150P
+90/91/92, 30P/30S, 150M/P, 451I, 81M/81S/81SM, 15S/15C
+COVER, CORTINAS BLACKOUT, CORTINAS DE TROPICAL, 8020P00, 710100, 54X100, 67100
+
+Extras a considerar:
+✅ Barras de progreso dinámicas en función del porcentaje de checklist completado.
+✅ Modo oscuro y accesibilidad optimizada.
+✅ Integración de notificaciones al completar un pedido.
+✅ Generación automática del mensaje de WhatsApp con el seguimiento del pedido.
