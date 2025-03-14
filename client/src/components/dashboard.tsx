@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs,  } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Table,
@@ -27,15 +27,15 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     noStock: number,
     items: Record<string, { completed: boolean, hasStock: boolean }>
   }>>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
-  const retryDelay = 1000; // 1 segundo
+  const retryDelay = 500; // Reducido a 500ms
 
   const fetchData = async (isRetry = false) => {
     try {
-      setLoading(true);
+      if (!loading) setLoading(true);
       setError(null);
 
       const branchesRef = collection(db, "branches");
@@ -49,36 +49,34 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       }));
 
       setData(branchData);
-      setRetryCount(0); // Reset retry count on success
+      setRetryCount(0);
+      setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
       if (retryCount < maxRetries) {
-        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
+        const nextRetryDelay = retryDelay * Math.pow(1.5, retryCount); // Backoff más suave
         setRetryCount(prev => prev + 1);
         setTimeout(() => fetchData(true), nextRetryDelay);
       } else {
         setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-
     return () => {
-      // Cleanup
       setData([]);
       setLoading(false);
       setError(null);
     };
   }, []);
 
-  if (loading) {
+  if (loading && !data.length) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
         <p className="text-muted-foreground">Cargando datos...</p>
       </div>
     );

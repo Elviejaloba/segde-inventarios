@@ -15,8 +15,9 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc, enableNetwork, disableNetwork } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Lista actualizada de códigos solicitados
 const CODES = [
@@ -68,32 +69,26 @@ export default function Home() {
   const retryDelay = 1000; // 1 segundo base para backoff exponencial
 
   const loadBranchData = async (branch: Branch, isRetry = false) => {
-    setSelectedBranch(branch);
+    if (!loading) setSelectedBranch(branch);
     setLoading(true);
     setError(null);
 
     try {
-      if (isRetry) {
-        // En caso de reintento, reiniciar la conexión
-        await disableNetwork(db);
-        await enableNetwork(db);
-      }
-
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
 
       if (branchDoc.exists()) {
         setItems(branchDoc.data().items || {});
-        setRetryCount(0); // Reset retry count on success
+        setRetryCount(0);
       } else {
         setItems({});
       }
+      setLoading(false);
     } catch (error) {
       console.error("Error al cargar datos de la sucursal:", error);
 
       if (retryCount < maxRetries) {
-        // Implementar backoff exponencial
-        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
+        const nextRetryDelay = retryDelay * Math.pow(1.5, retryCount); // Backoff más suave
         setRetryCount(prev => prev + 1);
         setTimeout(() => loadBranchData(branch, true), nextRetryDelay);
       } else {
@@ -103,9 +98,8 @@ export default function Home() {
           description: "No se pudieron cargar los datos. Reintentando...",
           variant: "destructive",
         });
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -117,8 +111,6 @@ export default function Home() {
       [code]: {
         ...(items[code] || { completed: false, hasStock: true }),
         [field]: !items[code]?.[field],
-        // Si se marca como completado, asegurarse de que tenga stock
-        // Si se marca sin stock, asegurarse de que no esté completado
         ...(field === 'completed' ? { hasStock: true } :
           field === 'hasStock' ? { completed: false } : {}),
       }
@@ -245,7 +237,6 @@ export default function Home() {
                       <Progress
                         value={progress.completed}
                         className="h-2"
-                        // Cambia el color basado en el progreso
                         style={{
                           background: progress.completed === 100 ? 'var(--success)' :
                             progress.completed >= 75 ? 'var(--primary)' :
@@ -268,7 +259,6 @@ export default function Home() {
                       <Progress
                         value={progress.noStock}
                         className="h-2"
-                        // Color rojo para items sin stock
                         style={{
                           background: 'var(--destructive)'
                         }}
@@ -343,6 +333,12 @@ export default function Home() {
             </p>
             <Dashboard onBranchSelect={loadBranchData} />
           </motion.div>
+        )}
+        {loading && !Object.keys(items).length && (
+          <div className="flex flex-col items-center justify-center p-8 space-y-4">
+            <LoadingSpinner />
+            <p className="text-muted-foreground">Cargando datos de la sucursal...</p>
+          </div>
         )}
       </AnimatePresence>
     </div>
