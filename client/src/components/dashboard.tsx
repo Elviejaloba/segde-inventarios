@@ -13,14 +13,19 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
 import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
 }
 
 export function Dashboard({ onBranchSelect }: DashboardProps) {
-  const [data, setData] = useState<Array<{id: string, totalCompleted: number}>>([]);
+  const [data, setData] = useState<Array<{
+    id: string, 
+    totalCompleted: number,
+    noStock: number,
+    items: Record<string, { completed: boolean, hasStock: boolean }>
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +44,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
         const branchData = snapshot.docs.map(doc => ({
           id: doc.id,
-          totalCompleted: doc.data().totalCompleted || 0
+          totalCompleted: doc.data().totalCompleted || 0,
+          noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
+          items: doc.data().items || {}
         }));
 
         setData(branchData);
@@ -87,7 +94,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       const branchData = data.find(d => d.id === branchId);
       return {
         id: branchId,
-        totalCompleted: branchData?.totalCompleted || 0
+        totalCompleted: branchData?.totalCompleted || 0,
+        noStock: branchData?.noStock || 0,
+        items: branchData?.items || {}
       };
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
@@ -104,7 +113,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
           <TableRow className="bg-muted/50">
             <TableHead className="w-[100px]">Posición</TableHead>
             <TableHead>Sucursal</TableHead>
-            <TableHead className="text-right">Completados</TableHead>
+            <TableHead className="text-right">Progreso</TableHead>
+            <TableHead className="text-right">Sin Stock</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -128,8 +138,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               <TableCell>
                 {branch.id}
               </TableCell>
-              <TableCell className="text-right">
-                {branch.totalCompleted}
+              <TableCell>
+                <div className="flex items-center justify-end gap-2">
+                  <Progress value={branch.totalCompleted} className="w-24 h-2" />
+                  <span className="text-sm">{branch.totalCompleted}%</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-end gap-2">
+                  <Progress value={(branch.noStock / 30) * 100} className="w-24 h-2" />
+                  <span className="text-sm">{branch.noStock} items</span>
+                </div>
               </TableCell>
             </TableRow>
           ))}
