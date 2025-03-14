@@ -1,11 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { 
-  getFirestore, 
-  initializeFirestore,
+  initializeFirestore, 
   CACHE_SIZE_UNLIMITED,
-  enableMultiTabIndexedDbPersistence,
   enableNetwork,
-  disableNetwork 
+  disableNetwork,
+  enableMultiTabIndexedDbPersistence
 } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
