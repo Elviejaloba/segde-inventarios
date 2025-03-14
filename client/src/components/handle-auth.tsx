@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { roleSchema } from "@shared/schema";
@@ -50,7 +50,7 @@ export function HandleAuth() {
           }
         }
 
-        console.log("Iniciando autenticación con:", {
+        console.log("Iniciando proceso de autenticación:", {
           email,
           role,
           hasBranch: !!parsedBranch
@@ -64,16 +64,28 @@ export function HandleAuth() {
 
         console.log("Usuario autenticado:", {
           uid: result.user.uid,
-          email: result.user.email,
+          email: result.user.email
         });
 
-        // Guardar datos en Firestore
-        await setDoc(doc(db, "users", result.user.uid), {
+        // Preparar datos del usuario
+        const userData = {
           email: result.user.email,
           role: roleSchema.parse(role),
           ...(parsedBranch ? { branch: parsedBranch } : {}),
           createdAt: new Date().toISOString()
-        });
+        };
+
+        // Guardar datos en Firestore
+        const userRef = doc(db, "users", result.user.uid);
+        await setDoc(userRef, userData);
+
+        // Verificar que los datos se guardaron correctamente
+        const verifyDoc = await getDoc(userRef);
+        if (!verifyDoc.exists()) {
+          throw new Error("Error al guardar la información del usuario");
+        }
+
+        console.log("Datos de usuario guardados y verificados:", userData);
 
         // Limpiar localStorage
         window.localStorage.removeItem("emailForSignIn");

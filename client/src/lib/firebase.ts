@@ -13,50 +13,41 @@ const firebaseConfig = {
   measurementId: "G-KL2NYT9BQE"
 };
 
-// Debug: Log config (without sensitive values)
-console.log('Firebase config loaded with:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  hasAppId: !!firebaseConfig.appId
-});
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 const db = getFirestore(app);
-console.log('Firestore initialized successfully');
 
 // Initialize Auth with persistence
 const auth = getAuth(app);
 
-// Set persistence to LOCAL
+// Set persistence to LOCAL to keep the user signed in
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
-    console.log('Firebase auth persistence set to LOCAL');
+    console.log('Firebase auth persistence set to LOCAL successfully');
   })
   .catch((error) => {
     console.error('Error setting auth persistence:', {
       code: error.code,
       message: error.message,
-      details: 'This might affect session persistence'
+      details: 'Session persistence might not work as expected'
     });
   });
 
 // Set language to match browser
 auth.useDeviceLanguage();
 
-// Log auth state changes
+// Log detailed auth state changes for debugging
 auth.onAuthStateChanged((user) => {
   console.log('Auth state changed:', {
+    timestamp: new Date().toISOString(),
     isSignedIn: !!user,
+    uid: user?.uid,
     email: user?.email,
-    emailVerified: user?.emailVerified,
-    hasUser: !!user
+    metadata: user?.metadata,
+    providerId: user?.providerId
   });
 });
-
-console.log('Firebase auth initialized successfully');
 
 export { app, auth, db };

@@ -13,11 +13,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Role } from "@shared/schema";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
 
 function Router() {
   const [user, authLoading] = useAuthState(auth);
   const [userRole, setUserRole] = useState<Role>();
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadUserRole = async () => {
@@ -27,21 +29,39 @@ function Router() {
       }
 
       try {
+        console.log("Loading user role for:", user.uid);
         const userDoc = await getDoc(doc(db, "users", user.uid));
+
         if (userDoc.exists()) {
-          setUserRole(userDoc.data().role as Role);
+          const role = userDoc.data().role as Role;
+          console.log("User role loaded:", role);
+          setUserRole(role);
         } else {
           console.warn("User document not found:", user.uid);
+          toast({
+            title: "Error de acceso",
+            description: "No se encontró tu información de usuario. Por favor, cierra sesión y vuelve a intentarlo.",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error("Error loading user role:", error);
+        toast({
+          title: "Error de acceso",
+          description: "Hubo un problema al cargar tu información. Por favor, intenta nuevamente.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    loadUserRole();
-  }, [user]);
+    if (user && !userRole) {
+      loadUserRole();
+    } else if (!user && !authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading, userRole, toast]);
 
   // Mostrar loading spinner mientras se carga la autenticación
   if (authLoading || loading) {
