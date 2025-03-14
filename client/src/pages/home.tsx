@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Branch, Code, codeSchema } from "@shared/schema";
 import { BranchSelector } from "@/components/branch-selector";
-import { Share } from "lucide-react";
+import { Share, ArrowLeft, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import {
@@ -14,7 +14,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 
@@ -105,73 +105,96 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
-        <BranchSelector value={selectedBranch} onChange={setSelectedBranch} />
+        <div className="flex items-center gap-4">
+          {selectedBranch && (
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedBranch(undefined)}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Ver Ranking
+            </Button>
+          )}
+          <BranchSelector value={selectedBranch} onChange={setSelectedBranch} />
+        </div>
         {selectedBranch && (
-          <Button onClick={handleShare}>
-            <Share className="mr-2 h-4 w-4" />
-            Compartir en WhatsApp
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleShare}>
+              <Share className="mr-2 h-4 w-4" />
+              Compartir en WhatsApp
+            </Button>
+          </div>
         )}
       </div>
 
-      {selectedBranch ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Checklist de {selectedBranch}</CardTitle>
-              <CardDescription className="text-muted-foreground mt-2">
-                Por favor seleccione los códigos que fueron realizados y comunicados vía mail
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
-                <h3 className="text-sm font-medium mb-2">Progreso</h3>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <Progress value={progress.completed} className="h-2" />
-                </motion.div>
-                <div className="text-sm text-muted-foreground mt-2">
-                  {progress.completed.toFixed(0)}% completado
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {Object.values(codeSchema.enum).map((code, index) => (
+      <AnimatePresence mode="wait">
+        {selectedBranch ? (
+          <motion.div
+            key="checklist"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Checklist de {selectedBranch}</CardTitle>
+                <CardDescription className="text-muted-foreground mt-2">
+                  Por favor seleccione los códigos que fueron realizados y comunicados vía mail
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
+                  <h3 className="text-sm font-medium mb-2">Progreso</h3>
                   <motion.div
-                    key={code}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="flex items-center gap-4 p-2 rounded hover:bg-accent"
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 0.5 }}
                   >
-                    <span className="flex-1 font-mono">{code}</span>
-                    <Checkbox
-                      checked={items[code]?.completed || false}
-                      onCheckedChange={() => handleToggle(code)}
-                    />
+                    <Progress value={progress.completed} className="h-2" />
                   </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-2xl font-bold mb-6">Ranking de Sucursales</h2>
-          <Dashboard />
-        </motion.div>
-      )}
+                  <div className="text-sm text-muted-foreground mt-2">
+                    {progress.completed.toFixed(0)}% completado
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {Object.values(codeSchema.enum).map((code, index) => (
+                    <motion.div
+                      key={code}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className="flex items-center gap-4 p-2 rounded hover:bg-accent"
+                    >
+                      <span className="flex-1 font-mono">{code}</span>
+                      <Checkbox
+                        checked={items[code]?.completed || false}
+                        onCheckedChange={() => handleToggle(code)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="dashboard"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <LineChart className="h-6 w-6" />
+              Ranking de Sucursales
+            </h2>
+            <Dashboard />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
