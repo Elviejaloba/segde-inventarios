@@ -27,13 +27,7 @@ console.log('Initializing Firestore...');
 // Inicializar Firestore con configuración específica para mejorar la estabilidad
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
-  experimentalAutoDetectLongPolling: true,
-  retry: {
-    initialDelayMs: 1000,
-    maxDelayMs: 10000,
-    backoffFactor: 1.5
-  }
+  experimentalForceLongPolling: true, // Usar long polling para conexiones más estables
 });
 
 console.log('Enabling Firestore persistence...');
