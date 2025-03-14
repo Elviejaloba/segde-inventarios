@@ -1,5 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator } from "firebase/firestore";
+import { 
+  getFirestore, 
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED,
+  enableMultiTabIndexedDbPersistence,
+  enableNetwork,
+  disableNetwork 
+} from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Your web app's Firebase configuration
@@ -13,29 +20,40 @@ const firebaseConfig = {
   measurementId: "G-KL2NYT9BQE"
 };
 
-// Initialize Firebase
 console.log('Initializing Firebase...');
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
 console.log('Initializing Firestore...');
-const db = getFirestore(app);
-
-// Enable offline persistence
-console.log('Enabling Firestore persistence...');
-enableIndexedDbPersistence(db, {
-  synchronizeTabs: true
-}).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-  } else if (err.code === 'unimplemented') {
-    console.warn('The current browser does not support persistence.');
-  } else {
-    console.error('Error enabling offline persistence:', err);
+// Inicializar Firestore con configuración específica para mejorar la estabilidad
+const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
+  experimentalAutoDetectLongPolling: true,
+  retry: {
+    initialDelayMs: 1000,
+    maxDelayMs: 10000,
+    backoffFactor: 1.5
   }
 });
 
-// Initialize Auth
+console.log('Enabling Firestore persistence...');
+enableMultiTabIndexedDbPersistence(db)
+  .then(() => {
+    console.log('Firestore persistence enabled successfully');
+  })
+  .catch((err) => {
+    console.error('Error enabling Firestore persistence:', {
+      code: err?.code,
+      message: err?.message,
+      details: 'Offline functionality might be limited'
+    });
+
+    // Si falla la persistencia, intentar reconectar
+    disableNetwork(db)
+      .then(() => enableNetwork(db))
+      .catch(console.error);
+  });
+
 console.log('Initializing Firebase Auth...');
 const auth = getAuth(app);
 
@@ -46,8 +64,8 @@ setPersistence(auth, browserLocalPersistence)
   })
   .catch((error) => {
     console.error('Error setting auth persistence:', {
-      code: error.code,
-      message: error.message,
+      code: error?.code,
+      message: error?.message,
       details: 'Session persistence might not work as expected'
     });
   });
