@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, enableNetwork, disableNetwork } from "firebase/firestore";
+import { collection, getDocs,  } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Table,
@@ -38,12 +38,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setLoading(true);
       setError(null);
 
-      if (isRetry) {
-        // En caso de reintento, reiniciar la conexión
-        await disableNetwork(db);
-        await enableNetwork(db);
-      }
-
       const branchesRef = collection(db, "branches");
       const snapshot = await getDocs(branchesRef);
 
@@ -59,8 +53,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     } catch (err) {
       console.error("Error loading data:", err);
       if (retryCount < maxRetries) {
+        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
         setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchData(true), retryDelay * Math.pow(2, retryCount));
+        setTimeout(() => fetchData(true), nextRetryDelay);
       } else {
         setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
       }
@@ -95,8 +90,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <div className="text-center space-y-4">
           <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
           <p className="text-destructive">{error}</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => fetchData(true)}
             className="gap-2"
           >

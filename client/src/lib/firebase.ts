@@ -19,8 +19,7 @@ const db = initializeFirestore(app, {
     tabManager: persistentSingleTabManager({
       forceOwnership: true // Forzar propiedad de la caché en esta pestaña
     })
-  }),
-  experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
+  })
 });
 
 export { app, db };
