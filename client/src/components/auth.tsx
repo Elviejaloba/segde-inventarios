@@ -41,7 +41,8 @@ export function Auth() {
       console.log('Configuración de autenticación:', {
         email,
         branch,
-        url: actionCodeSettings.url
+        url: actionCodeSettings.url,
+        actionCodeSettings
       });
 
       // Guardar el email y la sucursal en localStorage para el proceso de autenticación
@@ -64,7 +65,7 @@ export function Auth() {
       } else if (error?.code === 'auth/network-request-failed') {
         errorMessage = "Error de conexión. Verifica tu internet";
       } else if (error?.code === 'auth/configuration-not-found') {
-        errorMessage = "Error de configuración. Por favor contacta al administrador. Es necesario habilitar la autenticación por email sin contraseña (Email link sign-in) en Firebase.";
+        errorMessage = "Error de configuración. Por favor contacta al administrador. Es necesario habilitar la autenticación por email sin contraseña (Email link sign-in) en Firebase. Sigue los pasos en Authentication > Sign-in methods > Email link sign-in y activa la opción. Después de activar la opción, asegúrate de hacer clic en el botón 'Guardar'.";
       } else if (error?.code === 'auth/unauthorized-domain') {
         errorMessage = "Este dominio no está autorizado para el envío de emails. Es necesario agregar el dominio en la configuración de Firebase.";
       } else if (error?.code === 'auth/operation-not-allowed') {
@@ -72,6 +73,19 @@ export function Auth() {
       } else if (error?.code === 'auth/requires-recent-login') {
         errorMessage = "Por favor, inicia sesión nuevamente para continuar.";
       }
+
+      console.error('Error detallado:', {
+        code: error?.code,
+        message: error?.message,
+        email,
+        branch,
+        url: window.location.origin,
+        actionCodeSettings: {
+          url: window.location.origin,
+          handleCodeInApp: true,
+          dynamicLinkDomain: window.location.hostname
+        }
+      });
 
       toast({
         title: "Error al enviar el link",

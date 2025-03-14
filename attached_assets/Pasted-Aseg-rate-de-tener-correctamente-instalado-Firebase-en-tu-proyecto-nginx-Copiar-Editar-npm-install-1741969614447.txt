@@ -1,0 +1,85 @@
+Asegúrate de tener correctamente instalado Firebase en tu proyecto.
+
+nginx
+Copiar
+Editar
+npm install firebase
+Luego implementa este ejemplo básico en JavaScript para autenticación por vínculo de correo electrónico:
+
+📌 Código para enviar un enlace de autenticación por email:
+javascript
+Copiar
+Editar
+import { initializeApp } from 'firebase/app';
+import { getAuth, sendSignInLinkToEmail } from 'firebase/auth';
+
+// Tu configuración de Firebase
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROYECTO",
+  storageBucket: "TU_PROYECTO.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "TU_APP_ID"
+};
+
+// Inicializa Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+
+// Configuración para email link
+const actionCodeSettings = {
+  url: 'https://tu-app.repl.co/', // Reemplaza por tu URL en Replit
+  handleCodeInApp: true,
+};
+
+// Envía el vínculo al correo del usuario
+const email = "usuario@example.com"; // Correo del usuario
+sendSignInLink(email);
+
+function sendSignInLink(email) {
+  sendSignInLinkToEmail(auth, email, actionCodeSettings)
+    .then(() => {
+      console.log('Enlace enviado al correo del usuario.');
+      window.localStorage.setItem('emailForSignIn', email);
+    })
+    .catch((error) => {
+      console.error('Error al enviar email:', error);
+    });
+}
+⚙️ Código de validación para iniciar sesión al recibir el vínculo:
+En la página destino (la URL que configuraste en Dynamic Links), deberás validar el enlace recibido. Aquí tienes el ejemplo de cómo hacerlo con JavaScript en Replit:
+
+javascript
+Copiar
+Editar
+import { initializeApp } from 'firebase/app';
+import { getAuth, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROYECTO",
+};
+
+// Inicializa Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Obtiene el email del usuario desde almacenamiento local
+const email = window.localStorage.getItem('emailForSignIn');
+
+// Verifica si la URL actual es un enlace de inicio de sesión
+if (isSignInWithEmailLink(auth, window.location.href)) {
+  if (!email) {
+    email = window.prompt('Por favor, proporciona nuevamente tu correo para verificar:');
+  }
+
+  signInWithEmailLink(auth, email, window.location.href)
+    .then((result) => {
+      console.log("¡Inicio de sesión exitoso!", result.user);
+      window.localStorage.removeItem('emailForSignIn');
+    })
+    .catch((error) => {
+      console.error("Error al iniciar sesión:", error);
+    });
