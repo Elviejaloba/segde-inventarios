@@ -11,42 +11,57 @@ export function HandleAuth() {
 
   useEffect(() => {
     const completeSignIn = async () => {
+      // Solo proceder si estamos en una URL de autenticación
       if (isSignInWithEmailLink(auth, window.location.href)) {
         let email = window.localStorage.getItem("emailForSignIn");
         let role = window.localStorage.getItem("roleForSignIn");
         let branch = window.localStorage.getItem("branchForSignIn");
 
         try {
+          // Solicitar email si no está en localStorage
           if (!email) {
             email = window.prompt("Por favor ingresa tu email para confirmar");
+            if (!email) {
+              throw new Error("Se requiere el email para continuar");
+            }
           }
 
+          // Validar rol
           if (!role) {
-            role = "branch"; // Default role
+            role = "branch"; // Rol por defecto
           }
 
           // Parse branch from localStorage if exists
+          let parsedBranch = undefined;
           if (branch) {
-            branch = JSON.parse(branch);
+            try {
+              parsedBranch = JSON.parse(branch);
+            } catch (e) {
+              console.error("Error parsing branch:", e);
+            }
           }
 
-          const result = await signInWithEmailLink(auth, email || "", window.location.href);
+          // Completar el proceso de autenticación
+          const result = await signInWithEmailLink(auth, email, window.location.href);
+
+          if (!result.user) {
+            throw new Error("No se pudo completar la autenticación");
+          }
 
           // Guardar la información del usuario en Firestore
-          if (result.user) {
-            await setDoc(doc(db, "users", result.user.uid), {
-              email: result.user.email,
-              role: roleSchema.parse(role),
-              ...(branch ? { branch } : {}),
-              createdAt: new Date().toISOString()
-            });
-          }
+          await setDoc(doc(db, "users", result.user.uid), {
+            email: result.user.email,
+            role: roleSchema.parse(role),
+            ...(parsedBranch ? { branch: parsedBranch } : {}),
+            createdAt: new Date().toISOString()
+          });
 
           // Limpiar localStorage
           window.localStorage.removeItem("emailForSignIn");
           window.localStorage.removeItem("roleForSignIn");
           window.localStorage.removeItem("branchForSignIn");
 
+          // Notificar éxito
           toast({
             title: "¡Bienvenido! 👋",
             description: `Has iniciado sesión como ${role === "owner" ? "dueño" : "sucursal"}`,
@@ -58,7 +73,7 @@ export function HandleAuth() {
           console.error("Error al iniciar sesión:", error);
           toast({
             title: "Error al iniciar sesión",
-            description: "Por favor intenta nuevamente",
+            description: error instanceof Error ? error.message : "Por favor intenta nuevamente",
             variant: "destructive",
           });
         }
