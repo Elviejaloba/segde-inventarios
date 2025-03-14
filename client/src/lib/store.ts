@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 
-export type Branch = 'SUC001' | 'SUC002' | 'SUC003' | 'SUC004' | 'SUC005';
+export type Branch = 
+  | 'T.Mendoza' 
+  | 'T.SJuan' 
+  | 'T.SLuis' 
+  | 'Crisa2' 
+  | 'T.SMartin' 
+  | 'T.Tunuyan' 
+  | 'T.Lujan' 
+  | 'T.Maipu' 
+  | 'T.SRafael';
 
 interface ViewState {
   currentView: 'ranking' | 'details';
@@ -16,4 +25,14 @@ export const useViewStore = create<ViewState>((set) => ({
 export const getDataCollection = () => 'data';
 
 // Lista de sucursales disponibles para el ranking
-export const AVAILABLE_BRANCHES: Branch[] = ['SUC001', 'SUC002', 'SUC003', 'SUC004', 'SUC005'];
+export const AVAILABLE_BRANCHES: Branch[] = [
+  'T.Mendoza',
+  'T.SJuan',
+  'T.SLuis',
+  'Crisa2',
+  'T.SMartin',
+  'T.Tunuyan',
+  'T.Lujan',
+  'T.Maipu',
+  'T.SRafael'
+];

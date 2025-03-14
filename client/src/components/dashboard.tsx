@@ -117,7 +117,7 @@ export function Dashboard() {
                 )}
               </TableCell>
               <TableCell>
-                Sucursal {branch.id.substring(3)}
+                {branch.id}
               </TableCell>
               <TableCell className="text-right">
                 {branch.totalCompleted}

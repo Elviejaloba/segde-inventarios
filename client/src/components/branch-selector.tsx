@@ -26,7 +26,7 @@ export function BranchSelector({ value, onChange }: BranchSelectorProps) {
       <SelectContent>
         {AVAILABLE_BRANCHES.map((branch) => (
           <SelectItem key={branch} value={branch}>
-            Sucursal {branch.substring(3)} {/* Muestra solo el número, sin SUC */}
+            {branch}
           </SelectItem>
         ))}
       </SelectContent>
