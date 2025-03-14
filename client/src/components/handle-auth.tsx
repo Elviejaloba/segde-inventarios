@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "./ui/loading-spinner";
 
@@ -11,15 +12,28 @@ export function HandleAuth() {
     const completeSignIn = async () => {
       if (isSignInWithEmailLink(auth, window.location.href)) {
         let email = window.localStorage.getItem("emailForSignIn");
-        
+        let branch = window.localStorage.getItem("branchForSignIn");
+
         if (!email) {
           email = window.prompt("Por favor ingresa tu email para confirmar");
         }
 
         try {
-          await signInWithEmailLink(auth, email || "", window.location.href);
+          const result = await signInWithEmailLink(auth, email || "", window.location.href);
+
+          // Guardar la asociación usuario-sucursal en Firestore
+          if (result.user && branch) {
+            await setDoc(doc(db, "users", result.user.uid), {
+              email: result.user.email,
+              branch: branch,
+              createdAt: new Date().toISOString()
+            });
+          }
+
+          // Limpiar localStorage
           window.localStorage.removeItem("emailForSignIn");
-          
+          window.localStorage.removeItem("branchForSignIn");
+
           toast({
             title: "¡Bienvenido! 👋",
             description: "Has iniciado sesión correctamente",
@@ -40,5 +54,9 @@ export function HandleAuth() {
     completeSignIn();
   }, [toast]);
 
-  return <LoadingSpinner />;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <LoadingSpinner />
+    </div>
+  );
 }
