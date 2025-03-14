@@ -1,13 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCPAvMINyDHyo7-KElEBhP1buZAbfBfqdU",
   authDomain: "check-d1753.firebaseapp.com",
   projectId: "check-d1753",
-  storageBucket: "check-d1753.firebasestorage.app",
+  storageBucket: "check-d1753.appspot.com",
   messagingSenderId: "374297020151",
   appId: "1:374297020151:web:d4a8325ef1171b43e6f5f2",
   measurementId: "G-KL2NYT9BQE"
@@ -21,28 +21,42 @@ console.log('Firebase config loaded with:', {
   hasAppId: !!firebaseConfig.appId
 });
 
-let app;
-let auth;
-let db;
-let googleProvider;
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-try {
-  // Initialize Firebase
-  app = initializeApp(firebaseConfig);
-  console.log('Firebase app initialized successfully');
+// Initialize Firestore
+const db = getFirestore(app);
+console.log('Firestore initialized successfully');
 
-  // Initialize Firestore
-  db = getFirestore(app);
-  console.log('Firestore initialized successfully');
+// Initialize Auth with persistence
+const auth = getAuth(app);
 
-  // Initialize Auth
-  auth = getAuth(app);
-  auth.useDeviceLanguage(); // Set language to match browser
-  googleProvider = new GoogleAuthProvider();
-  console.log('Firebase auth initialized successfully');
-} catch (error) {
-  console.error('Error initializing Firebase:', error);
-  throw error;
-}
+// Set persistence to LOCAL
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('Firebase auth persistence set to LOCAL');
+  })
+  .catch((error) => {
+    console.error('Error setting auth persistence:', {
+      code: error.code,
+      message: error.message,
+      details: 'This might affect session persistence'
+    });
+  });
 
-export { app, auth, db, googleProvider };
+// Set language to match browser
+auth.useDeviceLanguage();
+
+// Log auth state changes
+auth.onAuthStateChanged((user) => {
+  console.log('Auth state changed:', {
+    isSignedIn: !!user,
+    email: user?.email,
+    emailVerified: user?.emailVerified,
+    hasUser: !!user
+  });
+});
+
+console.log('Firebase auth initialized successfully');
+
+export { app, auth, db };

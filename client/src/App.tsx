@@ -21,26 +21,27 @@ function Router() {
 
   useEffect(() => {
     const loadUserRole = async () => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            setUserRole(userDoc.data().role as Role);
-          }
-          setLoading(false);
-        } catch (error) {
-          console.error("Error loading user role:", error);
-          setLoading(false);
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role as Role);
+        } else {
+          console.warn("User document not found:", user.uid);
         }
+      } catch (error) {
+        console.error("Error loading user role:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (user) {
-      loadUserRole();
-    } else if (!authLoading) {
-      setLoading(false);
-    }
-  }, [user, authLoading]);
+    loadUserRole();
+  }, [user]);
 
   // Mostrar loading spinner mientras se carga la autenticación
   if (authLoading || loading) {
@@ -67,7 +68,9 @@ function Router() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold mb-2">Error de acceso</h2>
-          <p className="text-muted-foreground">No se pudo cargar tu rol de usuario.</p>
+          <p className="text-muted-foreground">
+            No se pudo cargar tu rol de usuario. Por favor, cierra sesión y vuelve a intentarlo.
+          </p>
         </div>
       </div>
     );
