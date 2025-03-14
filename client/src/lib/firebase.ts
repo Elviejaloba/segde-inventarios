@@ -21,7 +21,6 @@ const db = initializeFirestore(app, {
     })
   }),
   experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
-  cacheSizeBytes: 40000000, // Aproximadamente 40MB de caché
 });
 
 export { app, db };

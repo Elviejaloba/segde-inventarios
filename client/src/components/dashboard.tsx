@@ -60,7 +60,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       console.error("Error loading data:", err);
       if (retryCount < maxRetries) {
         setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchData(true), retryDelay * (retryCount + 1));
+        setTimeout(() => fetchData(true), retryDelay * Math.pow(2, retryCount));
       } else {
         setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
       }

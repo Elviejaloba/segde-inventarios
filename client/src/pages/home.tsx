@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, enableNetwork, disableNetwork } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 // Lista actualizada de códigos solicitados
@@ -60,21 +60,52 @@ interface ItemState {
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 segundo base para backoff exponencial
 
-  const loadBranchData = async (branch: Branch) => {
+  const loadBranchData = async (branch: Branch, isRetry = false) => {
     setSelectedBranch(branch);
+    setLoading(true);
+    setError(null);
+
     try {
+      if (isRetry) {
+        // En caso de reintento, reiniciar la conexión
+        await disableNetwork(db);
+        await enableNetwork(db);
+      }
+
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
+
       if (branchDoc.exists()) {
         setItems(branchDoc.data().items || {});
+        setRetryCount(0); // Reset retry count on success
       } else {
         setItems({});
       }
     } catch (error) {
       console.error("Error al cargar datos de la sucursal:", error);
-      setItems({});
+
+      if (retryCount < maxRetries) {
+        // Implementar backoff exponencial
+        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => loadBranchData(branch, true), nextRetryDelay);
+      } else {
+        setError("Error al cargar los datos. Por favor, intente nuevamente.");
+        toast({
+          title: "Error de conexión",
+          description: "No se pudieron cargar los datos. Reintentando...",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,7 +129,6 @@ export default function Home() {
     const completedCount = Object.values(newItems).filter(i => i.completed).length;
     const noStockCount = Object.values(newItems).filter(i => !i.hasStock).length;
     const completedPercentage = (completedCount / CODES.length) * 100;
-    const noStockPercentage = (noStockCount / CODES.length) * 100;
 
     try {
       const branchRef = doc(db, "branches", selectedBranch);
@@ -146,9 +176,12 @@ export default function Home() {
       console.error("Error al guardar datos:", error);
       toast({
         title: "Error al guardar",
-        description: "No se pudieron guardar los cambios",
+        description: "No se pudieron guardar los cambios. Intente nuevamente.",
         variant: "destructive",
       });
+
+      // Revertir cambios locales en caso de error
+      setItems(items);
     }
   };
 
@@ -160,7 +193,6 @@ export default function Home() {
       ? (Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100
       : 0,
   };
-
 
   return (
     <div className="space-y-8">
