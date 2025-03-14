@@ -21,7 +21,7 @@ export function BranchSelector({ value, onChange }: BranchSelectorProps) {
   return (
     <Select value={value} onValueChange={handleChange}>
       <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder="Select branch" />
+        <SelectValue placeholder="Selecciona tu Sucursal" />
       </SelectTrigger>
       <SelectContent>
         {Object.values(branchSchema.enum).map((branch) => (
