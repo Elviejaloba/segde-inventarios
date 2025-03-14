@@ -12,7 +12,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
+      <header className="border-b fixed top-0 left-0 right-0 bg-background z-50">
         <div className="container flex items-center justify-between h-16">
           <h1 className="text-xl font-bold">Seguimiento de muestreo de invierno</h1>
           <div className="flex items-center gap-4">
@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
-      <main className="container py-8">{children}</main>
+      <main className="container py-8 mt-16">{children}</main>
     </div>
   );
 }

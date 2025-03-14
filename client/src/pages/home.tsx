@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,7 +47,7 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
         <BranchSelector value={selectedBranch} onChange={setSelectedBranch} />
         {selectedBranch && (
           <Button onClick={handleShare}>
@@ -60,12 +61,15 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle>Checklist de {selectedBranch}</CardTitle>
+            <CardDescription className="text-muted-foreground mt-2">
+              Por favor seleccione los códigos que fueron realizados y comunicados vía mail
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Progreso</h3>
-              <Progress value={progress.completed} className="mb-2" />
-              <div className="text-sm text-muted-foreground">
+            <div className="sticky top-36 bg-background pt-2 pb-4 z-30">
+              <h3 className="text-sm font-medium mb-2">Progreso</h3>
+              <Progress value={progress.completed} className="h-2" />
+              <div className="text-sm text-muted-foreground mt-2">
                 {progress.completed.toFixed(0)}% completado
               </div>
             </div>
