@@ -15,8 +15,8 @@ import { Role } from "@shared/schema";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 1000; // 1 second
 
 function Router() {
   const [user, authLoading] = useAuthState(auth);
@@ -54,26 +54,6 @@ function Router() {
       } catch (error: any) {
         console.error("Error loading user role:", error);
 
-        // Handle offline state specifically
-        if (error?.message?.includes('offline')) {
-          console.log('Detected offline state, retrying...');
-          if (retryCount < MAX_RETRIES) {
-            setRetryCount(prev => prev + 1);
-            retryTimeout = setTimeout(loadUserRole, RETRY_DELAY * (retryCount + 1));
-          } else {
-            if (mounted) {
-              toast({
-                title: "Error de conexión",
-                description: "No hay conexión a internet. Por favor, verifica tu conexión e intenta nuevamente.",
-                variant: "destructive",
-              });
-              setLoading(false);
-            }
-          }
-          return;
-        }
-
-        // Handle other errors
         if (retryCount < MAX_RETRIES) {
           console.log(`Retrying role load... (${retryCount + 1}/${MAX_RETRIES})`);
           setRetryCount(prev => prev + 1);
@@ -82,7 +62,7 @@ function Router() {
           if (mounted) {
             toast({
               title: "Error de acceso",
-              description: "No se pudo cargar tu información después de varios intentos. Por favor, cierra sesión y vuelve a intentarlo.",
+              description: "No se pudo cargar tu información. Por favor, verifica tu conexión a internet y vuelve a intentarlo.",
               variant: "destructive",
             });
             setLoading(false);
@@ -111,7 +91,7 @@ function Router() {
         <div className="text-center">
           <LoadingSpinner />
           <p className="mt-4 text-muted-foreground">
-            {loading ? "Cargando información de usuario..." : "Verificando autenticación..."}
+            {loading ? `Cargando información de usuario... (Intento ${retryCount + 1}/${MAX_RETRIES})` : "Verificando autenticación..."}
           </p>
         </div>
       </div>
@@ -132,7 +112,7 @@ function Router() {
         <div className="text-center">
           <h2 className="text-xl font-bold mb-2">Error de acceso</h2>
           <p className="text-muted-foreground">
-            No se pudo cargar tu rol de usuario. Por favor, cierra sesión y vuelve a intentarlo.
+            No se pudo cargar tu información. Por favor, verifica tu conexión a internet y vuelve a intentarlo.
           </p>
         </div>
       </div>

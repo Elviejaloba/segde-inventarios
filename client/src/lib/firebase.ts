@@ -1,15 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { 
-  initializeFirestore, 
-  CACHE_SIZE_UNLIMITED,
-  enableIndexedDbPersistence
-} from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCPAvMINyDHyo7-KElEBhP1buZAbfBfqdU",
-  authDomain: "check-d1753.firebaseapp.com",
+  authDomain: "check-d1753.firebaseapp.com", 
   projectId: "check-d1753",
   storageBucket: "check-d1753.appspot.com",
   messagingSenderId: "374297020151",
@@ -21,30 +17,7 @@ console.log('Initializing Firebase...');
 const app = initializeApp(firebaseConfig);
 
 console.log('Initializing Firestore...');
-// Initialize Firestore with specific settings for better stability
-const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  retry: {
-    initialDelayMs: 1000,
-    maxDelayMs: 5000,
-    backoffFactor: 1.5
-  }
-});
-
-// Enable offline persistence after initialization
-enableIndexedDbPersistence(db)
-  .then(() => {
-    console.log('Firestore persistence enabled successfully');
-  })
-  .catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('The current browser does not support all of the features required to enable persistence');
-    } else {
-      console.error('Error enabling persistence:', err);
-    }
-  });
+const db = getFirestore(app);
 
 console.log('Initializing Firebase Auth...');
 const auth = getAuth(app);
