@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -19,19 +18,4 @@ const app = initializeApp(firebaseConfig);
 console.log('Initializing Firestore...');
 const db = getFirestore(app);
 
-console.log('Initializing Firebase Auth...');
-const auth = getAuth(app);
-
-// Set persistence to LOCAL
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log('Firebase auth persistence set to LOCAL successfully');
-  })
-  .catch((error) => {
-    console.error('Error setting auth persistence:', error);
-  });
-
-// Set language to match browser
-auth.useDeviceLanguage();
-
-export { app, auth, db };
+export { app, db };
