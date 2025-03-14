@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Table,
@@ -11,16 +11,18 @@ import {
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion } from "framer-motion";
-import { Trophy } from "lucide-react";
-import { Branch, AVAILABLE_BRANCHES } from "@/lib/store";
+import { Trophy, AlertCircle } from "lucide-react";
+import { AVAILABLE_BRANCHES } from "@/lib/store";
 
 export function Dashboard() {
-  const [branchesData, setBranchesData] = useState<any[]>([]);
+  const [data, setData] = useState<Array<{id: string, totalCompleted: number}>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadBranchesData = async () => {
+    let mounted = true;
+
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -28,80 +30,82 @@ export function Dashboard() {
         const branchesRef = collection(db, "branches");
         const snapshot = await getDocs(branchesRef);
 
-        const data = snapshot.docs.map(doc => ({
+        if (!mounted) return;
+
+        const branchData = snapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          totalCompleted: doc.data().totalCompleted || 0
         }));
 
-        setBranchesData(data);
+        setData(branchData);
       } catch (err) {
-        console.error('Error loading branches data:', err);
-        setError('Error cargando datos. Por favor, intenta nuevamente.');
+        console.error("Error loading data:", err);
+        if (mounted) {
+          setError("No se pudieron cargar los datos. Por favor, actualiza la página.");
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadBranchesData();
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <LoadingSpinner />
+      <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-muted-foreground">Cargando datos...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8 text-destructive">
-        <p>{error}</p>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+          <p className="text-destructive">{error}</p>
+        </div>
       </div>
     );
   }
 
-  const totalCodes = 10; // Valor fijo para ejemplo
   const sortedBranches = AVAILABLE_BRANCHES
-    .map(branch => {
-      const branchDoc = branchesData.find(d => d.id === branch);
+    .map(branchId => {
+      const branchData = data.find(d => d.id === branchId);
       return {
-        branch,
-        data: {
-          totalCompleted: branchDoc?.totalCompleted || 0,
-        }
+        id: branchId,
+        totalCompleted: branchData?.totalCompleted || 0
       };
     })
-    .sort((a, b) => b.data.totalCompleted - a.data.totalCompleted);
+    .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="rounded-md border bg-card"
     >
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[40px]">Pos</TableHead>
-            <TableHead className="w-[180px]">Sucursal</TableHead>
-            <TableHead className="text-right">Códigos Completados</TableHead>
-            <TableHead className="text-right">Progreso</TableHead>
+            <TableHead className="w-[100px]">Posición</TableHead>
+            <TableHead>Sucursal</TableHead>
+            <TableHead className="text-right">Completados</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedBranches.map(({ branch, data }, index) => (
-            <motion.tr
-              key={branch}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className={`border-b transition-colors hover:bg-muted/50 ${
-                index === 0 ? 'bg-primary/5' : ''
-              }`}
-            >
-              <TableCell className="font-medium">
+          {sortedBranches.map((branch, index) => (
+            <TableRow key={branch.id}>
+              <TableCell>
                 {index < 3 ? (
                   <Trophy className={`h-4 w-4 ${
                     index === 0 ? 'text-yellow-500' :
@@ -112,34 +116,13 @@ export function Dashboard() {
                   index + 1
                 )}
               </TableCell>
-              <TableCell className="font-medium">
-                Sucursal {branch.substring(3)}
+              <TableCell>
+                Sucursal {branch.id.substring(3)}
               </TableCell>
               <TableCell className="text-right">
-                {data.totalCompleted} de {totalCodes}
+                {branch.totalCompleted}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <div className="h-2 w-24 rounded-full bg-muted">
-                    <motion.div
-                      className={`h-full rounded-full transition-all ${
-                        data.totalCompleted === totalCodes ? 'bg-green-500' :
-                        data.totalCompleted > totalCodes / 2 ? 'bg-primary' :
-                        'bg-orange-500'
-                      }`}
-                      initial={{ width: 0 }}
-                      animate={{ 
-                        width: `${(data.totalCompleted / totalCodes) * 100}%` 
-                      }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {((data.totalCompleted / totalCodes) * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </TableCell>
-            </motion.tr>
+            </TableRow>
           ))}
         </TableBody>
       </Table>
