@@ -14,11 +14,16 @@ export function HandleAuth() {
         let email = window.localStorage.getItem("emailForSignIn");
         let branch = window.localStorage.getItem("branchForSignIn");
 
-        if (!email) {
-          email = window.prompt("Por favor ingresa tu email para confirmar");
-        }
-
         try {
+          if (!email) {
+            email = window.prompt("Por favor ingresa tu email para confirmar");
+          }
+
+          // Parse branch from localStorage
+          if (branch) {
+            branch = JSON.parse(branch);
+          }
+
           const result = await signInWithEmailLink(auth, email || "", window.location.href);
 
           // Guardar la asociación usuario-sucursal en Firestore

@@ -31,25 +31,42 @@ export function Auth() {
     try {
       // Configuración para el link de autenticación
       const actionCodeSettings = {
-        url: window.location.href,
+        // URL absoluta para el redirect después de autenticación
+        url: window.location.origin,
+        // Esto es importante para manejar el link dentro de la app
         handleCodeInApp: true,
       };
 
-      // Guardar el email y la sucursal en localStorage para completar el proceso
+      console.log('Configuración de autenticación:', {
+        email,
+        branch,
+        url: actionCodeSettings.url
+      });
+
+      // Guardar el email y la sucursal en localStorage para el proceso de autenticación
       window.localStorage.setItem("emailForSignIn", email);
-      window.localStorage.setItem("branchForSignIn", branch);
+      window.localStorage.setItem("branchForSignIn", JSON.stringify(branch));
 
       // Enviar el link mágico
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
 
       toast({
         title: "¡Link enviado! 📧",
-        description: "Revisa tu correo para acceder al sistema",
+        description: "Revisa tu correo para acceder al sistema. Si no lo encuentras, revisa tu carpeta de spam.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error al enviar email:', error);
+      let errorMessage = "Por favor intenta nuevamente";
+
+      if (error?.code === 'auth/invalid-email') {
+        errorMessage = "El correo electrónico no es válido";
+      } else if (error?.code === 'auth/network-request-failed') {
+        errorMessage = "Error de conexión. Verifica tu internet";
+      }
+
       toast({
         title: "Error al enviar el link",
-        description: "Por favor intenta nuevamente",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
