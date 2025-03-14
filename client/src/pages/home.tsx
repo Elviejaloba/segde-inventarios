@@ -17,25 +17,49 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
-// Códigos de ejemplo - esto debería venir de una configuración
+// Lista actualizada de códigos solicitados
 const CODES = [
-  'A001 - Solicitud de Stock',
-  'A002 - Verificación de Inventario',
-  'A003 - Control de Calidad',
-  'A004 - Registro de Faltantes',
-  'A005 - Actualización de Sistema',
-  'B001 - Reporte de Ventas',
-  'B002 - Control de Precios',
-  'B003 - Revisión de Exhibición',
-  'B004 - Limpieza de Local',
-  'B005 - Cierre de Caja'
+  '114F',
+  '505',
+  '138P',
+  '118M',
+  '400I',
+  '505X',
+  '506M',
+  '305K',
+  '605E',
+  '605T',
+  '510M',
+  '506C',
+  '90/91/92 COLOR',
+  '507M',
+  '98KS00',
+  '158S00',
+  '99 COLOR',
+  'TI125',
+  '98KM',
+  '150P',
+  '30P/30S',
+  '150M/P',
+  '451I',
+  '81M',
+  '81SM',
+  '15S/15C',
+  '7095 color',
+  'Cortinas black out',
+  'Cortinas tropical',
+  'Cover'
 ];
+
+interface ItemState {
+  completed: boolean;
+  hasStock: boolean;
+}
 
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
-  const [items, setItems] = useState<Record<string, { completed: boolean }>>({});
+  const [items, setItems] = useState<Record<string, ItemState>>({});
 
-  // Cargar datos cuando se selecciona una sucursal
   const loadBranchData = async (branch: Branch) => {
     setSelectedBranch(branch);
     try {
@@ -52,14 +76,14 @@ export default function Home() {
     }
   };
 
-  // Guardar cambios cuando se marca/desmarca un código
-  const handleToggle = async (code: string) => {
+  const handleToggle = async (code: string, field: keyof ItemState) => {
     if (!selectedBranch) return;
 
     const newItems = {
       ...items,
       [code]: {
-        completed: !items[code]?.completed
+        ...(items[code] || { completed: false, hasStock: false }),
+        [field]: !items[code]?.[field]
       }
     };
 
@@ -118,7 +142,7 @@ export default function Home() {
               <CardHeader>
                 <CardTitle>Checklist de {selectedBranch}</CardTitle>
                 <CardDescription className="text-muted-foreground mt-2">
-                  Seleccione las tareas completadas
+                  Marque los items completados y si hay stock disponible
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -139,11 +163,23 @@ export default function Home() {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className="flex items-center gap-4 p-2 rounded hover:bg-accent"
                     >
-                      <span className="flex-1">{code}</span>
-                      <Checkbox
-                        checked={items[code]?.completed || false}
-                        onCheckedChange={() => handleToggle(code)}
-                      />
+                      <span className="flex-1 font-mono">{code}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Completado</span>
+                          <Checkbox
+                            checked={items[code]?.completed || false}
+                            onCheckedChange={() => handleToggle(code, 'completed')}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Stock</span>
+                          <Checkbox
+                            checked={items[code]?.hasStock || false}
+                            onCheckedChange={() => handleToggle(code, 'hasStock')}
+                          />
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
