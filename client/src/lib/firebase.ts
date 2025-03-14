@@ -37,6 +37,7 @@ try {
 
   // Initialize Auth
   auth = getAuth(app);
+  auth.useDeviceLanguage(); // Set language to match browser
   googleProvider = new GoogleAuthProvider();
   console.log('Firebase auth initialized successfully');
 } catch (error) {

@@ -62,6 +62,10 @@ export function Auth() {
         errorMessage = "El correo electrónico no es válido";
       } else if (error?.code === 'auth/network-request-failed') {
         errorMessage = "Error de conexión. Verifica tu internet";
+      } else if (error?.code === 'auth/configuration-not-found') {
+        errorMessage = "Error de configuración. Por favor contacta al administrador.";
+      } else if (error?.code === 'auth/unauthorized-domain') {
+        errorMessage = "Este dominio no está autorizado para el envío de emails.";
       }
 
       toast({
