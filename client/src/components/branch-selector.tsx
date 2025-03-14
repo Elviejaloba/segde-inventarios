@@ -9,7 +9,7 @@ import {
 import { Branch, AVAILABLE_BRANCHES } from "@/lib/store";
 
 interface BranchSelectorProps {
-  value: Branch | null;
+  value: Branch | undefined;
   onChange: (branch: Branch) => void;
 }
 
@@ -19,7 +19,7 @@ export function BranchSelector({ value, onChange }: BranchSelectorProps) {
   }, [onChange]);
 
   return (
-    <Select value={value || undefined} onValueChange={handleChange}>
+    <Select value={value} onValueChange={handleChange}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Selecciona Sucursal" />
       </SelectTrigger>
