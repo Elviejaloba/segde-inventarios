@@ -34,6 +34,9 @@ export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
 
   useEffect(() => {
     let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 segundo
 
     const fetchData = async () => {
       try {
@@ -53,10 +56,16 @@ export function Dashboard({ onBranchSelect, showExport }: DashboardProps) {
         }));
 
         setData(branchData);
+        retryCount = 0; // Reset retry count on success
       } catch (err) {
         console.error("Error loading data:", err);
         if (mounted) {
-          setError("No se pudieron cargar los datos. Por favor, actualiza la página.");
+          if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(fetchData, retryDelay * retryCount);
+          } else {
+            setError("No se pudieron cargar los datos. Por favor, actualiza la página.");
+          }
         }
       } finally {
         if (mounted) {

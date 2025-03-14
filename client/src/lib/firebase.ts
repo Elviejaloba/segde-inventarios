@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -13,7 +13,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with simple configuration
-const db = getFirestore(app);
+// Initialize Firestore with optimized settings
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentSingleTabManager()
+  }),
+  experimentalForceLongPolling: true, // Usar long polling en lugar de WebSocket
+});
 
 export { app, db };
