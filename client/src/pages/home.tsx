@@ -200,7 +200,12 @@ export default function Home() {
       [code]: {
         ...(items[code] || { completed: false, hasStock: true }),
         [field]: !items[code]?.[field],
-        ...(field === 'completed' ? { hasStock: true } : { completed: false })
+        ...(field === 'completed' ?
+          { hasStock: true } : // Si marca completado, tiene stock
+          field === 'hasStock' ?
+            { completed: !items[code]?.hasStock } : // Si cambia stock, invierte completed
+            {}
+        )
       }
     };
 
@@ -219,7 +224,7 @@ export default function Home() {
             duration: 5000,
           });
           setLastToastProgress(thresholdNum);
-          celebrateProgress(thresholdNum); // Llamar a la celebración con el progreso actual
+          celebrateProgress(thresholdNum);
         }
       });
 
@@ -310,6 +315,16 @@ export default function Home() {
                   {progress.completed === 100 && (
                     <PartyPopper className="h-4 w-4 text-yellow-500 animate-bounce" />
                   )}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
+                <Progress
+                  value={(progress.noStock / CODES.length) * 100}
+                  className="h-2 bg-destructive/20"
+                />
+                <div className="text-sm text-muted-foreground mt-2">
+                  {progress.noStock} items sin stock
                 </div>
               </div>
             </div>
