@@ -29,11 +29,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2;
-  const retryDelay = 300;
 
-  const fetchData = async (isRetry = false) => {
+  const fetchData = async () => {
     try {
       if (!loading) setLoading(true);
       setError(null);
@@ -51,18 +48,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         }));
 
       setData(branchData);
-      setRetryCount(0);
       setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
-      if (retryCount < maxRetries) {
-        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchData(true), nextRetryDelay);
-      } else {
-        setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
-        setLoading(false);
-      }
+      setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
+      setLoading(false);
     }
   };
 
@@ -105,7 +95,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
           <p className="text-destructive text-sm">{error}</p>
           <Button
             variant="outline"
-            onClick={() => fetchData(true)}
+            onClick={fetchData}
             className="gap-2"
             size="sm"
           >
@@ -171,9 +161,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   index + 1
                 )}
               </TableCell>
-              <TableCell>
-                {branch.id}
-              </TableCell>
+              <TableCell>{branch.id}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <Progress value={branch.totalCompleted} className="w-24 h-2" />
