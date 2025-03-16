@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Branch } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, LineChart } from "lucide-react";
+import { ArrowLeft, LineChart, PartyPopper, Trophy, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import {
@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { storage } from "@/lib/storage";
+import confetti from 'canvas-confetti';
 
 // Lista de códigos
 const CODES = [
@@ -31,11 +32,30 @@ interface ItemState {
   hasStock: boolean;
 }
 
+const MOTIVATION_MESSAGES = {
+  20: { title: "¡Excelente inicio! 🌟", description: "¡Sigue así, vas por buen camino!" },
+  40: { title: "¡Vas muy bien! 💪", description: "¡Ya llevas casi la mitad!" },
+  60: { title: "¡Increíble progreso! 🚀", description: "¡Mantén ese ritmo!" },
+  80: { title: "¡Casi llegas! 🎯", description: "¡Te falta muy poco!" },
+  100: { title: "¡FELICITACIONES! 🎉", description: "¡Has completado todos los items!" }
+};
+
+const celebrateProgress = (progress: number) => {
+  if (progress === 100) {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
+};
+
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [lastToastProgress, setLastToastProgress] = useState(0);
 
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
@@ -73,9 +93,28 @@ export default function Home() {
     setItems(newItems);
 
     try {
+      const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
+
+      // Verificar si alcanzamos un nuevo hito
+      Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
+        const thresholdNum = parseInt(threshold);
+        if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
+          toast({
+            title: message.title,
+            description: message.description,
+            duration: 5000,
+          });
+          setLastToastProgress(thresholdNum);
+
+          if (thresholdNum === 100) {
+            celebrateProgress(100);
+          }
+        }
+      });
+
       storage.updateBranch(selectedBranch, {
         items: newItems,
-        totalCompleted: Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100),
+        totalCompleted: completedPercentage,
         noStock: Object.values(newItems).filter(i => !i.hasStock).length
       });
     } catch (error) {
@@ -108,6 +147,7 @@ export default function Home() {
               onClick={() => {
                 setSelectedBranch(undefined);
                 setItems({});
+                setLastToastProgress(0);
               }}
               className="gap-2"
             >
@@ -129,7 +169,10 @@ export default function Home() {
       ) : selectedBranch ? (
         <Card>
           <CardHeader>
-            <CardTitle>Checklist de {selectedBranch}</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span>Checklist de {selectedBranch}</span>
+              {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
+            </CardTitle>
             <CardDescription>
               Marque los items completados y los que no tienen stock disponible
             </CardDescription>
@@ -148,18 +191,14 @@ export default function Home() {
                           'var(--muted)'
                   }}
                 />
-                <div className="text-sm text-muted-foreground mt-2">
+                <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
                   {Math.round(progress.completed)}% completado
-                </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                <Progress
-                  value={progress.noStock}
-                  className="h-2 bg-destructive/20"
-                />
-                <div className="text-sm text-muted-foreground mt-2">
-                  {Math.round(progress.noStock)}% sin stock
+                  {progress.completed >= 20 && progress.completed < 100 && (
+                    <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
+                  )}
+                  {progress.completed === 100 && (
+                    <PartyPopper className="h-4 w-4 text-yellow-500 animate-bounce" />
+                  )}
                 </div>
               </div>
             </div>
