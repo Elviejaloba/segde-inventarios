@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
@@ -65,6 +65,7 @@ export default function Home() {
   const { toast } = useToast();
 
   const loadBranchData = async (branch: Branch) => {
+    if (loading) return; // Evitar múltiples cargas simultáneas
     setLoading(true);
     setItems({});
     setSelectedBranch(branch);
@@ -95,19 +96,19 @@ export default function Home() {
   };
 
   const handleToggle = async (code: string, field: keyof ItemState) => {
-    if (!selectedBranch) return;
+    if (!selectedBranch || loading) return;
+
+    const newItems = {
+      ...items,
+      [code]: {
+        ...(items[code] || { completed: false, hasStock: true }),
+        [field]: !items[code]?.[field],
+        ...(field === 'completed' ? { hasStock: true } :
+          field === 'hasStock' ? { completed: false } : {}),
+      }
+    };
 
     try {
-      const newItems = {
-        ...items,
-        [code]: {
-          ...(items[code] || { completed: false, hasStock: true }),
-          [field]: !items[code]?.[field],
-          ...(field === 'completed' ? { hasStock: true } :
-            field === 'hasStock' ? { completed: false } : {}),
-        }
-      };
-
       setItems(newItems);
 
       const completedCount = Object.values(newItems).filter(i => i.completed).length;
@@ -121,18 +122,12 @@ export default function Home() {
         noStock: noStockCount,
       });
 
+      // Notificaciones solo para cambios importantes
       if (field === 'completed' && newItems[code].completed) {
-        const milestones = [
-          { percent: 25, message: "¡Buen comienzo! 🌟" },
-          { percent: 50, message: "¡Medio camino! 🎯" },
-          { percent: 75, message: "¡Excelente! 🚀" },
-          { percent: 100, message: "¡Completado! 🎉" }
-        ];
-
-        const milestone = milestones.find(m => completedPercentage === m.percent);
-        if (milestone) {
+        const milestones = [25, 50, 75, 100];
+        if (milestones.includes(completedPercentage)) {
           toast({
-            title: milestone.message,
+            title: completedPercentage === 100 ? "¡Completado! 🎉" : "¡Buen progreso! 🌟",
             variant: completedPercentage === 100 ? "success" : "default"
           });
         }
@@ -144,7 +139,7 @@ export default function Home() {
         description: "Intente nuevamente",
         variant: "destructive",
       });
-      setItems(items);
+      setItems(items); // Revertir cambios
     }
   };
 
@@ -166,7 +161,7 @@ export default function Home() {
               variant="outline"
               onClick={() => {
                 setSelectedBranch(undefined);
-                setItems({}); // Limpiar items al volver al dashboard
+                setItems({});
               }}
               className="gap-2"
             >
@@ -187,10 +182,9 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center p-4 space-y-2"
+            className="flex flex-col items-center justify-center p-4"
           >
             <LoadingSpinner />
-            <p className="text-muted-foreground text-sm">Cargando datos...</p>
           </motion.div>
         ) : selectedBranch ? (
           <motion.div
@@ -201,97 +195,73 @@ export default function Home() {
             transition={{ duration: 0.3 }}
           >
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Checklist de {selectedBranch}</CardTitle>
-                  <CardDescription className="text-muted-foreground mt-2">
-                    Marque los items completados y los que no tienen stock disponible
-                  </CardDescription>
-                </div>
+              <CardHeader>
+                <CardTitle>Checklist de {selectedBranch}</CardTitle>
+                <CardDescription className="text-muted-foreground mt-2">
+                  Marque los items completados y los que no tienen stock disponible
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="sticky top-36 bg-background pt-2 pb-4 z-30 space-y-4">
+                <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium mb-2">Progreso Completados</h3>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress.completed}%` }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Progress
-                        value={progress.completed}
-                        className="h-2"
-                        style={{
-                          background: progress.completed === 100 ? 'var(--success)' :
-                            progress.completed >= 75 ? 'var(--primary)' :
-                              progress.completed >= 50 ? 'var(--warning)' :
-                                'var(--muted)'
-                        }}
-                      />
-                    </motion.div>
+                    <h3 className="text-sm font-medium mb-2">Progreso</h3>
+                    <Progress
+                      value={progress.completed}
+                      className="h-2"
+                      style={{
+                        background: progress.completed === 100 ? 'var(--success)' :
+                          progress.completed >= 75 ? 'var(--primary)' :
+                            progress.completed >= 50 ? 'var(--warning)' :
+                              'var(--muted)'
+                      }}
+                    />
                     <div className="text-sm text-muted-foreground mt-2">
                       {Math.round(progress.completed)}% completado
                     </div>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress.noStock}%` }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Progress
-                        value={progress.noStock}
-                        className="h-2"
-                        style={{
-                          background: 'var(--destructive)'
-                        }}
-                      />
-                    </motion.div>
+                    <Progress
+                      value={progress.noStock}
+                      className="h-2"
+                      style={{
+                        background: 'var(--destructive)'
+                      }}
+                    />
                     <div className="text-sm text-muted-foreground mt-2">
                       {Math.round(progress.noStock)}% sin stock
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {CODES.map((code, index) => (
                     <motion.div
                       key={code}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
                       className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
                         items[code]?.completed ? 'bg-primary/10' : ''
                       }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       <span className="flex-1 font-mono">{code}</span>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Completado</span>
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Checkbox
-                              checked={items[code]?.completed || false}
-                              onCheckedChange={() => handleToggle(code, 'completed')}
-                            />
-                          </motion.div>
+                          <Checkbox
+                            checked={items[code]?.completed || false}
+                            onCheckedChange={() => handleToggle(code, 'completed')}
+                            disabled={loading}
+                          />
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Sin Stock</span>
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Checkbox
-                              checked={!items[code]?.hasStock}
-                              onCheckedChange={() => handleToggle(code, 'hasStock')}
-                            />
-                          </motion.div>
+                          <Checkbox
+                            checked={!items[code]?.hasStock}
+                            onCheckedChange={() => handleToggle(code, 'hasStock')}
+                            disabled={loading}
+                          />
                         </div>
                       </div>
                     </motion.div>

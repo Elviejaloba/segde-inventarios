@@ -81,7 +81,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   if (loading && !data.length) {
     return (
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <LoadingSpinner />
       </div>
     );
@@ -135,9 +135,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
                     index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
               }`}
-              onClick={() => onBranchSelect && onBranchSelect(branch.id)}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+              onClick={() => onBranchSelect?.(branch.id)}
             >
               <TableCell>
                 {index < 3 ? (
