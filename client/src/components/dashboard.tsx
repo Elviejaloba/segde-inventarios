@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db, checkFirebaseConnection } from "@/lib/firebase";
+import { db, checkFirebaseConnection, retryOperation } from "@/lib/firebase";
 import {
   Table,
   TableBody,
@@ -43,17 +43,20 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         throw new Error("No se pudo establecer conexión con Firebase");
       }
 
-      const branchesRef = collection(db, "branches");
-      const snapshot = await getDocs(branchesRef);
+      // Usar retryOperation para manejar reintentos
+      const branchData = await retryOperation(async () => {
+        const branchesRef = collection(db, "branches");
+        const snapshot = await getDocs(branchesRef);
 
-      const branchData = snapshot.docs
-        .filter(doc => AVAILABLE_BRANCHES.includes(doc.id))
-        .map(doc => ({
-          id: doc.id,
-          totalCompleted: doc.data().totalCompleted || 0,
-          noStock: doc.data().noStock || 0,
-          items: doc.data().items || {}
-        }));
+        return snapshot.docs
+          .filter(doc => AVAILABLE_BRANCHES.includes(doc.id))
+          .map(doc => ({
+            id: doc.id,
+            totalCompleted: doc.data().totalCompleted || 0,
+            noStock: doc.data().noStock || 0,
+            items: doc.data().items || {}
+          }));
+      });
 
       setData(branchData);
     } catch (err) {
@@ -61,7 +64,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setError("Error de conexión. Por favor, intente nuevamente.");
       toast({
         title: "Error de conexión",
-        description: "No se pudo establecer conexión con el servidor",
+        description: "No se pudo establecer conexión con el servidor. Reintentando...",
         variant: "destructive",
       });
     } finally {

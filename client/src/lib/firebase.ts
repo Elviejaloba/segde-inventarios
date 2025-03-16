@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
+import { initializeFirestore, enableNetwork, disableNetwork, getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -13,17 +13,15 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with optimized settings
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  cacheSizeBytes: 40000000, // 40MB cache size
-});
+// Initialize Firestore with optimized settings for Replit environment
+const db = getFirestore(app);
 
 // Función para verificar la conexión
 export const checkFirebaseConnection = async () => {
   try {
     await disableNetwork(db);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Aumentar el tiempo de espera
+    // Esperar un tiempo suficiente antes de reconectar
+    await new Promise(resolve => setTimeout(resolve, 2000));
     await enableNetwork(db);
     console.log("Conexión a Firebase verificada y restablecida");
     return true;
@@ -52,6 +50,5 @@ export const retryOperation = async (operation: () => Promise<any>, maxRetries =
     }
   }
 };
-
 
 export { app, db };
