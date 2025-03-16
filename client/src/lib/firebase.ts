@@ -1,5 +1,10 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  enableIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED,
+  getFirestore
+} from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -13,21 +18,25 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with aggressive caching and offline persistence
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+// Initialize Firestore with basic settings
+const db = getFirestore(app);
 
-// Función para manejar reintentos con backoff exponencial
+// Enable offline persistence
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser doesn\'t support all of the features required to enable persistence');
+    }
+  });
+
+// Función para reintentar operaciones con backoff exponencial
 export const retryOperation = async (operation: () => Promise<any>, maxRetries = 5) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
-      console.error(`Intento ${attempt}/${maxRetries} falló:`, error);
-
       if (attempt === maxRetries) {
         throw error;
       }
