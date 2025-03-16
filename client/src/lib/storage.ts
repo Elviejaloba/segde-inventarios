@@ -1,3 +1,5 @@
+import { doc, setDoc, collection } from 'firebase/firestore';
+import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES } from './store';
 
 interface BranchData {
@@ -9,40 +11,55 @@ interface BranchData {
 
 class LocalStorage {
   private storageKey = 'branch_data';
+  private localData: BranchData[] = [];
 
   constructor() {
     this.initializeData();
   }
 
   private initializeData() {
-    if (!localStorage.getItem(this.storageKey)) {
-      const initialData = AVAILABLE_BRANCHES.map(branch => ({
+    const storedData = localStorage.getItem(this.storageKey);
+    if (!storedData) {
+      this.localData = AVAILABLE_BRANCHES.map(branch => ({
         id: branch,
         totalCompleted: 0,
         noStock: 0,
         items: {}
       }));
-      localStorage.setItem(this.storageKey, JSON.stringify(initialData));
+      this.saveToLocalStorage();
+    } else {
+      this.localData = JSON.parse(storedData);
     }
+  }
+
+  private saveToLocalStorage() {
+    localStorage.setItem(this.storageKey, JSON.stringify(this.localData));
   }
 
   getData(): BranchData[] {
-    const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : [];
+    return this.localData;
   }
 
-  updateBranch(branchId: Branch, data: Partial<BranchData>) {
-    const allData = this.getData();
-    const index = allData.findIndex(b => b.id === branchId);
-
+  async updateBranch(branchId: Branch, data: Partial<BranchData>) {
+    // Actualizar datos locales
+    const index = this.localData.findIndex(b => b.id === branchId);
     if (index !== -1) {
-      allData[index] = { ...allData[index], ...data };
+      this.localData[index] = { ...this.localData[index], ...data };
     } else {
-      allData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
+      this.localData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
+    }
+    this.saveToLocalStorage();
+
+    // Sincronizar con Firestore
+    try {
+      const branchRef = doc(collection(db, 'branches'), branchId);
+      await setDoc(branchRef, data, { merge: true });
+    } catch (error) {
+      console.error('Error al sincronizar con Firestore:', error);
+      throw new Error('Error al guardar los datos en la nube');
     }
 
-    localStorage.setItem(this.storageKey, JSON.stringify(allData));
-    return allData;
+    return this.localData;
   }
 }
 
