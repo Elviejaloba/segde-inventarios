@@ -10,10 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Trophy } from "lucide-react";
+import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { FirebaseStatus } from '@/components/firebase-status';
 
 interface DashboardProps {
@@ -36,6 +37,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setLoading(true);
       setError(null);
 
+      // Verificar conexión antes de proceder
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
         throw new Error("No se pudo establecer conexión con Firebase");
@@ -49,14 +51,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         .map(doc => ({
           id: doc.id,
           totalCompleted: doc.data().totalCompleted || 0,
-          noStock: Object.values(doc.data().items || {}).filter((item: any) => !item.hasStock).length,
+          noStock: doc.data().noStock || 0,
           items: doc.data().items || {}
         }));
 
       setData(branchData);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
+      setError("Error de conexión. Por favor, intente nuevamente.");
       toast({
         title: "Error de conexión",
         description: "No se pudo establecer conexión con el servidor",
@@ -71,6 +73,30 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     fetchData();
   }, []);
 
+  const retryFetch = async () => {
+    await fetchData();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4 space-y-4">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-destructive text-center">{error}</p>
+        <Button onClick={retryFetch} variant="outline">
+          Reintentar conexión
+        </Button>
+      </div>
+    );
+  }
+
   const sortedBranches = AVAILABLE_BRANCHES
     .map(branchId => {
       const branchData = data.find(d => d.id === branchId) || {
@@ -84,24 +110,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       };
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-center text-destructive">
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
