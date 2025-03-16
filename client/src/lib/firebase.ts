@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -16,7 +16,16 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with optimized settings
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  experimentalForceLongPolling: true, // Solo usar long polling
+  experimentalForceLongPolling: true, // Solo usar long polling para mayor estabilidad
+});
+
+// Habilitar persistencia offline
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Persistencia solo disponible en una pestaña a la vez');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Navegador no soporta persistencia');
+  }
 });
 
 export { app, db };

@@ -75,11 +75,14 @@ export default function Home() {
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
 
+      if (branch !== selectedBranch) return; // Evitar actualización si cambió la selección
+
       if (branchDoc.exists()) {
         const data = branchDoc.data();
-        setItems(data.items || {});
+        if (data && typeof data.items === 'object') {
+          setItems(data.items);
+        }
       } else {
-        // Inicializar nueva sucursal
         const initialData = { items: {}, totalCompleted: 0, noStock: 0 };
         await setDoc(branchRef, initialData);
       }
@@ -91,7 +94,9 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (branch === selectedBranch) {
+        setLoading(false);
+      }
     }
   };
 
@@ -122,7 +127,7 @@ export default function Home() {
         noStock: noStockCount
       });
 
-      // Solo notificar en hitos importantes
+      // Notificar solo en hitos importantes
       if (field === 'completed' && newItems[code].completed) {
         const milestones = [25, 50, 75, 100];
         if (milestones.includes(completedPercentage)) {
@@ -149,7 +154,7 @@ export default function Home() {
       : 0,
     noStock: selectedBranch
       ? (Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100
-      : 0,
+      : 0
   };
 
   return (
