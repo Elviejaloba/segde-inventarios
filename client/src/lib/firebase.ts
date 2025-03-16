@@ -1,20 +1,35 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { 
+  getFirestore, 
+  enableIndexedDbPersistence,
+  setLogLevel
+} from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: "374297020151",
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
+// Set log level for debugging
+setLogLevel('debug');
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with basic settings
-const db = getFirestore(app);
+// Initialize Firestore
+const db = getFirestore();
+
+// Enable offline persistence
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser doesn\'t support all of the features required to enable persistence');
+    }
+  });
 
 // Función para reintentar operaciones
 export const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {

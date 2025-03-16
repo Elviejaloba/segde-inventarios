@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db, retryOperation } from "@/lib/firebase";
 import {
   Table,
@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Trophy, AlertCircle } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCw } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -29,12 +29,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
+      setRetrying(false);
 
       const branchData = await retryOperation(async () => {
         const branchesRef = collection(db, "branches");
@@ -52,10 +54,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setData(branchData);
     } catch (err) {
       console.error("Error al cargar datos:", err);
-      setError("Error de conexión. Por favor, intente nuevamente.");
+      setError("Error al cargar los datos. Por favor, intente nuevamente.");
       toast({
         title: "Error de conexión",
-        description: "No se pudieron cargar los datos. Intente nuevamente.",
+        description: "No se pudieron cargar los datos. Reintentando...",
         variant: "destructive",
       });
     } finally {
@@ -66,6 +68,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    await fetchData();
+  };
 
   if (loading) {
     return (
@@ -80,8 +87,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       <div className="flex flex-col items-center justify-center p-4 space-y-4">
         <AlertCircle className="h-8 w-8 text-destructive" />
         <p className="text-destructive text-center">{error}</p>
-        <Button onClick={fetchData} variant="outline">
-          Reintentar
+        <Button 
+          onClick={handleRetry} 
+          variant="outline"
+          disabled={retrying}
+          className="gap-2"
+        >
+          {retrying && <RefreshCw className="h-4 w-4 animate-spin" />}
+          Reintentar conexión
         </Button>
       </div>
     );
