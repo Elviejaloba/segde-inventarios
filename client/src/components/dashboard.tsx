@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Trophy, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import { Trophy, AlertCircle } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -29,24 +29,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      fetchData(); // Intentar recargar datos cuando vuelva la conexión
-    };
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   const fetchData = async () => {
     try {
@@ -69,15 +52,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setData(branchData);
     } catch (err) {
       console.error("Error al cargar datos:", err);
-      const message = isOffline ? 
-        "Trabajando en modo offline. Los datos pueden no estar actualizados." :
-        "Error de conexión. Por favor, intente nuevamente.";
-
-      setError(message);
+      setError("Error de conexión. Por favor, intente nuevamente.");
       toast({
-        title: isOffline ? "Modo Offline" : "Error de conexión",
-        description: message,
-        variant: isOffline ? "warning" : "destructive",
+        title: "Error de conexión",
+        description: "No se pudieron cargar los datos. Intente nuevamente.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -99,10 +78,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-4 space-y-4">
-        {isOffline ? <WifiOff className="h-8 w-8 text-warning" /> : <AlertCircle className="h-8 w-8 text-destructive" />}
-        <p className={`text-center ${isOffline ? 'text-warning' : 'text-destructive'}`}>{error}</p>
-        <Button onClick={fetchData} variant="outline" className="gap-2">
-          {isOffline ? <Wifi className="h-4 w-4" /> : null}
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-destructive text-center">{error}</p>
+        <Button onClick={fetchData} variant="outline">
           Reintentar
         </Button>
       </div>
@@ -123,12 +101,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   return (
     <div className="rounded-md border bg-card">
-      {isOffline && (
-        <div className="p-2 bg-warning/10 text-warning flex items-center gap-2 text-sm">
-          <WifiOff className="h-4 w-4" />
-          Modo offline - Los datos pueden no estar actualizados
-        </div>
-      )}
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">

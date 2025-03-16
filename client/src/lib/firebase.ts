@@ -1,9 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  initializeFirestore,
-  CACHE_SIZE_UNLIMITED,
-} from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,30 +13,28 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with optimized settings
-const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED
-});
+// Initialize Firestore with basic settings
+const db = getFirestore(app);
 
+// Función para reintentar operaciones
+export const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+  let lastError;
 
-// Función para reintentar operaciones con backoff exponencial
-export const retryOperation = async (operation: () => Promise<any>, maxRetries = 5) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       console.error(`Intento ${attempt}/${maxRetries} falló:`, error);
+      lastError = error;
 
-      if (attempt === maxRetries) {
-        throw error;
-      }
+      if (attempt === maxRetries) break;
 
-      // Backoff exponencial con jitter aleatorio
-      const baseDelay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-      const jitter = Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
+      // Espera simple antes de reintentar
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }
+
+  throw lastError;
 };
 
 export { app, db };
