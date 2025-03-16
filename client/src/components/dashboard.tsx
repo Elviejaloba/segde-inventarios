@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db, checkFirebaseConnection, retryOperation } from "@/lib/firebase";
+import { db, retryOperation } from "@/lib/firebase";
 import {
   Table,
   TableBody,
@@ -15,7 +15,6 @@ import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { FirebaseStatus } from '@/components/firebase-status';
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -37,13 +36,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setLoading(true);
       setError(null);
 
-      // Verificar conexión antes de proceder
-      const isConnected = await checkFirebaseConnection();
-      if (!isConnected) {
-        throw new Error("No se pudo establecer conexión con Firebase");
-      }
-
-      // Usar retryOperation para manejar reintentos
       const branchData = await retryOperation(async () => {
         const branchesRef = collection(db, "branches");
         const snapshot = await getDocs(branchesRef);
@@ -60,11 +52,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
       setData(branchData);
     } catch (err) {
-      console.error("Error loading data:", err);
-      setError("Error de conexión. Por favor, intente nuevamente.");
+      console.error("Error al cargar datos:", err);
+      setError("Error de conexión. Intente nuevamente.");
       toast({
         title: "Error de conexión",
-        description: "No se pudo establecer conexión con el servidor. Reintentando...",
+        description: "No se pudieron cargar los datos. Reintentando...",
         variant: "destructive",
       });
     } finally {
@@ -100,23 +92,20 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
-  const sortedBranches = AVAILABLE_BRANCHES
+  const sortedBranches = [...AVAILABLE_BRANCHES]
     .map(branchId => {
       const branchData = data.find(d => d.id === branchId) || {
+        id: branchId,
         totalCompleted: 0,
         noStock: 0,
         items: {}
       };
-      return {
-        id: branchId,
-        ...branchData
-      };
+      return branchData;
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   return (
     <div className="space-y-6">
-      <FirebaseStatus />
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
