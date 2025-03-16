@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { SettingsDialog } from "@/components/settings-dialog";
+import { initializeAudio } from "@/lib/sound-effects";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +11,11 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    // Initialize audio system when component mounts
+    initializeAudio();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,12 +32,13 @@ export function Layout({ children }: LayoutProps) {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            <SettingsDialog />
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
-              {theme === "dark" ? <Sun /> : <Moon />}
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
         </div>
