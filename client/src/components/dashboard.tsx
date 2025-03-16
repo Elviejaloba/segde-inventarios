@@ -85,10 +85,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               <TableCell>
                 {index < 3 ? (
                   <Trophy className={`h-5 w-5 ${
-                    index === 0 ? 'text-yellow-500' :
-                      index === 1 ? 'text-gray-400' :
-                        'text-amber-600'
-                  }`} />
+                    index === 0 ? 'text-yellow-500 animate-bounce' :
+                      index === 1 ? 'text-gray-400 animate-pulse' :
+                        'text-amber-600 animate-pulse'
+                  } ${
+                    index === 0 ? 'hover:scale-125' :
+                      index === 1 ? 'hover:scale-110' :
+                        'hover:scale-105'
+                  } transition-transform duration-200`} />
                 ) : (
                   index + 1
                 )}
