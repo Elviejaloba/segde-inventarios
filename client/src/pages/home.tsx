@@ -13,67 +13,23 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { storage } from "@/lib/storage";
 
 // Lista de códigos
 const CODES = [
-  '114F',
-  '505',
-  '138P',
-  '118M',
-  '400I',
-  '505X',
-  '506M',
-  '305K',
-  '605E',
-  '605T',
-  '510M',
-  '506C',
-  '90/91/92 COLOR',
-  '507M',
-  '98KS00',
-  '158S00',
-  '99 COLOR',
-  'TI125',
-  '98KM',
-  '150P',
-  '30P/30S',
-  '150M/P',
-  '451I',
-  '81M',
-  '81SM',
-  '15S/15C',
-  '7095 color',
-  'Cortinas black out',
-  'Cortinas tropical',
-  'Cover'
+  '114F', '505', '138P', '118M', '400I', '505X', '506M', '305K',
+  '605E', '605T', '510M', '506C', '90/91/92 COLOR', '507M', '98KS00',
+  '158S00', '99 COLOR', 'TI125', '98KM', '150P', '30P/30S', '150M/P',
+  '451I', '81M', '81SM', '15S/15C', '7095 color', 'Cortinas black out',
+  'Cortinas tropical', 'Cover'
 ];
 
 interface ItemState {
   completed: boolean;
   hasStock: boolean;
 }
-
-const retryOperation = async <T>(operation: () => Promise<T>, maxRetries = 3, retryDelay = 1000): Promise<T> => {
-  let retries = 0;
-  while (retries < maxRetries) {
-    try {
-      return await operation();
-    } catch (error) {
-      console.error(`Retry attempt ${retries + 1} failed:`, error);
-      retries++;
-      if (retries < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay * retries));
-      } else {
-        throw error; // Re-throw error after max retries
-      }
-    }
-  }
-};
-
 
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
@@ -86,23 +42,10 @@ export default function Home() {
 
     setLoading(true);
     setSelectedBranch(branch);
-    setItems({});
 
     try {
-      const branchData = await retryOperation(async () => {
-        const branchRef = doc(db, "branches", branch);
-        const branchDoc = await getDoc(branchRef);
-
-        if (branchDoc.exists()) {
-          return branchDoc.data();
-        } else {
-          const initialData = { items: {}, totalCompleted: 0, noStock: 0 };
-          await setDoc(branchRef, initialData);
-          return initialData;
-        }
-      });
-
-      setItems(branchData.items || {});
+      const branchData = storage.getData().find(b => b.id === branch);
+      setItems(branchData?.items || {});
     } catch (error) {
       console.error("Error al cargar datos:", error);
       toast({
@@ -123,21 +66,17 @@ export default function Home() {
       [code]: {
         ...(items[code] || { completed: false, hasStock: true }),
         [field]: !items[code]?.[field],
-        ...(field === 'completed' ? { hasStock: true } :
-          field === 'hasStock' ? { completed: false } : {})
+        ...(field === 'completed' ? { hasStock: true } : { completed: false })
       }
     };
 
     setItems(newItems);
 
     try {
-      await retryOperation(async () => {
-        const branchRef = doc(db, "branches", selectedBranch);
-        await setDoc(branchRef, {
-          items: newItems,
-          totalCompleted: Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100),
-          noStock: Object.values(newItems).filter(i => !i.hasStock).length
-        });
+      storage.updateBranch(selectedBranch, {
+        items: newItems,
+        totalCompleted: Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100),
+        noStock: Object.values(newItems).filter(i => !i.hasStock).length
       });
     } catch (error) {
       console.error("Error al guardar:", error);

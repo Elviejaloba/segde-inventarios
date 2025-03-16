@@ -9,7 +9,6 @@ interface BranchData {
 
 class LocalStorage {
   private storageKey = 'branch_data';
-  private syncInterval: number | null = null;
 
   constructor() {
     this.initializeData();
@@ -35,7 +34,7 @@ class LocalStorage {
   updateBranch(branchId: Branch, data: Partial<BranchData>) {
     const allData = this.getData();
     const index = allData.findIndex(b => b.id === branchId);
-    
+
     if (index !== -1) {
       allData[index] = { ...allData[index], ...data };
     } else {
@@ -44,23 +43,6 @@ class LocalStorage {
 
     localStorage.setItem(this.storageKey, JSON.stringify(allData));
     return allData;
-  }
-
-  startSync(interval = 5000) {
-    if (this.syncInterval) return;
-    
-    this.syncInterval = window.setInterval(() => {
-      const data = this.getData();
-      // TODO: Implement server sync when backend is ready
-      console.log('Syncing data...', data);
-    }, interval);
-  }
-
-  stopSync() {
-    if (this.syncInterval) {
-      clearInterval(this.syncInterval);
-      this.syncInterval = null;
-    }
   }
 }
 

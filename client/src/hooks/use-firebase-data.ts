@@ -11,17 +11,12 @@ export function useFirebaseData() {
     try {
       const branchData = storage.getData();
       setData(branchData);
-      storage.startSync();
     } catch (err) {
       console.error("Error loading data:", err);
       setError("Error al cargar los datos");
     } finally {
       setLoading(false);
     }
-
-    return () => {
-      storage.stopSync();
-    };
   }, []);
 
   const refetch = async () => {
