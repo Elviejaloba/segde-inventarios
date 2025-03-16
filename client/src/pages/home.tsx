@@ -264,7 +264,7 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
         <div className="flex items-center gap-4">
           {selectedBranch && (
             <Button
@@ -284,6 +284,10 @@ export default function Home() {
             value={selectedBranch}
             onChange={loadBranchData}
           />
+        </div>
+        <div className="text-sm text-muted-foreground max-w-[600px] animate-[fadeIn_1s_ease-in] italic">
+          Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance. 
+          La comunicación sigue por mail con su adjunto correspondiente.
         </div>
       </div>
 
