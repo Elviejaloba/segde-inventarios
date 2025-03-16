@@ -1,9 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  enableIndexedDbPersistence,
-  setLogLevel
-} from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -12,26 +8,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Set log level for debugging
-setLogLevel('debug');
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-const db = getFirestore();
+// Initialize Firestore with basic configuration
+const db = getFirestore(app);
 
-// Enable offline persistence
-enableIndexedDbPersistence(db)
-  .catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('The current browser doesn\'t support all of the features required to enable persistence');
-    }
-  });
-
-// Función para reintentar operaciones
+// Retry operation with incremental backoff
 export const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
   let lastError;
 
@@ -39,13 +22,13 @@ export const retryOperation = async (operation: () => Promise<any>, maxRetries =
     try {
       return await operation();
     } catch (error) {
-      console.error(`Intento ${attempt}/${maxRetries} falló:`, error);
+      console.error(`Attempt ${attempt}/${maxRetries} failed:`, error);
       lastError = error;
 
       if (attempt === maxRetries) break;
 
-      // Espera simple antes de reintentar
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      // Simple incremental delay
+      await new Promise(resolve => setTimeout(resolve, attempt * 1000));
     }
   }
 
