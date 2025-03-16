@@ -33,7 +33,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      fetchData(); // Intentar recargar datos cuando vuelva la conexión
+    };
     const handleOffline = () => setIsOffline(true);
 
     window.addEventListener('online', handleOnline);

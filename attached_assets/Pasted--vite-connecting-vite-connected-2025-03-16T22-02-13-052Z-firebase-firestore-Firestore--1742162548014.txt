@@ -1,0 +1,27 @@
+[vite] connecting...
+[vite] connected.
+[2025-03-16T22:02:13.052Z]  @firebase/firestore: Firestore (11.4.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead.
+[2025-03-16T22:02:14.153Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x1170144a transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:14.156Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x1170144b transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:14.732Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x1170144d transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:14.761Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x1170144c transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:15.710Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x1170144e transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:16.077Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x1170144f transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:17.552Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x11701450 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:17.922Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x11701451 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:19.407Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x11701453 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:19.474Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x11701452 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:22.136Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Write' stream 0x11701455 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
+[2025-03-16T22:02:22.475Z]  @firebase/firestore: Firestore (11.4.0): WebChannelConnection RPC 'Listen' stream 0x11701454 transport errored: 
+jd {type: "c", target: Y2, g: Y2, defaultPrevented: false, status: 1}
