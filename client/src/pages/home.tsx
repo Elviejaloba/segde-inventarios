@@ -62,128 +62,88 @@ export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
-  const maxRetries = 2;
-  const retryDelay = 300;
 
-  const loadBranchData = async (branch: Branch, isRetry = false) => {
-    // Limpiar el estado anterior antes de cargar nuevos datos
-    if (!isRetry) {
-      setItems({});
-      setSelectedBranch(branch);
-    }
-
-    if (!loading) setLoading(true);
-    setError(null);
+  const loadBranchData = async (branch: Branch) => {
+    setLoading(true);
+    setItems({});
+    setSelectedBranch(branch);
 
     try {
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
 
-      // Verificar que estamos cargando la sucursal correcta
-      if (branch !== selectedBranch) {
-        return; // Evitar actualizar si el usuario ya seleccionó otra sucursal
-      }
-
       if (branchDoc.exists()) {
-        const branchData = branchDoc.data();
-        setItems(branchData?.items || {});
-        setRetryCount(0);
+        setItems(branchDoc.data().items || {});
       } else {
-        // Si la sucursal no existe, inicializarla con items vacíos
-        setItems({});
-        await setDoc(branchRef, { items: {}, totalCompleted: 0, noStock: 0 });
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error("Error al cargar datos de la sucursal:", error);
-
-      if (retryCount < maxRetries) {
-        const nextRetryDelay = retryDelay * Math.pow(2, retryCount);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => loadBranchData(branch, true), nextRetryDelay);
-      } else {
-        setError("Error al cargar los datos. Por favor, intente nuevamente.");
-        toast({
-          title: "Error de conexión",
-          description: "No se pudieron cargar los datos. Reintentando...",
-          variant: "destructive",
+        await setDoc(branchRef, {
+          items: {},
+          totalCompleted: 0,
+          noStock: 0
         });
-        setLoading(false);
       }
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+      toast({
+        title: "Error de conexión",
+        description: "No se pudieron cargar los datos. Intente nuevamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleToggle = async (code: string, field: keyof ItemState) => {
     if (!selectedBranch) return;
 
-    const newItems = {
-      ...items,
-      [code]: {
-        ...(items[code] || { completed: false, hasStock: true }),
-        [field]: !items[code]?.[field],
-        ...(field === 'completed' ? { hasStock: true } :
-          field === 'hasStock' ? { completed: false } : {}),
-      }
-    };
-
-    setItems(newItems);
-
-    const completedCount = Object.values(newItems).filter(i => i.completed).length;
-    const noStockCount = Object.values(newItems).filter(i => !i.hasStock).length;
-    const completedPercentage = (completedCount / CODES.length) * 100;
-
     try {
+      const newItems = {
+        ...items,
+        [code]: {
+          ...(items[code] || { completed: false, hasStock: true }),
+          [field]: !items[code]?.[field],
+          ...(field === 'completed' ? { hasStock: true } :
+            field === 'hasStock' ? { completed: false } : {}),
+        }
+      };
+
+      setItems(newItems);
+
+      const completedCount = Object.values(newItems).filter(i => i.completed).length;
+      const noStockCount = Object.values(newItems).filter(i => !i.hasStock).length;
+      const completedPercentage = Math.round((completedCount / CODES.length) * 100);
+
       const branchRef = doc(db, "branches", selectedBranch);
       await setDoc(branchRef, {
         items: newItems,
         totalCompleted: completedPercentage,
         noStock: noStockCount,
-      }, { merge: true });
+      });
 
       if (field === 'completed' && newItems[code].completed) {
-        if (completedPercentage === 25) {
+        const milestones = [
+          { percent: 25, message: "¡Buen comienzo! 🌟" },
+          { percent: 50, message: "¡Medio camino! 🎯" },
+          { percent: 75, message: "¡Excelente! 🚀" },
+          { percent: 100, message: "¡Completado! 🎉" }
+        ];
+
+        const milestone = milestones.find(m => completedPercentage === m.percent);
+        if (milestone) {
           toast({
-            title: "¡Buen comienzo! 🌟",
-            description: "Has completado el 25% de los items",
-          });
-        } else if (completedPercentage === 50) {
-          toast({
-            title: "¡Medio camino recorrido! 🎯",
-            description: "Has completado el 50% de los items",
-          });
-        } else if (completedPercentage === 75) {
-          toast({
-            title: "¡Excelente progreso! 🚀",
-            description: "Solo te falta el último tramo",
-          });
-        } else if (completedPercentage === 100) {
-          toast({
-            title: "¡Felicitaciones! 🎉",
-            description: "Has completado todos los items",
-            variant: "success",
+            title: milestone.message,
+            variant: completedPercentage === 100 ? "success" : "default"
           });
         }
       }
-
-      if (field === 'hasStock' && !newItems[code].hasStock) {
-        toast({
-          title: "Item sin stock registrado",
-          description: `${noStockCount} items marcados sin stock`,
-          variant: "warning",
-        });
-      }
     } catch (error) {
-      console.error("Error al guardar datos:", error);
+      console.error("Error al guardar:", error);
       toast({
         title: "Error al guardar",
-        description: "No se pudieron guardar los cambios. Intente nuevamente.",
+        description: "Intente nuevamente",
         variant: "destructive",
       });
-
-      // Revertir cambios locales en caso de error
       setItems(items);
     }
   };

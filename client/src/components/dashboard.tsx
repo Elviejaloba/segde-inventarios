@@ -42,7 +42,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       const snapshot = await getDocs(branchesRef);
 
       const branchData = snapshot.docs
-        .filter(doc => AVAILABLE_BRANCHES.includes(doc.id)) // Solo incluir sucursales válidas
+        .filter(doc => AVAILABLE_BRANCHES.includes(doc.id))
         .map(doc => ({
           id: doc.id,
           totalCompleted: doc.data().totalCompleted || 0,
@@ -77,19 +77,21 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   const sortedBranches = AVAILABLE_BRANCHES
     .map(branchId => {
-      const branchData = data.find(d => d.id === branchId);
+      const branchData = data.find(d => d.id === branchId) || {
+        totalCompleted: 0,
+        noStock: 0,
+        items: {}
+      };
       return {
         id: branchId,
-        totalCompleted: branchData?.totalCompleted || 0,
-        noStock: branchData?.noStock || 0,
-        items: branchData?.items || {}
+        ...branchData
       };
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   if (loading && !data.length) {
     return (
-      <div className="flex flex-col items-center justify-center p-4 space-y-2">
+      <div className="flex flex-col items-center justify-center p-4">
         <LoadingSpinner />
       </div>
     );
