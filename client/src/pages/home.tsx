@@ -285,9 +285,11 @@ export default function Home() {
             onChange={loadBranchData}
           />
         </div>
-        <div className="text-sm text-muted-foreground max-w-[600px] animate-[fadeIn_1s_ease-in] italic">
+        <div className="text-sm text-muted-foreground max-w-[600px] bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic">
           Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance. 
-          La comunicación sigue por mail con su adjunto correspondiente.
+          <span className="block mt-1 text-primary/80">
+            La comunicación sigue por mail con su adjunto correspondiente.
+          </span>
         </div>
       </div>
 
