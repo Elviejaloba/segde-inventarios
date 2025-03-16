@@ -57,6 +57,24 @@ interface ItemState {
   hasStock: boolean;
 }
 
+const retryOperation = async <T>(operation: () => Promise<T>, maxRetries = 3, retryDelay = 1000): Promise<T> => {
+  let retries = 0;
+  while (retries < maxRetries) {
+    try {
+      return await operation();
+    } catch (error) {
+      console.error(`Retry attempt ${retries + 1} failed:`, error);
+      retries++;
+      if (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay * retries));
+      } else {
+        throw error; // Re-throw error after max retries
+      }
+    }
+  }
+};
+
+
 export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
@@ -71,19 +89,25 @@ export default function Home() {
     setItems({});
 
     try {
-      const branchRef = doc(db, "branches", branch);
-      const branchDoc = await getDoc(branchRef);
+      const branchData = await retryOperation(async () => {
+        const branchRef = doc(db, "branches", branch);
+        const branchDoc = await getDoc(branchRef);
 
-      if (branchDoc.exists()) {
-        setItems(branchDoc.data().items || {});
-      } else {
-        await setDoc(branchRef, { items: {}, totalCompleted: 0, noStock: 0 });
-      }
+        if (branchDoc.exists()) {
+          return branchDoc.data();
+        } else {
+          const initialData = { items: {}, totalCompleted: 0, noStock: 0 };
+          await setDoc(branchRef, initialData);
+          return initialData;
+        }
+      });
+
+      setItems(branchData.items || {});
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error al cargar datos:", error);
       toast({
         title: "Error de conexión",
-        description: "No se pudieron cargar los datos",
+        description: "No se pudieron cargar los datos. Intente nuevamente.",
         variant: "destructive",
       });
     } finally {
@@ -107,14 +131,17 @@ export default function Home() {
     setItems(newItems);
 
     try {
-      const branchRef = doc(db, "branches", selectedBranch);
-      await setDoc(branchRef, {
-        items: newItems,
-        totalCompleted: Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100),
-        noStock: Object.values(newItems).filter(i => !i.hasStock).length
+      await retryOperation(async () => {
+        const branchRef = doc(db, "branches", selectedBranch);
+        await setDoc(branchRef, {
+          items: newItems,
+          totalCompleted: Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100),
+          noStock: Object.values(newItems).filter(i => !i.hasStock).length
+        });
       });
     } catch (error) {
-      setItems(items); // Revertir cambios
+      console.error("Error al guardar:", error);
+      setItems(items); // Revertir cambios en caso de error
       toast({
         title: "Error al guardar",
         description: "Intente nuevamente",
