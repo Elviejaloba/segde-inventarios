@@ -65,23 +65,23 @@ export default function Home() {
   const { toast } = useToast();
 
   const loadBranchData = async (branch: Branch) => {
-    if (loading) return; // Evitar múltiples cargas simultáneas
+    if (loading) return;
+
     setLoading(true);
-    setItems({});
     setSelectedBranch(branch);
+    setItems({});
 
     try {
       const branchRef = doc(db, "branches", branch);
       const branchDoc = await getDoc(branchRef);
 
       if (branchDoc.exists()) {
-        setItems(branchDoc.data().items || {});
+        const data = branchDoc.data();
+        setItems(data.items || {});
       } else {
-        await setDoc(branchRef, {
-          items: {},
-          totalCompleted: 0,
-          noStock: 0
-        });
+        // Inicializar nueva sucursal
+        const initialData = { items: {}, totalCompleted: 0, noStock: 0 };
+        await setDoc(branchRef, initialData);
       }
     } catch (error) {
       console.error("Error al cargar datos:", error);
@@ -119,16 +119,16 @@ export default function Home() {
       await setDoc(branchRef, {
         items: newItems,
         totalCompleted: completedPercentage,
-        noStock: noStockCount,
+        noStock: noStockCount
       });
 
-      // Notificaciones solo para cambios importantes
+      // Solo notificar en hitos importantes
       if (field === 'completed' && newItems[code].completed) {
         const milestones = [25, 50, 75, 100];
         if (milestones.includes(completedPercentage)) {
           toast({
             title: completedPercentage === 100 ? "¡Completado! 🎉" : "¡Buen progreso! 🌟",
-            variant: completedPercentage === 100 ? "success" : "default"
+            variant: "default"
           });
         }
       }
