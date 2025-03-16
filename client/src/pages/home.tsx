@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Branch } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, LineChart, PartyPopper, Trophy, Star } from "lucide-react";
+import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import {
@@ -170,6 +170,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollButton(window.pageYOffset > 100);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
@@ -283,84 +292,96 @@ export default function Home() {
           <LoadingSpinner />
         </div>
       ) : selectedBranch ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span>Checklist de {selectedBranch}</span>
-              {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
-            </CardTitle>
-            <CardDescription>
-              Marque los items completados y los que no tienen stock disponible
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Progreso</h3>
-                <Progress
-                  value={progress.completed}
-                  className="h-2"
-                  style={{
-                    background: progress.completed === 100 ? 'var(--success)' :
-                      progress.completed >= 75 ? 'var(--primary)' :
-                        progress.completed >= 50 ? 'var(--warning)' :
-                          'var(--muted)'
-                  }}
-                />
-                <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                  {Math.round(progress.completed)}% completado
-                  {progress.completed >= 20 && progress.completed < 100 && (
-                    <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
-                  )}
-                  {progress.completed === 100 && (
-                    <PartyPopper className="h-4 w-4 text-yellow-500 animate-bounce" />
-                  )}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                <Progress
-                  value={Math.round((Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100)}
-                  className="h-2 bg-destructive/20"
-                />
-                <div className="text-sm text-muted-foreground mt-2">
-                  {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {CODES.map((code) => (
-                <div
-                  key={code}
-                  className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
-                    items[code]?.completed ? 'bg-primary/10' : ''
-                  }`}
-                >
-                  <span className="flex-1 font-mono">{code}</span>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Completado</span>
-                      <Checkbox
-                        checked={items[code]?.completed || false}
-                        onCheckedChange={() => handleToggle(code, 'completed')}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Sin Stock</span>
-                      <Checkbox
-                        checked={!items[code]?.hasStock}
-                        onCheckedChange={() => handleToggle(code, 'hasStock')}
-                        disabled={loading}
-                      />
-                    </div>
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>Checklist de {selectedBranch}</span>
+                {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
+              </CardTitle>
+              <CardDescription>
+                Marque los items completados y los que no tienen stock disponible
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Progreso</h3>
+                  <Progress
+                    value={progress.completed}
+                    className="h-2"
+                    style={{
+                      background: progress.completed === 100 ? 'var(--success)' :
+                        progress.completed >= 75 ? 'var(--primary)' :
+                          progress.completed >= 50 ? 'var(--warning)' :
+                            'var(--muted)'
+                    }}
+                  />
+                  <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                    {Math.round(progress.completed)}% completado
+                    {progress.completed >= 20 && progress.completed < 100 && (
+                      <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
+                    )}
+                    {progress.completed === 100 && (
+                      <PartyPopper className="h-4 w-4 text-yellow-500 animate-bounce" />
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
+                  <Progress
+                    value={Math.round((Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100)}
+                    className="h-2 bg-destructive/20"
+                  />
+                  <div className="text-sm text-muted-foreground mt-2">
+                    {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {CODES.map((code) => (
+                  <div
+                    key={code}
+                    className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
+                      items[code]?.completed ? 'bg-primary/10' : ''
+                    }`}
+                  >
+                    <span className="flex-1 font-mono">{code}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Completado</span>
+                        <Checkbox
+                          checked={items[code]?.completed || false}
+                          onCheckedChange={() => handleToggle(code, 'completed')}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Sin Stock</span>
+                        <Checkbox
+                          checked={!items[code]?.hasStock}
+                          onCheckedChange={() => handleToggle(code, 'hasStock')}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          {showScrollButton && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="fixed bottom-4 right-4 rounded-full shadow-lg hover:shadow-xl transition-all"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       ) : (
         <div>
           <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
