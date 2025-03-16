@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, initializeFirestore, enableNetwork, disableNetwork, connectFirestoreEmulator } from "firebase/firestore";
+import { initializeFirestore, enableNetwork, disableNetwork, connectFirestoreEmulator } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -16,7 +16,6 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with optimized settings
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: true,
   cacheSizeBytes: 40000000, // 40MB cache
 });
 
