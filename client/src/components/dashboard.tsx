@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, checkFirebaseConnection } from "@/lib/firebase";
 import {
   Table,
   TableBody,
@@ -10,11 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { motion } from "framer-motion";
-import { Trophy, AlertCircle, RefreshCcw } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -29,11 +28,18 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchData = async () => {
     try {
-      if (!loading) setLoading(true);
+      setLoading(true);
       setError(null);
+
+      // Verificar conexión antes de proceder
+      const isConnected = await checkFirebaseConnection();
+      if (!isConnected) {
+        throw new Error("No se pudo establecer conexión con Firebase");
+      }
 
       const branchesRef = collection(db, "branches");
       const snapshot = await getDocs(branchesRef);
@@ -48,21 +54,21 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         }));
 
       setData(branchData);
-      setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
       setError("No se pudieron cargar los datos. Por favor, intente nuevamente.");
+      toast({
+        title: "Error de conexión",
+        description: "No se pudo establecer conexión con el servidor",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-    return () => {
-      setData([]);
-      setLoading(false);
-      setError(null);
-    };
   }, []);
 
   const sortedBranches = AVAILABLE_BRANCHES
@@ -79,7 +85,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     })
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
-  if (loading && !data.length) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
         <LoadingSpinner />
@@ -90,30 +96,15 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   if (error) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="text-center space-y-2">
-          <AlertCircle className="h-6 w-6 text-destructive mx-auto" />
-          <p className="text-destructive text-sm">{error}</p>
-          <Button
-            variant="outline"
-            onClick={fetchData}
-            className="gap-2"
-            size="sm"
-          >
-            <RefreshCcw className="h-4 w-4" />
-            Reintentar
-          </Button>
+        <div className="text-center text-destructive">
+          <p>{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="rounded-md border bg-card"
-    >
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
@@ -125,11 +116,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         </TableHeader>
         <TableBody>
           {sortedBranches.map((branch, index) => (
-            <motion.tr
+            <TableRow
               key={branch.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
               className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                 index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
                   index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
@@ -139,22 +127,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             >
               <TableCell>
                 {index < 3 ? (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                      delay: index * 0.05
-                    }}
-                  >
-                    <Trophy className={`h-5 w-5 ${
-                      index === 0 ? 'text-yellow-500' :
-                        index === 1 ? 'text-gray-400' :
-                          'text-amber-600'
-                    }`} />
-                  </motion.div>
+                  <Trophy className={`h-5 w-5 ${
+                    index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-gray-400' :
+                        'text-amber-600'
+                  }`} />
                 ) : (
                   index + 1
                 )}
@@ -172,10 +149,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <span className="text-sm">{branch.noStock} items</span>
                 </div>
               </TableCell>
-            </motion.tr>
+            </TableRow>
           ))}
         </TableBody>
       </Table>
-    </motion.div>
+    </div>
   );
 }

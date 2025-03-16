@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFirestore, initializeFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -15,17 +15,20 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore with optimized settings
 const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  experimentalForceLongPolling: true, // Solo usar long polling para mayor estabilidad
+  experimentalForceLongPolling: true, // Usar polling en lugar de WebSocket
 });
 
-// Habilitar persistencia offline
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Persistencia solo disponible en una pestaña a la vez');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Navegador no soporta persistencia');
+// Función para verificar la conexión
+export const checkFirebaseConnection = async () => {
+  try {
+    await disableNetwork(db);
+    await enableNetwork(db);
+    console.log("Conexión a Firebase verificada y restablecida");
+    return true;
+  } catch (error) {
+    console.error("Error en la conexión a Firebase:", error);
+    return false;
   }
-});
+};
 
 export { app, db };
