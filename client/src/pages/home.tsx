@@ -41,12 +41,126 @@ const MOTIVATION_MESSAGES = {
 };
 
 const celebrateProgress = (progress: number) => {
-  if (progress === 100) {
+  const defaults = {
+    spread: 360,
+    ticks: 100,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
+  };
+
+  const particleCount = Math.floor(progress * 2); // Más partículas a mayor progreso
+
+  if (progress >= 20) {
+    // Celebración básica para 20%
     confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
+      ...defaults,
+      particleCount,
+      colors: ['#ffd700', '#ff0000'],
+      origin: { x: 0.2, y: 0.8 }
     });
+    confetti({
+      ...defaults,
+      particleCount,
+      colors: ['#ffd700', '#ff0000'],
+      origin: { x: 0.8, y: 0.8 }
+    });
+  }
+
+  if (progress >= 40) {
+    // Celebración en zigzag para 40%
+    confetti({
+      ...defaults,
+      particleCount,
+      angle: 60,
+      spread: 80,
+      colors: ['#00ff00', '#0000ff'],
+      origin: { x: 0, y: 0.8 }
+    });
+    confetti({
+      ...defaults,
+      particleCount,
+      angle: 120,
+      spread: 80,
+      colors: ['#00ff00', '#0000ff'],
+      origin: { x: 1, y: 0.8 }
+    });
+  }
+
+  if (progress >= 60) {
+    // Lluvia de confetti para 60%
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        ...defaults,
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.5 }
+      });
+      confetti({
+        ...defaults,
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.5 }
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+  }
+
+  if (progress >= 80) {
+    // Explosión circular para 80%
+    const circles = 3;
+    for (let i = 0; i < circles; i++) {
+      setTimeout(() => {
+        confetti({
+          ...defaults,
+          particleCount: 100,
+          angle: 360 * i / circles,
+          spread: 360 / circles,
+          colors: ['#ff00ff', '#00ffff', '#ffff00'],
+          origin: { x: 0.5, y: 0.5 }
+        });
+      }, i * 200);
+    }
+  }
+
+  if (progress === 100) {
+    // Gran final para 100%
+    const duration = 5000;
+    const end = Date.now() + duration;
+
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+
+    (function frame() {
+      confetti({
+        ...defaults,
+        particleCount: 6,
+        angle: 60,
+        spread: 360,
+        colors,
+        origin: { x: Math.random(), y: Math.random() * 0.8 }
+      });
+      confetti({
+        ...defaults,
+        particleCount: 6,
+        angle: 120,
+        spread: 360,
+        colors,
+        origin: { x: Math.random(), y: Math.random() * 0.8 }
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
   }
 };
 
@@ -105,10 +219,7 @@ export default function Home() {
             duration: 5000,
           });
           setLastToastProgress(thresholdNum);
-
-          if (thresholdNum === 100) {
-            celebrateProgress(100);
-          }
+          celebrateProgress(thresholdNum); // Llamar a la celebración con el progreso actual
         }
       });
 
