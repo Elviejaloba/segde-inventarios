@@ -1,77 +1,26 @@
-import { useState, useEffect } from "react";
-import { collection, getDocs, onSnapshot } from "firebase/firestore";
-import { db, retryOperation } from "@/lib/firebase";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Trophy, AlertCircle, RefreshCw } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useFirebaseData } from "@/hooks/use-firebase-data";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
 }
 
 export function Dashboard({ onBranchSelect }: DashboardProps) {
-  const [data, setData] = useState<Array<{
-    id: string,
-    totalCompleted: number,
-    noStock: number,
-    items: Record<string, { completed: boolean, hasStock: boolean }>
-  }>>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retrying, setRetrying] = useState(false);
+  const { data, loading, error, refetch } = useFirebaseData();
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setRetrying(false);
-
-      const branchData = await retryOperation(async () => {
-        const branchesRef = collection(db, "branches");
-        const snapshot = await getDocs(branchesRef);
-        return snapshot.docs
-          .filter(doc => AVAILABLE_BRANCHES.includes(doc.id))
-          .map(doc => ({
-            id: doc.id,
-            totalCompleted: doc.data().totalCompleted || 0,
-            noStock: doc.data().noStock || 0,
-            items: doc.data().items || {}
-          }));
-      });
-
-      setData(branchData);
-    } catch (err) {
-      console.error("Error al cargar datos:", err);
-      setError("Error al cargar los datos. Por favor, intente nuevamente.");
-      toast({
-        title: "Error de conexión",
-        description: "No se pudieron cargar los datos. Reintentando...",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const handleRetry = async () => {
-    setRetrying(true);
-    await fetchData();
+    toast({
+      title: "Reconectando",
+      description: "Intentando recargar los datos...",
+    });
+    await refetch();
   };
 
   if (loading) {
@@ -88,12 +37,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <AlertCircle className="h-8 w-8 text-destructive" />
         <p className="text-destructive text-center">{error}</p>
         <Button 
-          onClick={handleRetry} 
+          onClick={handleRetry}
           variant="outline"
-          disabled={retrying}
           className="gap-2"
         >
-          {retrying && <RefreshCw className="h-4 w-4 animate-spin" />}
+          <RefreshCw className="h-4 w-4" />
           Reintentar conexión
         </Button>
       </div>
