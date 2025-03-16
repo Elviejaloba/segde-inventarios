@@ -14,6 +14,7 @@ import { Trophy } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { FirebaseStatus } from '@/components/firebase-status';
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -35,7 +36,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       setLoading(true);
       setError(null);
 
-      // Verificar conexión antes de proceder
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
         throw new Error("No se pudo establecer conexión con Firebase");
@@ -104,55 +104,58 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   }
 
   return (
-    <div className="rounded-md border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="w-[100px]">Posición</TableHead>
-            <TableHead>Sucursal</TableHead>
-            <TableHead className="text-right">Progreso</TableHead>
-            <TableHead className="text-right">Sin Stock</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedBranches.map((branch, index) => (
-            <TableRow
-              key={branch.id}
-              className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
-                  index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
-                    index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
-              }`}
-              onClick={() => onBranchSelect?.(branch.id)}
-            >
-              <TableCell>
-                {index < 3 ? (
-                  <Trophy className={`h-5 w-5 ${
-                    index === 0 ? 'text-yellow-500' :
-                      index === 1 ? 'text-gray-400' :
-                        'text-amber-600'
-                  }`} />
-                ) : (
-                  index + 1
-                )}
-              </TableCell>
-              <TableCell>{branch.id}</TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-2">
-                  <Progress value={branch.totalCompleted} className="w-24 h-2" />
-                  <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-2">
-                  <Progress value={(branch.noStock / 30) * 100} className="w-24 h-2" />
-                  <span className="text-sm">{branch.noStock} items</span>
-                </div>
-              </TableCell>
+    <div className="space-y-6">
+      <FirebaseStatus />
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[100px]">Posición</TableHead>
+              <TableHead>Sucursal</TableHead>
+              <TableHead className="text-right">Progreso</TableHead>
+              <TableHead className="text-right">Sin Stock</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {sortedBranches.map((branch, index) => (
+              <TableRow
+                key={branch.id}
+                className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                  index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
+                    index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
+                      index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
+                }`}
+                onClick={() => onBranchSelect?.(branch.id)}
+              >
+                <TableCell>
+                  {index < 3 ? (
+                    <Trophy className={`h-5 w-5 ${
+                      index === 0 ? 'text-yellow-500' :
+                        index === 1 ? 'text-gray-400' :
+                          'text-amber-600'
+                    }`} />
+                  ) : (
+                    index + 1
+                  )}
+                </TableCell>
+                <TableCell>{branch.id}</TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-2">
+                    <Progress value={branch.totalCompleted} className="w-24 h-2" />
+                    <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-2">
+                    <Progress value={(branch.noStock / 30) * 100} className="w-24 h-2" />
+                    <span className="text-sm">{branch.noStock} items</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
