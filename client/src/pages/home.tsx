@@ -320,11 +320,11 @@ export default function Home() {
               <div>
                 <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
                 <Progress
-                  value={(progress.noStock / CODES.length) * 100}
+                  value={Math.round((Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100)}
                   className="h-2 bg-destructive/20"
                 />
                 <div className="text-sm text-muted-foreground mt-2">
-                  {progress.noStock} items sin stock
+                  {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
                 </div>
               </div>
             </div>
