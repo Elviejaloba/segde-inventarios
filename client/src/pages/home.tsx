@@ -265,7 +265,7 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {selectedBranch && (
             <Button
               variant="outline"
@@ -274,7 +274,7 @@ export default function Home() {
                 setItems({});
                 setLastToastProgress(0);
               }}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               <ArrowLeft className="h-4 w-4" />
               Ver Ranking
@@ -285,7 +285,7 @@ export default function Home() {
             onChange={loadBranchData}
           />
         </div>
-        <div className="text-sm text-muted-foreground max-w-[600px] bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic">
+        <div className="text-sm text-muted-foreground max-w-[600px] bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
           Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance. 
           <span className="block mt-1 text-primary/80">
             La comunicación sigue por mail con su adjunto correspondiente.
@@ -301,7 +301,7 @@ export default function Home() {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 flex-wrap">
                 <span>Checklist de {selectedBranch}</span>
                 {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
               </CardTitle>
@@ -349,12 +349,12 @@ export default function Home() {
                 {CODES.map((code) => (
                   <div
                     key={code}
-                    className={`flex items-center gap-4 p-2 rounded hover:bg-accent transition-colors ${
+                    className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
                       items[code]?.completed ? 'bg-primary/10' : ''
                     }`}
                   >
                     <span className="flex-1 font-mono">{code}</span>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Completado</span>
                         <Checkbox

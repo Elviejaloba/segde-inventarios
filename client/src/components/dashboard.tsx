@@ -61,14 +61,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     .sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="rounded-md border bg-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[100px]">Posición</TableHead>
-            <TableHead>Sucursal</TableHead>
-            <TableHead className="text-right">Progreso</TableHead>
-            <TableHead className="text-right">Sin Stock</TableHead>
+            <TableHead className="w-[80px] min-w-[60px]">Posición</TableHead>
+            <TableHead className="min-w-[120px]">Sucursal</TableHead>
+            <TableHead className="text-right min-w-[150px]">Progreso</TableHead>
+            <TableHead className="text-right min-w-[150px]">Sin Stock</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,13 +101,13 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <Progress value={branch.totalCompleted} className="w-24 h-2" />
-                  <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
+                  <span className="text-sm whitespace-nowrap">{Math.round(branch.totalCompleted)}%</span>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <Progress value={(branch.noStock / 30) * 100} className="w-24 h-2" />
-                  <span className="text-sm">{branch.noStock} items</span>
+                  <span className="text-sm whitespace-nowrap">{branch.noStock} items</span>
                 </div>
               </TableCell>
             </TableRow>
