@@ -230,7 +230,15 @@ export default function Home() {
 
     try {
       const branchData = branchesData?.find(b => b.id === branch);
-      setItems(branchData?.items || {});
+      // Inicializar items con hasStock: true por defecto
+      const initializedItems = CODES.reduce((acc, code) => {
+        const sanitizedCode = sanitizeCode(code);
+        const existingItem = branchData?.items?.[sanitizedCode];
+        acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
+        return acc;
+      }, {});
+
+      setItems(initializedItems);
 
       // Registrar cambio de sucursal
       analytics.logAction('branch_select', { branch });
