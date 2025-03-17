@@ -53,27 +53,55 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
+      console.log(`Intentando actualizar sucursal ${branchId}...`);
+
+      // Primero verificamos que podemos leer los datos actuales
       const snapshot = await get(this.dbRef);
+      if (!snapshot.exists()) {
+        throw new Error('No se encontró la estructura de datos inicial');
+      }
+
       const allData = snapshot.val() || [];
       const index = allData.findIndex((b: BranchData) => b.id === branchId);
 
+      // Preparar los datos actualizados
+      let updatedData;
       if (index !== -1) {
-        allData[index] = { ...allData[index], ...data };
+        updatedData = [...allData];
+        updatedData[index] = { ...updatedData[index], ...data };
       } else {
-        allData.push({ 
-          id: branchId,
-          totalCompleted: 0,
-          noStock: 0,
-          items: {},
-          ...data
-        });
+        updatedData = [
+          ...allData,
+          {
+            id: branchId,
+            totalCompleted: 0,
+            noStock: 0,
+            items: {},
+            ...data
+          }
+        ];
       }
 
-      await set(this.dbRef, allData);
-      return allData;
-    } catch (error) {
-      console.error('Error updating branch:', error);
-      throw new Error('No se pudieron guardar los cambios');
+      // Intentar guardar los datos
+      console.log('Guardando datos actualizados...');
+      await set(this.dbRef, updatedData);
+      console.log('Datos guardados exitosamente');
+
+      return updatedData;
+    } catch (error: any) {
+      console.error('Error al actualizar sucursal:', {
+        error: error.message,
+        code: error.code,
+        branch: branchId
+      });
+
+      if (error.code === 'PERMISSION_DENIED') {
+        throw new Error('No tienes permisos para guardar cambios. Verifica las reglas de seguridad de Firebase.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        throw new Error('Error de conexión. Verifica tu conexión a internet.');
+      } else {
+        throw new Error(`No se pudieron guardar los cambios: ${error.message}`);
+      }
     }
   }
 }
