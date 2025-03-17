@@ -25,7 +25,7 @@ class FirebaseStorage {
         await set(this.dbRef, initialData);
       }
     } catch (error) {
-      console.error('Error initializing data:', error);
+      console.warn('Firebase initialization:', error);
     }
   }
 
@@ -33,26 +33,24 @@ class FirebaseStorage {
     onValue(this.dbRef, (snapshot) => {
       const data = snapshot.val() || [];
       callback(data);
+    }, (error) => {
+      console.warn('Firebase subscription:', error);
+      callback([]); // Return empty array on error
     });
   }
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
-    try {
-      const allData = await get(this.dbRef).then(snap => snap.val() || []);
-      const index = allData.findIndex(b => b.id === branchId);
+    const allData = await get(this.dbRef).then(snap => snap.val() || []);
+    const index = allData.findIndex(b => b.id === branchId);
 
-      if (index !== -1) {
-        allData[index] = { ...allData[index], ...data };
-      } else {
-        allData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
-      }
-
-      await set(this.dbRef, allData);
-      return allData;
-    } catch (error) {
-      console.error('Error updating data:', error);
-      throw error;
+    if (index !== -1) {
+      allData[index] = { ...allData[index], ...data };
+    } else {
+      allData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
     }
+
+    await set(this.dbRef, allData);
+    return allData;
   }
 }
 
