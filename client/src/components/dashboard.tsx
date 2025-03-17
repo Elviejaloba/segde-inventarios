@@ -106,7 +106,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  <span className="text-sm whitespace-nowrap">{branch.noStock} items</span>
+                  <span className="text-sm whitespace-nowrap">{branch.noStock || 0} items</span>
                 </div>
               </TableCell>
             </TableRow>
