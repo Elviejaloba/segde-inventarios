@@ -35,9 +35,11 @@ class FirebaseStorage {
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
+    console.log('Estableciendo suscripción a Firebase...');
     return onValue(this.dbRef, 
       (snapshot) => {
         const data = snapshot.val() || [];
+        console.log('Datos recibidos de Firebase:', data);
         callback(data);
       },
       (error) => {
@@ -49,6 +51,7 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
+      console.log(`Actualizando sucursal ${branchId}...`);
       const snapshot = await get(this.dbRef);
       if (!snapshot.exists()) {
         await this.initializeData();
@@ -81,7 +84,7 @@ class FirebaseStorage {
         ];
       }
 
-      // Intenta guardar los datos
+      console.log('Guardando datos actualizados:', updatedData);
       await set(this.dbRef, updatedData);
       return updatedData;
     } catch (error: any) {
