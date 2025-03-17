@@ -44,28 +44,28 @@ interface ItemState {
 }
 
 const MOTIVATION_MESSAGES = {
-  20: { 
-    title: "¡Excelente inicio! 🌟", 
+  20: {
+    title: "¡Excelente inicio! 🌟",
     description: "¡Sigue así, vas por buen camino!",
     variant: "success" as const
   },
-  40: { 
-    title: "¡Vas muy bien! 💪", 
+  40: {
+    title: "¡Vas muy bien! 💪",
     description: "¡Ya llevas casi la mitad!",
     variant: "success" as const
   },
-  60: { 
-    title: "¡Increíble progreso! 🚀", 
+  60: {
+    title: "¡Increíble progreso! 🚀",
     description: "¡Mantén ese ritmo!",
     variant: "success" as const
   },
-  80: { 
-    title: "¡Casi llegas! 🎯", 
+  80: {
+    title: "¡Casi llegas! 🎯",
     description: "¡Te falta muy poco!",
     variant: "success" as const
   },
-  100: { 
-    title: "¡FELICITACIONES! 🎉", 
+  100: {
+    title: "¡FELICITACIONES! 🎉",
     description: "¡Has completado todos los items!",
     variant: "success" as const
   }
@@ -80,7 +80,7 @@ const celebrateProgress = (progress: number) => {
     startVelocity: 30,
   };
 
-  const particleCount = Math.floor(progress * 2); 
+  const particleCount = Math.floor(progress * 2);
 
   if (progress >= 20) {
     confetti({
@@ -314,11 +314,9 @@ export default function Home() {
             onChange={loadBranchData}
           />
         </div>
-        <div className="text-sm text-muted-foreground max-w-[600px] bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
-          Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance.
-          <span className="block mt-1 text-primary/80">
-            La comunicación sigue por mail con su adjunto correspondiente.
-          </span>
+        <div className="text-sm text-foreground bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
+          <p className="font-medium text-primary">Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance.</p>
+          <p className="mt-1 text-muted-foreground">La comunicación sigue por mail con su adjunto correspondiente.</p>
         </div>
       </div>
 
