@@ -14,8 +14,12 @@ class FirebaseStorage {
 
   async initializeData() {
     try {
+      console.log('Initializing Firebase connection...');
       const snapshot = await get(this.dbRef);
+      console.log('Connection successful, checking data existence...');
+
       if (!snapshot.exists()) {
+        console.log('No existing data found, initializing with default data...');
         const initialData = AVAILABLE_BRANCHES.map(branch => ({
           id: branch,
           totalCompleted: 0,
@@ -23,34 +27,57 @@ class FirebaseStorage {
           items: {}
         }));
         await set(this.dbRef, initialData);
+        console.log('Default data initialized successfully');
+      } else {
+        console.log('Existing data found');
       }
     } catch (error) {
-      console.warn('Firebase initialization:', error);
+      console.error('Firebase initialization error:', error);
+      throw new Error('No se pudo establecer conexión con la base de datos');
     }
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
-    onValue(this.dbRef, (snapshot) => {
-      const data = snapshot.val() || [];
-      callback(data);
-    }, (error) => {
-      console.warn('Firebase subscription:', error);
-      callback([]); // Return empty array on error
-    });
+    console.log('Setting up real-time data subscription...');
+    onValue(this.dbRef, 
+      (snapshot) => {
+        console.log('Received real-time update');
+        const data = snapshot.val() || [];
+        callback(data);
+      }, 
+      (error) => {
+        console.error('Real-time subscription error:', error);
+        callback([]); // Return empty array on error
+      }
+    );
   }
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
-    const allData = await get(this.dbRef).then(snap => snap.val() || []);
-    const index = allData.findIndex(b => b.id === branchId);
+    try {
+      console.log(`Updating branch ${branchId}...`);
+      const snapshot = await get(this.dbRef);
+      const allData = snapshot.val() || [];
+      const index = allData.findIndex((b: BranchData) => b.id === branchId);
 
-    if (index !== -1) {
-      allData[index] = { ...allData[index], ...data };
-    } else {
-      allData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
+      if (index !== -1) {
+        allData[index] = { ...allData[index], ...data };
+      } else {
+        allData.push({ 
+          id: branchId, 
+          totalCompleted: 0, 
+          noStock: 0, 
+          items: {}, 
+          ...data 
+        });
+      }
+
+      await set(this.dbRef, allData);
+      console.log(`Branch ${branchId} updated successfully`);
+      return allData;
+    } catch (error) {
+      console.error('Error updating branch:', error);
+      throw new Error('No se pudieron actualizar los datos');
     }
-
-    await set(this.dbRef, allData);
-    return allData;
   }
 }
 
