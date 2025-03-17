@@ -10,16 +10,34 @@ interface BranchData {
 }
 
 class FirebaseStorage {
-  private dbRef = ref(db, 'branches');
+  private dbRef = ref(db, 'test'); // Primero probamos con una referencia simple
+
+  async testConnection() {
+    try {
+      console.log('Testing Firebase connection...');
+      const testRef = ref(db, 'connection-test');
+      await set(testRef, { timestamp: Date.now() });
+      const snapshot = await get(testRef);
+      console.log('Connection test successful:', snapshot.exists());
+      return true;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      return false;
+    }
+  }
 
   async initializeData() {
     try {
-      console.log('Initializing Firebase connection...');
+      // Primero verificamos la conexión
+      const isConnected = await this.testConnection();
+      if (!isConnected) {
+        throw new Error('No se pudo establecer conexión con Firebase');
+      }
+
+      this.dbRef = ref(db, 'branches');
       const snapshot = await get(this.dbRef);
-      console.log('Connection successful, checking data existence...');
 
       if (!snapshot.exists()) {
-        console.log('No existing data found, initializing with default data...');
         const initialData = AVAILABLE_BRANCHES.map(branch => ({
           id: branch,
           totalCompleted: 0,
@@ -27,34 +45,28 @@ class FirebaseStorage {
           items: {}
         }));
         await set(this.dbRef, initialData);
-        console.log('Default data initialized successfully');
-      } else {
-        console.log('Existing data found');
       }
     } catch (error) {
-      console.error('Firebase initialization error:', error);
-      throw new Error('No se pudo establecer conexión con la base de datos');
+      console.error('Error initializing data:', error);
+      throw error;
     }
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
-    console.log('Setting up real-time data subscription...');
     onValue(this.dbRef, 
       (snapshot) => {
-        console.log('Received real-time update');
         const data = snapshot.val() || [];
         callback(data);
       }, 
       (error) => {
-        console.error('Real-time subscription error:', error);
-        callback([]); // Return empty array on error
+        console.error('Subscription error:', error);
+        callback([]);
       }
     );
   }
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
-      console.log(`Updating branch ${branchId}...`);
       const snapshot = await get(this.dbRef);
       const allData = snapshot.val() || [];
       const index = allData.findIndex((b: BranchData) => b.id === branchId);
@@ -72,11 +84,10 @@ class FirebaseStorage {
       }
 
       await set(this.dbRef, allData);
-      console.log(`Branch ${branchId} updated successfully`);
       return allData;
     } catch (error) {
       console.error('Error updating branch:', error);
-      throw new Error('No se pudieron actualizar los datos');
+      throw error;
     }
   }
 }

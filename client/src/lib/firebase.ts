@@ -6,14 +6,19 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  // Using the default database URL with region
-  databaseURL: `https://${import.meta.env.VITE_FIREBASE_PROJECT_ID}-default-rtdb.us-central1.firebasedatabase.app`
+  // Use basic URL format
+  databaseURL: `https://${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseio.com`
 };
+
+console.log('Initializing Firebase with config:', {
+  ...firebaseConfig,
+  apiKey: '[HIDDEN]' // No mostrar la API key en logs
+});
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Realtime Database with persistence enabled
+// Initialize Realtime Database
 const db = getDatabase(app);
 
 export { app, db };
