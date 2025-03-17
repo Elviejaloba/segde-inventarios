@@ -1,5 +1,6 @@
 import { db } from './firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { ref, set, get, remove } from 'firebase/database';
 
 interface DiagnosticResult {
   success: boolean;
@@ -9,7 +10,6 @@ interface DiagnosticResult {
     networkConnected: boolean;
     readSuccess: boolean;
     writeSuccess: boolean;
-    reconnectionSuccess: boolean;
     errorLogs: string[];
   };
 }
@@ -22,7 +22,6 @@ export const runFirebaseDiagnostics = async (): Promise<DiagnosticResult> => {
       networkConnected: false,
       readSuccess: false,
       writeSuccess: false,
-      reconnectionSuccess: false,
       errorLogs: []
     }
   };
@@ -39,24 +38,19 @@ export const runFirebaseDiagnostics = async (): Promise<DiagnosticResult> => {
       throw new Error("Falta configuración de Firebase");
     }
 
-    // Probar reconexión
-    await disableNetwork(db);
-    await enableNetwork(db);
-    result.details.reconnectionSuccess = true;
-
     // Probar lectura
-    const testCollection = collection(db, 'diagnostic-tests');
-    await getDocs(testCollection);
+    const testRef = ref(db, 'diagnostic-tests');
+    await get(testRef);
     result.details.readSuccess = true;
 
     // Probar escritura
-    const testDoc = doc(testCollection, 'test-connection');
-    await setDoc(testDoc, { 
+    const testDataRef = ref(db, 'diagnostic-tests/test-connection');
+    await set(testDataRef, { 
       timestamp: new Date().toISOString(),
       status: 'test'
     });
     result.details.writeSuccess = true;
-    await deleteDoc(testDoc);
+    await remove(testDataRef);
 
     result.details.networkConnected = true;
     result.success = true;
