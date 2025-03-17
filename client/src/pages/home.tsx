@@ -410,10 +410,10 @@ export default function Home() {
             <Button
               variant="outline"
               size="icon"
-              className="fixed bottom-4 right-4 rounded-full shadow-lg hover:shadow-xl transition-all"
+              className="fixed bottom-4 right-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-primary/10 hover:bg-primary/20 border-primary/20 hover:border-primary/30 h-12 w-12 hover:scale-110"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-6 w-6 text-primary animate-bounce" />
             </Button>
           )}
         </div>
