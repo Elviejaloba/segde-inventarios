@@ -4,6 +4,7 @@ import { BranchSelector } from "@/components/branch-selector";
 import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
+import { useFirebaseData } from "@/hooks/use-firebase-data";
 import {
   Card,
   CardContent,
@@ -171,6 +172,7 @@ export default function Home() {
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const { data: branchesData } = useFirebaseData();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -187,7 +189,8 @@ export default function Home() {
     setSelectedBranch(branch);
 
     try {
-      const branchData = storage.getData().find(b => b.id === branch);
+      // Usar los datos del hook useFirebaseData en lugar de getData
+      const branchData = branchesData?.find(b => b.id === branch);
       setItems(branchData?.items || {});
     } catch (error) {
       console.error("Error al cargar datos:", error);
@@ -286,7 +289,7 @@ export default function Home() {
           />
         </div>
         <div className="text-sm text-muted-foreground max-w-[600px] bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
-          Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance. 
+          Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance.
           <span className="block mt-1 text-primary/80">
             La comunicación sigue por mail con su adjunto correspondiente.
           </span>

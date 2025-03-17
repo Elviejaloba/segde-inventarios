@@ -1,0 +1,36 @@
+lockdown-install.js:1 Removing unpermitted intrinsics
+chunk-WERSD76P.js?v=0801908e:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+firebase.ts:5 Environment check: Object
+firebase.ts:22 Initializing Firebase with config: Object
+firebase.ts:37 Using production Firebase database
+firebase.ts:39 Firebase initialized successfully
+contentView.bundle.js:31 Uncaught (in promise) Error: User not found
+    at t.ExtensionGuideService.<anonymous> (contentView.bundle.js:31:109882)
+    at Generator.next (<anonymous>)
+    at a (contentView.bundle.js:31:109169)
+contentView.bundle.js:31 Uncaught (in promise) Error: User not found
+    at t.ExtensionGuideService.<anonymous> (contentView.bundle.js:31:109882)
+    at Generator.next (<anonymous>)
+    at a (contentView.bundle.js:31:109169)
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+home.tsx:193 Error al cargar datos: TypeError: storage.getData is not a function
+    at loadBranchData (home.tsx:190:34)
+    at onClick (dashboard.tsx:83:30)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=0801908e:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=0801908e:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=0801908e:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-WERSD76P.js?v=0801908e:3736:33)
+    at executeDispatch (chunk-WERSD76P.js?v=0801908e:7014:11)
+    at processDispatchQueueItemsInOrder (chunk-WERSD76P.js?v=0801908e:7034:15)
+    at processDispatchQueue (chunk-WERSD76P.js?v=0801908e:7043:13)
+    at dispatchEventsForPlugins (chunk-WERSD76P.js?v=0801908e:7051:11)
+loadBranchData @ home.tsx:193
