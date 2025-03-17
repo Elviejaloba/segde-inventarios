@@ -397,13 +397,21 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                  <Progress
-                    value={progress.noStock}
-                    className="h-2 bg-destructive/20"
-                  />
-                  <div className="text-sm text-muted-foreground mt-2">
-                    {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
-                  </div>
+                  {progress.noStock > 0 ? (
+                    <>
+                      <Progress
+                        value={progress.noStock}
+                        className="h-2 bg-destructive/20"
+                      />
+                      <div className="text-sm text-muted-foreground mt-2">
+                        {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-muted-foreground mt-2">
+                      0 items sin stock
+                    </div>
+                  )}
                 </div>
               </div>
 
