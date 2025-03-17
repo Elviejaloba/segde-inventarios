@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
-import { AVAILABLE_BRANCHES } from '@/lib/store';
+import { Branch } from '@/lib/store';
+
+interface BranchData {
+  id: string;
+  totalCompleted: number;
+  noStock: number;
+  items: Record<string, { completed: boolean; hasStock: boolean }>;
+}
 
 export function useFirebaseData() {
-  const [data, setData] = useState([]); // Initialize empty to avoid undefined
+  const [data, setData] = useState<BranchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
