@@ -4,6 +4,7 @@ import { BranchSelector } from "@/components/branch-selector";
 import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
+import { FirebaseStatus } from "@/components/firebase-status";
 import {
   Card,
   CardContent,
@@ -292,6 +293,8 @@ export default function Home() {
           </span>
         </div>
       </div>
+
+      {!selectedBranch && <FirebaseStatus />}
 
       {loading ? (
         <div className="flex items-center justify-center p-4">
