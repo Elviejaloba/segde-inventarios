@@ -5,15 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { useThemeConfig, ThemeColor, AnimationStyle, SoundEffect, THEME_COLORS } from "@/lib/theme-config";
 import { playSound } from "@/lib/sound-effects";
+import { analytics } from "@/lib/analytics";
 
 export function SettingsDialog() {
   const { primaryColor, animationStyle, soundEffect, setTheme, setAnimation, setSound } = useThemeConfig();
+
+  const handleThemeChange = (value: ThemeColor) => {
+    setTheme(value);
+    analytics.logAction('theme_change', { theme: value });
+  };
+
+  const handleAnimationChange = (value: AnimationStyle) => {
+    setAnimation(value);
+    analytics.logAction('animation_change', { style: value });
+  };
 
   const handleSoundChange = async (value: SoundEffect) => {
     setSound(value);
     if (value !== 'none') {
       await playSound(value);
     }
+    analytics.logAction('sound_change', { effect: value });
   };
 
   return (
@@ -30,7 +42,7 @@ export function SettingsDialog() {
         <div className="space-y-6">
           <div className="space-y-4">
             <Label>Tema de Color</Label>
-            <RadioGroup value={primaryColor} onValueChange={(value: ThemeColor) => setTheme(value)}>
+            <RadioGroup value={primaryColor} onValueChange={handleThemeChange}>
               {Object.keys(THEME_COLORS).map((color) => (
                 <div key={color} className="flex items-center space-x-2">
                   <RadioGroupItem value={color} id={`color-${color}`} />
@@ -42,7 +54,7 @@ export function SettingsDialog() {
 
           <div className="space-y-4">
             <Label>Estilo de Animación</Label>
-            <RadioGroup value={animationStyle} onValueChange={(value: AnimationStyle) => setAnimation(value)}>
+            <RadioGroup value={animationStyle} onValueChange={handleAnimationChange}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="minimal" id="animation-minimal" />
                 <Label htmlFor="animation-minimal">Mínima</Label>

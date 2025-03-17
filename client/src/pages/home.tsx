@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { storage } from "@/lib/storage";
 import confetti from 'canvas-confetti';
+import { analytics } from "@/lib/analytics"; // Added import
+
 
 // Lista de códigos sanitizados (reemplazando caracteres no permitidos)
 const CODES = [
@@ -207,6 +209,19 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Registrar vista de página
+    analytics.logPageView('home');
+
+    // Registrar duración de sesión
+    const startTime = Date.now();
+    return () => {
+      const duration = (Date.now() - startTime) / 1000; // Convertir a segundos
+      analytics.logSessionDuration(duration);
+    };
+  }, []); // Added analytics tracking
+
+
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
 
@@ -216,6 +231,9 @@ export default function Home() {
     try {
       const branchData = branchesData?.find(b => b.id === branch);
       setItems(branchData?.items || {});
+
+      // Registrar cambio de sucursal
+      analytics.logAction('branch_select', { branch });
     } catch (error) {
       console.error("Error al cargar datos:", error);
       toast({
@@ -263,6 +281,14 @@ export default function Home() {
           setLastToastProgress(thresholdNum);
           celebrateProgress(thresholdNum);
         }
+      });
+
+      // Registrar la acción de toggle
+      analytics.logAction('item_toggle', {
+        branch: selectedBranch,
+        code: sanitizedCode,
+        field,
+        newValue: !items[sanitizedCode]?.[field]
       });
 
       await storage.updateBranch(selectedBranch, {
