@@ -15,7 +15,7 @@ class FirebaseStorage {
 
   async initializeData() {
     try {
-      console.log('Initializing Firebase data...');
+      console.log('Checking Firebase data...');
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
@@ -29,6 +29,8 @@ class FirebaseStorage {
         }));
         await set(this.dbRef, initialData);
         console.log('Initial data created successfully');
+      } else {
+        console.log('Data structure already exists');
       }
     } catch (error: any) {
       console.error('Firebase Error:', error);
@@ -39,13 +41,19 @@ class FirebaseStorage {
   subscribeToData(callback: (data: BranchData[]) => void) {
     console.log('Estableciendo suscripción a Firebase...');
 
-    // Configurar la suscripción en tiempo real
+    // Configurar la suscripción en tiempo real con manejo de errores mejorado
     const unsubscribe = onValue(this.dbRef, 
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
           console.log('Datos recibidos de Firebase:', data);
-          callback(data);
+          // Asegurar que los datos son válidos antes de llamar al callback
+          if (Array.isArray(data)) {
+            callback(data);
+          } else {
+            console.error('Datos recibidos no son un array:', data);
+            callback([]);
+          }
         } else {
           console.log('No hay datos en Firebase');
           callback([]);
@@ -72,10 +80,9 @@ class FirebaseStorage {
 
       const currentData = snapshot.val() || [];
       const branchIndex = currentData.findIndex((b: BranchData) => b.id === branchId);
-
-      let updatedData;
       const timestamp = Date.now();
 
+      let updatedData;
       if (branchIndex !== -1) {
         // Actualizar sucursal existente
         updatedData = [...currentData];
@@ -105,11 +112,12 @@ class FirebaseStorage {
 
       console.log('Guardando datos actualizados:', updatedData);
 
-      // Usar update en lugar de set para mejor concurrencia
+      // Usar update en lugar de set para mejor manejo de concurrencia
       const updates = {};
       updatedData.forEach((branch, index) => {
         updates[`/${index}`] = branch;
       });
+
       await update(this.dbRef, updates);
       return updatedData;
     } catch (error: any) {
@@ -117,7 +125,6 @@ class FirebaseStorage {
       throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
     }
   }
-
   async resetAllData() {
     try {
       const initialData = AVAILABLE_BRANCHES.map(branch => ({

@@ -201,18 +201,6 @@ export default function Home() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
 
-  // Efecto para reiniciar la base de datos cuando se carga el componente
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        await storage.resetAllData();
-      } catch (error) {
-        console.error('Error al reiniciar datos:', error);
-      }
-    };
-    initializeData();
-  }, []); // Solo se ejecuta una vez al cargar el componente
-
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollButton(window.pageYOffset > 100);
