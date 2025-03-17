@@ -95,13 +95,24 @@ class FirebaseStorage {
         branch: branchId
       });
 
-      if (error.code === 'PERMISSION_DENIED') {
-        throw new Error('No tienes permisos para guardar cambios. Verifica las reglas de seguridad de Firebase.');
-      } else if (error.code === 'NETWORK_ERROR') {
-        throw new Error('Error de conexión. Verifica tu conexión a internet.');
-      } else {
-        throw new Error(`No se pudieron guardar los cambios: ${error.message}`);
-      }
+      throw new Error('No se pudieron guardar los cambios');
+    }
+  }
+
+  async resetAllData() {
+    try {
+      const initialData = AVAILABLE_BRANCHES.map(branch => ({
+        id: branch,
+        totalCompleted: 0,
+        noStock: 0,
+        items: {}
+      }));
+      await set(this.dbRef, initialData);
+      console.log('Base de datos reinicializada exitosamente');
+      return initialData;
+    } catch (error: any) {
+      console.error('Error al reiniciar datos:', error);
+      throw new Error('No se pudo reiniciar la base de datos');
     }
   }
 }

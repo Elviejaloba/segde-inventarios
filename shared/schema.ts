@@ -17,14 +17,22 @@ export const branchSchema = z.enum([
 
 export type Branch = z.infer<typeof branchSchema>;
 
-export const userSchema = z.object({
-  email: z.string().email(),
-  role: roleSchema,
-  branch: branchSchema.optional(), 
-  createdAt: z.string(),
+export const itemSchema = z.object({
+  completed: z.boolean().default(false),
+  hasStock: z.boolean().default(true),
+  lastUpdated: z.number().optional()
 });
 
-export type User = z.infer<typeof userSchema>;
+export type Item = z.infer<typeof itemSchema>;
+
+export const branchDataSchema = z.object({
+  id: branchSchema,
+  totalCompleted: z.number().default(0),
+  noStock: z.number().default(0),
+  items: z.record(z.string(), itemSchema).default({})
+});
+
+export type BranchData = z.infer<typeof branchDataSchema>;
 
 export const codeSchema = z.enum([
   "TI114F", "TI505", "138P", "118M", "400I", "505X", "506M", "305K",
@@ -36,16 +44,11 @@ export const codeSchema = z.enum([
 
 export type Code = z.infer<typeof codeSchema>;
 
-export interface ChecklistItem {
-  code: Code;
-  completed: boolean;
-  communicated: boolean;
-  updatedAt: number;
-  updatedBy: string;
-}
+export const userSchema = z.object({
+  email: z.string().email(),
+  role: roleSchema,
+  branch: branchSchema.optional(), 
+  createdAt: z.string(),
+});
 
-export interface BranchData {
-  items: Record<Code, ChecklistItem>;
-  totalCompleted: number;
-  totalCommunicated: number;
-}
+export type User = z.infer<typeof userSchema>;
