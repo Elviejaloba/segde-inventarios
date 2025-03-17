@@ -315,8 +315,8 @@ export default function Home() {
           />
         </div>
         <div className="text-sm text-foreground bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
-          <p className="font-medium text-primary">Esta herramienta sirve como ayuda memoria y seguimiento para ir monitoreando su avance.</p>
-          <p className="mt-1 text-muted-foreground">La comunicación sigue por mail con su adjunto correspondiente.</p>
+          <p className="font-medium text-primary">Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso.</p>
+          <p className="mt-1 text-muted-foreground">La comunicación continuará por correo electrónico con el archivo adjunto correspondiente.</p>
         </div>
       </div>
 
