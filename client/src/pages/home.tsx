@@ -303,9 +303,9 @@ export default function Home() {
                 setItems({});
                 setLastToastProgress(0);
               }}
-              className="gap-2 w-full sm:w-auto"
+              className="gap-2 w-full sm:w-auto bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 text-primary" />
               Ver Ranking
             </Button>
           )}
