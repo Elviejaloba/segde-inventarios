@@ -32,7 +32,7 @@ const CODES = [
 
 // Función para sanitizar códigos al guardar
 const sanitizeCode = (code: string) => {
-  return code.replace(/[/.#$[\]]/g, '-');
+  return code.toLowerCase().replace(/[/.#$[\]]/g, '-');
 };
 
 // Función para desanitizar códigos al mostrar
