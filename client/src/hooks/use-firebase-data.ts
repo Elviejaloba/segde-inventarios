@@ -3,18 +3,24 @@ import { storage } from '@/lib/storage';
 import { AVAILABLE_BRANCHES } from '@/lib/store';
 
 export function useFirebaseData() {
-  const [data, setData] = useState(storage.getData());
+  const [data, setData] = useState([]); // Initialize empty to avoid undefined
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     try {
-      const branchData = storage.getData();
-      setData(branchData);
+      // Inicializar datos si es necesario
+      storage.initializeData();
+
+      // Suscribirse a cambios en tiempo real
+      storage.subscribeToData((newData) => {
+        setData(newData);
+        setLoading(false);
+      });
     } catch (err) {
       console.error("Error loading data:", err);
       setError("Error al cargar los datos");
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -23,7 +29,7 @@ export function useFirebaseData() {
     setLoading(true);
     setError(null);
     try {
-      const branchData = storage.getData();
+      const branchData = await storage.getData();
       setData(branchData);
     } catch (err) {
       console.error("Error refreshing data:", err);

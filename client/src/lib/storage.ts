@@ -1,3 +1,5 @@
+import { ref, set, onValue, get } from 'firebase/database';
+import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES } from './store';
 
 interface BranchData {
@@ -7,32 +9,36 @@ interface BranchData {
   items: Record<string, { completed: boolean; hasStock: boolean }>;
 }
 
-class LocalStorage {
-  private storageKey = 'branch_data';
+class FirebaseStorage {
+  private dbRef = ref(db, 'branches');
 
-  constructor() {
-    this.initializeData();
-  }
-
-  private initializeData() {
-    if (!localStorage.getItem(this.storageKey)) {
+  async initializeData() {
+    const snapshot = await get(this.dbRef);
+    if (!snapshot.exists()) {
       const initialData = AVAILABLE_BRANCHES.map(branch => ({
         id: branch,
         totalCompleted: 0,
         noStock: 0,
         items: {}
       }));
-      localStorage.setItem(this.storageKey, JSON.stringify(initialData));
+      await set(this.dbRef, initialData);
     }
   }
 
-  getData(): BranchData[] {
-    const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : [];
+  subscribeToData(callback: (data: BranchData[]) => void) {
+    onValue(this.dbRef, (snapshot) => {
+      const data = snapshot.val() || [];
+      callback(data);
+    });
   }
 
-  updateBranch(branchId: Branch, data: Partial<BranchData>) {
-    const allData = this.getData();
+  async getData(): Promise<BranchData[]> {
+    const snapshot = await get(this.dbRef);
+    return snapshot.val() || [];
+  }
+
+  async updateBranch(branchId: Branch, data: Partial<BranchData>) {
+    const allData = await this.getData();
     const index = allData.findIndex(b => b.id === branchId);
 
     if (index !== -1) {
@@ -41,9 +47,9 @@ class LocalStorage {
       allData.push({ id: branchId, totalCompleted: 0, noStock: 0, items: {}, ...data });
     }
 
-    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+    await set(this.dbRef, allData);
     return allData;
   }
 }
 
-export const storage = new LocalStorage();
+export const storage = new FirebaseStorage();

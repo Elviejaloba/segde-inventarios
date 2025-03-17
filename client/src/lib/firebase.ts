@@ -1,18 +1,23 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 
 // Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: `https://${import.meta.env.VITE_FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`, // URL para Realtime Database
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with basic configuration
-const db = getFirestore(app);
+// Initialize Firestore
+const firestoreDb = getFirestore(app);
+
+// Initialize Realtime Database
+const db = getDatabase(app);
 
 // Retry operation with incremental backoff
 export const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
@@ -35,4 +40,4 @@ export const retryOperation = async (operation: () => Promise<any>, maxRetries =
   throw lastError;
 };
 
-export { app, db };
+export { app, db, firestoreDb };
