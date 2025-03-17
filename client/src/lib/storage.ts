@@ -19,6 +19,7 @@ class FirebaseStorage {
 
       if (!snapshot.exists()) {
         console.log('Creating initial data structure...');
+        // Asegurarnos de que todos los items comienzan con hasStock = true
         const initialData = AVAILABLE_BRANCHES.map(branch => ({
           id: branch,
           totalCompleted: 0,
