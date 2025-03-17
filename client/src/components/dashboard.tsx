@@ -106,7 +106,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  <Progress value={(branch.noStock / 30) * 100} className="w-24 h-2" />
                   <span className="text-sm whitespace-nowrap">{branch.noStock} items</span>
                 </div>
               </TableCell>
