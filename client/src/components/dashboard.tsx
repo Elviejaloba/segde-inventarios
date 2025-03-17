@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { Trophy, AlertCircle, RefreshCw } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
@@ -26,7 +26,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <LoadingSpinner />
+        <LoadingMascot size="sm" message="Cargando datos..." />
       </div>
     );
   }
