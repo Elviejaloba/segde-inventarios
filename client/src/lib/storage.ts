@@ -1,4 +1,4 @@
-import { ref, set, onValue, get } from 'firebase/database';
+import { ref, set, onValue, get, update } from 'firebase/database';
 import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES } from './store';
 
@@ -6,8 +6,8 @@ interface BranchData {
   id: string;
   totalCompleted: number;
   noStock: number;
-  items: Record<string, { completed: boolean; hasStock: boolean }>;
-  lastUpdated?: number; // Added lastUpdated field
+  items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  lastUpdated?: number;
 }
 
 class FirebaseStorage {
@@ -24,7 +24,8 @@ class FirebaseStorage {
           id: branch,
           totalCompleted: 0,
           noStock: 0,
-          items: {}
+          items: {},
+          lastUpdated: Date.now()
         }));
         await set(this.dbRef, initialData);
         console.log('Initial data created successfully');
@@ -37,17 +38,26 @@ class FirebaseStorage {
 
   subscribeToData(callback: (data: BranchData[]) => void) {
     console.log('Estableciendo suscripción a Firebase...');
-    return onValue(this.dbRef, 
+
+    // Configurar la suscripción en tiempo real
+    const unsubscribe = onValue(this.dbRef, 
       (snapshot) => {
-        const data = snapshot.val() || [];
-        console.log('Datos recibidos de Firebase:', data);
-        callback(data);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          console.log('Datos recibidos de Firebase:', data);
+          callback(data);
+        } else {
+          console.log('No hay datos en Firebase');
+          callback([]);
+        }
       },
       (error) => {
-        console.error('Firebase subscription error:', error);
+        console.error('Error en suscripción Firebase:', error);
         callback([]);
       }
     );
+
+    return unsubscribe;
   }
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
@@ -57,13 +67,17 @@ class FirebaseStorage {
 
       if (!snapshot.exists()) {
         await this.initializeData();
+        return this.updateBranch(branchId, data); // Reintentar después de inicializar
       }
 
       const currentData = snapshot.val() || [];
       const branchIndex = currentData.findIndex((b: BranchData) => b.id === branchId);
 
       let updatedData;
+      const timestamp = Date.now();
+
       if (branchIndex !== -1) {
+        // Actualizar sucursal existente
         updatedData = [...currentData];
         updatedData[branchIndex] = {
           ...updatedData[branchIndex],
@@ -72,9 +86,10 @@ class FirebaseStorage {
             ...updatedData[branchIndex].items,
             ...data.items
           },
-          lastUpdated: Date.now() 
+          lastUpdated: timestamp
         };
       } else {
+        // Crear nueva sucursal
         updatedData = [
           ...currentData,
           {
@@ -83,14 +98,19 @@ class FirebaseStorage {
             noStock: 0,
             items: {},
             ...data,
-            lastUpdated: Date.now()
+            lastUpdated: timestamp
           }
         ];
       }
 
       console.log('Guardando datos actualizados:', updatedData);
-      await set(this.dbRef, updatedData);
 
+      // Usar update en lugar de set para mejor concurrencia
+      const updates = {};
+      updatedData.forEach((branch, index) => {
+        updates[`/${index}`] = branch;
+      });
+      await update(this.dbRef, updates);
       return updatedData;
     } catch (error: any) {
       console.error('Error al actualizar sucursal:', error);
@@ -104,7 +124,8 @@ class FirebaseStorage {
         id: branch,
         totalCompleted: 0,
         noStock: 0,
-        items: {}
+        items: {},
+        lastUpdated: Date.now()
       }));
       await set(this.dbRef, initialData);
       console.log('Base de datos reinicializada exitosamente');

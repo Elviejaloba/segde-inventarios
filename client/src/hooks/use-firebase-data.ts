@@ -5,7 +5,8 @@ interface BranchData {
   id: string;
   totalCompleted: number;
   noStock: number;
-  items: Record<string, { completed: boolean; hasStock: boolean }>;
+  items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  lastUpdated?: number;
 }
 
 export function useFirebaseData() {
@@ -19,13 +20,18 @@ export function useFirebaseData() {
 
     const initAndSubscribe = async () => {
       try {
+        setLoading(true);
         await storage.initializeData();
 
         // Establecer la suscripción en tiempo real
         unsubscribe = storage.subscribeToData((newData) => {
           if (isMounted) {
             console.log('Datos actualizados recibidos:', newData);
-            setData(newData);
+            // Ordenar los datos por lastUpdated para mostrar los cambios más recientes
+            const sortedData = [...newData].sort((a, b) => 
+              (b.lastUpdated || 0) - (a.lastUpdated || 0)
+            );
+            setData(sortedData);
             setLoading(false);
             setError(null);
           }
