@@ -1,4 +1,4 @@
-import { ref, set, onValue, get } from 'firebase/database';
+import { ref, set, onValue, get, off } from 'firebase/database';
 import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES } from './store';
 import { retryOperation } from './firebase';
@@ -29,23 +29,30 @@ class FirebaseStorage {
       });
     } catch (error) {
       console.error('Error initializing Firebase data:', error);
-      throw new Error('No se pudo inicializar la conexión con Firebase');
+      // Continuar silenciosamente
     }
   }
 
-  subscribeToData(callback: (data: BranchData[]) => void) {
-    onValue(this.dbRef, (snapshot) => {
+  subscribeToData(callback: (data: BranchData[]) => void, errorCallback?: (error: Error) => void) {
+    const handleError = (error: Error) => {
+      console.error('Error en Firebase:', error);
+      errorCallback?.(error);
+    };
+
+    const handleData = (snapshot: any) => {
       try {
         const data = snapshot.val() || [];
         callback(data);
       } catch (error) {
-        console.error('Error reading Firebase data:', error);
+        handleError(error as Error);
         callback([]); // Retorna array vacío en caso de error
       }
-    }, (error) => {
-      console.error('Error subscribing to Firebase:', error);
-      callback([]); // Retorna array vacío en caso de error de suscripción
-    });
+    };
+
+    onValue(this.dbRef, handleData, handleError);
+
+    // Retornar función de limpieza
+    return () => off(this.dbRef);
   }
 
   async getData(): Promise<BranchData[]> {
@@ -73,7 +80,7 @@ class FirebaseStorage {
       return allData;
     } catch (error) {
       console.error('Error updating Firebase data:', error);
-      throw new Error('No se pudo actualizar los datos en Firebase');
+      throw new Error('No se pudo actualizar los datos');
     }
   }
 }

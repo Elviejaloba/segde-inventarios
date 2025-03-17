@@ -21,28 +21,29 @@ export function useFirebaseData() {
       storage.initializeData();
 
       // Suscribirse a cambios en tiempo real
-      storage.subscribeToData((newData) => {
+      const unsubscribe = storage.subscribeToData((newData) => {
         setData(newData);
         setLoading(false);
+      }, (error) => {
+        // Manejo silencioso de errores
+        console.error("Error en la sincronización:", error);
+        setLoading(false);
       });
+
+      // Cleanup subscription
+      return () => unsubscribe();
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Error al cargar los datos");
       setLoading(false);
     }
   }, []);
 
   const refetch = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const branchData = await storage.getData();
       setData(branchData);
-    } catch (err) {
-      console.error("Error refreshing data:", err);
-      setError("Error al actualizar los datos");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
     }
   };
 
