@@ -48,9 +48,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
+  // Asegurarse de que data es un array y mapearlo con valores por defecto
   const sortedBranches = [...AVAILABLE_BRANCHES]
     .map(branchId => {
-      const branchData = data.find(d => d.id === branchId) || {
+      const branchData = data?.find(d => d.id === branchId) || {
         id: branchId,
         totalCompleted: 0,
         noStock: 0,
@@ -58,7 +59,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       };
       return branchData;
     })
-    .sort((a, b) => b.totalCompleted - a.totalCompleted);
+    .sort((a, b) => (b.totalCompleted || 0) - (a.totalCompleted || 0));
 
   return (
     <div className="rounded-md border bg-card overflow-x-auto">
@@ -74,7 +75,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <TableBody>
           {sortedBranches.map((branch, index) => (
             <TableRow
-              key={branch.id}
+              key={`${branch.id}-${index}`}
               className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                 index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
                   index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
@@ -88,11 +89,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                     index === 0 ? 'text-yellow-500 animate-[bounce_3s_ease-in-out_infinite]' :
                       index === 1 ? 'text-gray-400 animate-[pulse_4s_ease-in-out_infinite]' :
                         'text-amber-600 animate-[pulse_4s_ease-in-out_infinite]'
-                  } ${
-                    index === 0 ? 'hover:scale-125' :
-                      index === 1 ? 'hover:scale-110' :
-                        'hover:scale-105'
-                  } transition-transform duration-500`} />
+                  }`} />
                 ) : (
                   index + 1
                 )}
@@ -100,8 +97,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               <TableCell>{branch.id}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  <Progress value={branch.totalCompleted} className="w-24 h-2" />
-                  <span className="text-sm whitespace-nowrap">{Math.round(branch.totalCompleted)}%</span>
+                  <Progress value={branch.totalCompleted || 0} className="w-24 h-2" />
+                  <span className="text-sm whitespace-nowrap">{Math.round(branch.totalCompleted || 0)}%</span>
                 </div>
               </TableCell>
               <TableCell>
