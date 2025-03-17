@@ -10,33 +10,36 @@ interface BranchData {
 }
 
 class FirebaseStorage {
-  private dbRef = ref(db, 'test'); // Primero probamos con una referencia simple
+  private dbRef = ref(db, 'test');
 
   async testConnection() {
     try {
-      console.log('Testing Firebase connection...');
-      const testRef = ref(db, 'connection-test');
+      // Try a simple write operation
+      const testRef = ref(db, 'test');
       await set(testRef, { timestamp: Date.now() });
+
+      // Verify we can read it back
       const snapshot = await get(testRef);
-      console.log('Connection test successful:', snapshot.exists());
-      return true;
+      return snapshot.exists();
     } catch (error) {
-      console.error('Connection test failed:', error);
+      console.error('Firebase connection test failed:', error);
       return false;
     }
   }
 
   async initializeData() {
     try {
-      // Primero verificamos la conexión
+      // First verify connection
       const isConnected = await this.testConnection();
       if (!isConnected) {
         throw new Error('No se pudo establecer conexión con Firebase');
       }
 
+      // Set reference to actual data
       this.dbRef = ref(db, 'branches');
-      const snapshot = await get(this.dbRef);
 
+      // Initialize data if needed
+      const snapshot = await get(this.dbRef);
       if (!snapshot.exists()) {
         const initialData = AVAILABLE_BRANCHES.map(branch => ({
           id: branch,
@@ -53,33 +56,30 @@ class FirebaseStorage {
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
-    onValue(this.dbRef, 
-      (snapshot) => {
-        const data = snapshot.val() || [];
-        callback(data);
-      }, 
-      (error) => {
-        console.error('Subscription error:', error);
-        callback([]);
-      }
-    );
+    onValue(this.dbRef, (snapshot) => {
+      const data = snapshot.val() || [];
+      callback(data);
+    }, (error) => {
+      console.error('Subscription error:', error);
+      callback([]);
+    });
   }
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
       const snapshot = await get(this.dbRef);
       const allData = snapshot.val() || [];
-      const index = allData.findIndex((b: BranchData) => b.id === branchId);
+      const index = allData.findIndex(b => b.id === branchId);
 
       if (index !== -1) {
         allData[index] = { ...allData[index], ...data };
       } else {
-        allData.push({ 
-          id: branchId, 
-          totalCompleted: 0, 
-          noStock: 0, 
-          items: {}, 
-          ...data 
+        allData.push({
+          id: branchId,
+          totalCompleted: 0,
+          noStock: 0,
+          items: {},
+          ...data
         });
       }
 
