@@ -15,7 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { storage } from "@/lib/storage";
 import confetti from 'canvas-confetti';
 
@@ -321,8 +321,8 @@ export default function Home() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center p-4">
-          <LoadingSpinner />
+        <div className="flex items-center justify-center p-8">
+          <LoadingMascot message="Actualizando datos..." />
         </div>
       ) : selectedBranch ? (
         <div>
