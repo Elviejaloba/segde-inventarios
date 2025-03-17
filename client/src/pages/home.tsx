@@ -34,11 +34,31 @@ interface ItemState {
 }
 
 const MOTIVATION_MESSAGES = {
-  20: { title: "¡Excelente inicio! 🌟", description: "¡Sigue así, vas por buen camino!" },
-  40: { title: "¡Vas muy bien! 💪", description: "¡Ya llevas casi la mitad!" },
-  60: { title: "¡Increíble progreso! 🚀", description: "¡Mantén ese ritmo!" },
-  80: { title: "¡Casi llegas! 🎯", description: "¡Te falta muy poco!" },
-  100: { title: "¡FELICITACIONES! 🎉", description: "¡Has completado todos los items!" }
+  20: { 
+    title: "¡Excelente inicio! 🌟", 
+    description: "¡Sigue así, vas por buen camino!",
+    variant: "success" as const
+  },
+  40: { 
+    title: "¡Vas muy bien! 💪", 
+    description: "¡Ya llevas casi la mitad!",
+    variant: "success" as const
+  },
+  60: { 
+    title: "¡Increíble progreso! 🚀", 
+    description: "¡Mantén ese ritmo!",
+    variant: "success" as const
+  },
+  80: { 
+    title: "¡Casi llegas! 🎯", 
+    description: "¡Te falta muy poco!",
+    variant: "success" as const
+  },
+  100: { 
+    title: "¡FELICITACIONES! 🎉", 
+    description: "¡Has completado todos los items!",
+    variant: "success" as const
+  }
 };
 
 const celebrateProgress = (progress: number) => {
@@ -50,10 +70,9 @@ const celebrateProgress = (progress: number) => {
     startVelocity: 30,
   };
 
-  const particleCount = Math.floor(progress * 2); // Más partículas a mayor progreso
+  const particleCount = Math.floor(progress * 2); 
 
   if (progress >= 20) {
-    // Celebración básica para 20%
     confetti({
       ...defaults,
       particleCount,
@@ -69,7 +88,6 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress >= 40) {
-    // Celebración en zigzag para 40%
     confetti({
       ...defaults,
       particleCount,
@@ -89,7 +107,6 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress >= 60) {
-    // Lluvia de confetti para 60%
     const duration = 3000;
     const end = Date.now() + duration;
 
@@ -117,7 +134,6 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress >= 80) {
-    // Explosión circular para 80%
     const circles = 3;
     for (let i = 0; i < circles; i++) {
       setTimeout(() => {
@@ -134,7 +150,6 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress === 100) {
-    // Gran final para 100%
     const duration = 5000;
     const end = Date.now() + duration;
 
@@ -189,7 +204,6 @@ export default function Home() {
     setSelectedBranch(branch);
 
     try {
-      // Usar los datos del hook useFirebaseData en lugar de getData
       const branchData = branchesData?.find(b => b.id === branch);
       setItems(branchData?.items || {});
     } catch (error) {
@@ -213,9 +227,9 @@ export default function Home() {
         ...(items[code] || { completed: false, hasStock: true }),
         [field]: !items[code]?.[field],
         ...(field === 'completed' ?
-          { hasStock: true } : // Si marca completado, tiene stock
+          { hasStock: true } :
           field === 'hasStock' ?
-            { completed: !items[code]?.hasStock } : // Si cambia stock, invierte completed
+            { completed: !items[code]?.hasStock } :
             {}
         )
       }
@@ -226,14 +240,14 @@ export default function Home() {
     try {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
 
-      // Verificar si alcanzamos un nuevo hito
       Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
         const thresholdNum = parseInt(threshold);
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
           toast({
             title: message.title,
             description: message.description,
-            duration: 5000,
+            variant: message.variant,
+            duration: 8000, 
           });
           setLastToastProgress(thresholdNum);
           celebrateProgress(thresholdNum);
@@ -247,11 +261,12 @@ export default function Home() {
       });
     } catch (error) {
       console.error("Error al guardar:", error);
-      setItems(items); // Revertir cambios en caso de error
+      setItems(items); 
       toast({
         title: "Error al guardar",
         description: "Intente nuevamente",
         variant: "destructive",
+        duration: 5000,
       });
     }
   };
