@@ -268,6 +268,7 @@ export default function Home() {
 
     try {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
+      const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
 
       Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
         const thresholdNum = parseInt(threshold);
@@ -294,7 +295,7 @@ export default function Home() {
       await storage.updateBranch(selectedBranch, {
         items: newItems,
         totalCompleted: completedPercentage,
-        noStock: Object.values(newItems).filter(i => !i.hasStock).length
+        noStock: noStockCount // Solo items explícitamente marcados como sin stock
       });
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -313,7 +314,7 @@ export default function Home() {
       ? (Object.values(items).filter(i => i.completed).length / CODES.length) * 100
       : 0,
     noStock: selectedBranch
-      ? (Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100
+      ? (Object.values(items).filter(i => i.hasStock === false).length / CODES.length) * 100
       : 0
   };
 
@@ -389,7 +390,7 @@ export default function Home() {
                 <div>
                   <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
                   <Progress
-                    value={Math.round((Object.values(items).filter(i => !i.hasStock).length / CODES.length) * 100)}
+                    value={progress.noStock}
                     className="h-2 bg-destructive/20"
                   />
                   <div className="text-sm text-muted-foreground mt-2">

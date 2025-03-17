@@ -23,7 +23,7 @@ class FirebaseStorage {
           id: branch,
           totalCompleted: 0,
           noStock: 0,
-          items: {}
+          items: {} // Los items se inicializarán cuando se interactúe con ellos
         }));
         await set(this.dbRef, initialData);
         console.log('Initial data created successfully');
