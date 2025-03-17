@@ -290,36 +290,31 @@ export default function Home() {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
       const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
 
-      Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
-        const thresholdNum = parseInt(threshold);
-        if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
-          toast({
-            title: message.title,
-            description: message.description,
-            variant: message.variant,
-            duration: 8000,
-          });
-          setLastToastProgress(thresholdNum);
-          celebrateProgress(thresholdNum);
-        }
+      // Agregar timestamp para forzar actualización
+      const updatedItems = Object.entries(newItems).reduce((acc, [key, value]) => {
+        acc[key] = {
+          ...value,
+          lastUpdated: Date.now()
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
+      await storage.updateBranch(selectedBranch, {
+        items: updatedItems,
+        totalCompleted: completedPercentage,
+        noStock: noStockCount,
       });
 
-      // Registrar la acción de toggle
+      // Registrar la acción
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
         code: sanitizedCode,
         field,
         newValue: !items[sanitizedCode]?.[field]
       });
-
-      await storage.updateBranch(selectedBranch, {
-        items: newItems,
-        totalCompleted: completedPercentage,
-        noStock: noStockCount // Solo items explícitamente marcados como sin stock
-      });
     } catch (error) {
       console.error("Error al guardar:", error);
-      setItems(items);
+      setItems(items); // Revertir cambios en caso de error
       toast({
         title: "Error al guardar",
         description: "Intente nuevamente",

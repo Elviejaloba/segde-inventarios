@@ -7,6 +7,7 @@ interface BranchData {
   totalCompleted: number;
   noStock: number;
   items: Record<string, { completed: boolean; hasStock: boolean }>;
+  lastUpdated?: number; // Added lastUpdated field
 }
 
 class FirebaseStorage {
@@ -51,8 +52,9 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
-      console.log(`Actualizando sucursal ${branchId}...`);
+      console.log(`Actualizando sucursal ${branchId}...`, data);
       const snapshot = await get(this.dbRef);
+
       if (!snapshot.exists()) {
         await this.initializeData();
       }
@@ -69,7 +71,8 @@ class FirebaseStorage {
           items: {
             ...updatedData[branchIndex].items,
             ...data.items
-          }
+          },
+          lastUpdated: Date.now() 
         };
       } else {
         updatedData = [
@@ -79,13 +82,15 @@ class FirebaseStorage {
             totalCompleted: 0,
             noStock: 0,
             items: {},
-            ...data
+            ...data,
+            lastUpdated: Date.now()
           }
         ];
       }
 
       console.log('Guardando datos actualizados:', updatedData);
       await set(this.dbRef, updatedData);
+
       return updatedData;
     } catch (error: any) {
       console.error('Error al actualizar sucursal:', error);
