@@ -19,14 +19,24 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { storage } from "@/lib/storage";
 import confetti from 'canvas-confetti';
 
-// Lista de códigos
+// Lista de códigos sanitizados (reemplazando caracteres no permitidos)
 const CODES = [
   '114F', '505', '138P', '118M', '400I', '505X', '506M', '305K',
-  '605E', '605T', '510M', '506C', '90/91/92 COLOR', '507M', '98KS00',
-  '158S00', '99 COLOR', 'TI125', '98KM', '150P', '30P/30S', '150M/P',
-  '451I', '81M', '81SM', '15S/15C', '7095 color', 'Cortinas black out',
-  'Cortinas tropical', 'Cover'
+  '605E', '605T', '510M', '506C', '90-91-92-COLOR', '507M', '98KS00',
+  '158S00', '99-COLOR', 'TI125', '98KM', '150P', '30P-30S', '150M-P',
+  '451I', '81M', '81SM', '15S-15C', '7095-color', 'Cortinas-black-out',
+  'Cortinas-tropical', 'Cover'
 ];
+
+// Función para sanitizar códigos al guardar
+const sanitizeCode = (code: string) => {
+  return code.replace(/[/.#$[\]]/g, '-');
+};
+
+// Función para desanitizar códigos al mostrar
+const desanitizeCode = (code: string) => {
+  return CODES.find(originalCode => sanitizeCode(originalCode) === code) || code;
+};
 
 interface ItemState {
   completed: boolean;
@@ -221,15 +231,16 @@ export default function Home() {
   const handleToggle = async (code: string, field: keyof ItemState) => {
     if (!selectedBranch || loading) return;
 
+    const sanitizedCode = sanitizeCode(code);
     const newItems = {
       ...items,
-      [code]: {
-        ...(items[code] || { completed: false, hasStock: true }),
-        [field]: !items[code]?.[field],
+      [sanitizedCode]: {
+        ...(items[sanitizedCode] || { completed: false, hasStock: true }),
+        [field]: !items[sanitizedCode]?.[field],
         ...(field === 'completed' ?
           { hasStock: true } :
           field === 'hasStock' ?
-            { completed: !items[code]?.hasStock } :
+            { completed: !items[sanitizedCode]?.hasStock } :
             {}
         )
       }
@@ -247,21 +258,21 @@ export default function Home() {
             title: message.title,
             description: message.description,
             variant: message.variant,
-            duration: 8000, 
+            duration: 8000,
           });
           setLastToastProgress(thresholdNum);
           celebrateProgress(thresholdNum);
         }
       });
 
-      storage.updateBranch(selectedBranch, {
+      await storage.updateBranch(selectedBranch, {
         items: newItems,
         totalCompleted: completedPercentage,
         noStock: Object.values(newItems).filter(i => !i.hasStock).length
       });
     } catch (error) {
       console.error("Error al guardar:", error);
-      setItems(items); 
+      setItems(items);
       toast({
         title: "Error al guardar",
         description: "Intente nuevamente",
@@ -368,15 +379,15 @@ export default function Home() {
                   <div
                     key={code}
                     className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
-                      items[code]?.completed ? 'bg-primary/10' : ''
+                      items[sanitizeCode(code)]?.completed ? 'bg-primary/10' : ''
                     }`}
                   >
-                    <span className="flex-1 font-mono">{code}</span>
+                    <span className="flex-1 font-mono">{desanitizeCode(code)}</span>
                     <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Completado</span>
                         <Checkbox
-                          checked={items[code]?.completed || false}
+                          checked={items[sanitizeCode(code)]?.completed || false}
                           onCheckedChange={() => handleToggle(code, 'completed')}
                           disabled={loading}
                         />
@@ -384,7 +395,7 @@ export default function Home() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Sin Stock</span>
                         <Checkbox
-                          checked={!items[code]?.hasStock}
+                          checked={!items[sanitizeCode(code)]?.hasStock}
                           onCheckedChange={() => handleToggle(code, 'hasStock')}
                           disabled={loading}
                         />
