@@ -287,6 +287,21 @@ export default function Home() {
         return acc;
       }, {} as Record<string, any>);
 
+      // Verificar progreso y mostrar notificaciones
+      Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
+        const thresholdNum = parseInt(threshold);
+        if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
+          toast({
+            title: message.title,
+            description: message.description,
+            variant: message.variant,
+            duration: 8000,
+          });
+          setLastToastProgress(thresholdNum);
+          celebrateProgress(thresholdNum);
+        }
+      });
+
       await storage.updateBranch(selectedBranch, {
         items: updatedItems,
         totalCompleted: completedPercentage,
