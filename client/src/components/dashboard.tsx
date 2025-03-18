@@ -48,63 +48,65 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
-  // Asegurarse de que data es un array y mapearlo con valores por defecto
-  const sortedBranches = [...AVAILABLE_BRANCHES]
-    .map(branchId => {
-      const branchData = data?.find(d => d.id === branchId) || {
-        id: branchId,
-        totalCompleted: 0,
-        noStock: 0,
-        items: {}
-      };
-      return branchData;
-    })
-    .sort((a, b) => (b.totalCompleted || 0) - (a.totalCompleted || 0));
+  // Asegurar que data es un array y mapearlo con valores por defecto
+  const branches = AVAILABLE_BRANCHES.map(branchId => {
+    const branchData = data?.find(d => d.id === branchId);
+    return {
+      id: branchId,
+      totalCompleted: branchData?.totalCompleted || 0,
+      noStock: branchData?.noStock || 0,
+      items: branchData?.items || {},
+      lastUpdated: branchData?.lastUpdated || 0
+    };
+  });
+
+  // Ordenar las sucursales por progreso
+  const sortedBranches = [...branches].sort((a, b) => b.totalCompleted - a.totalCompleted);
 
   return (
-    <div className="rounded-md border bg-card overflow-x-auto">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[80px] min-w-[60px]">Posición</TableHead>
-            <TableHead className="min-w-[120px]">Sucursal</TableHead>
-            <TableHead className="text-right min-w-[150px]">Progreso</TableHead>
-            <TableHead className="text-right min-w-[150px]">Sin Stock</TableHead>
+            <TableHead className="w-[80px]">Posición</TableHead>
+            <TableHead>Sucursal</TableHead>
+            <TableHead className="text-right">Progreso</TableHead>
+            <TableHead className="text-right">Sin Stock</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedBranches.map((branch, index) => (
             <TableRow
-              key={`${branch.id}-${index}`}
+              key={`branch-${branch.id}-${index}`}
               className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                 index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
-                  index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
-                    index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
+                index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
+                index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
               }`}
               onClick={() => onBranchSelect?.(branch.id)}
             >
               <TableCell>
                 {index < 3 ? (
-                  <Trophy className={`h-5 w-5 ${
-                    index === 0 ? 'text-yellow-500 animate-[bounce_3s_ease-in-out_infinite]' :
-                      index === 1 ? 'text-gray-400 animate-[pulse_4s_ease-in-out_infinite]' :
-                        'text-amber-600 animate-[pulse_4s_ease-in-out_infinite]'
-                  }`} />
+                  <Trophy 
+                    className={`h-5 w-5 ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-gray-400' :
+                      'text-amber-600'
+                    }`} 
+                  />
                 ) : (
-                  index + 1
+                  <span>{index + 1}</span>
                 )}
               </TableCell>
               <TableCell>{branch.id}</TableCell>
-              <TableCell>
+              <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Progress value={branch.totalCompleted || 0} className="w-24 h-2" />
-                  <span className="text-sm whitespace-nowrap">{Math.round(branch.totalCompleted || 0)}%</span>
+                  <Progress value={branch.totalCompleted} className="w-24 h-2" />
+                  <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
                 </div>
               </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-sm whitespace-nowrap">{branch.noStock || 0} items</span>
-                </div>
+              <TableCell className="text-right">
+                <span className="text-sm">{branch.noStock} items</span>
               </TableCell>
             </TableRow>
           ))}
