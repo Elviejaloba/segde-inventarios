@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   FileDown,
@@ -32,12 +31,13 @@ import {
   Legend,
   Cell
 } from 'recharts';
+import { BranchSelectorNew } from "@/components/branch-selector-new";
 
 const COLORS = ['#6366f1', '#f43f5e', '#22c55e', '#eab308', '#ec4899', '#8b5cf6'];
 
 export function ReportsView() {
-  const [selectedBranch, setSelectedBranch] = useState<string>("all");
-  const { metrics, loading } = useAjustesData(selectedBranch === "all" ? undefined : selectedBranch);
+  const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
+  const { metrics, loading } = useAjustesData(selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch);
 
   if (loading) {
     return (
@@ -51,9 +51,6 @@ export function ReportsView() {
     );
   }
 
-  const handleExport = () => {
-    // Implementar exportación
-  };
 
   const handleBranchChange = (value: string) => {
     setSelectedBranch(value);
@@ -61,34 +58,10 @@ export function ReportsView() {
 
   return (
     <div className="space-y-8">
-      {/* Selector de Sucursal Mejorado */}
-      <Card className="bg-card p-4">
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex-1">
-            <Select value={selectedBranch} onValueChange={handleBranchChange}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Seleccionar Sucursal" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las Sucursales</SelectItem>
-                {AVAILABLE_BRANCHES.map((branch) => (
-                  <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground mt-2">
-              {selectedBranch === "all" 
-                ? "Mostrando datos consolidados de todas las sucursales"
-                : `Mostrando datos de ${selectedBranch}`}
-            </p>
-          </div>
-
-          <Button variant="outline" className="gap-2" onClick={handleExport}>
-            <FileDown className="h-4 w-4" />
-            Exportar Reporte
-          </Button>
-        </div>
-      </Card>
+      <BranchSelectorNew 
+        value={selectedBranch}
+        onChange={handleBranchChange}
+      />
 
       {/* Resumen General */}
       <AnimatePresence>
@@ -146,7 +119,7 @@ export function ReportsView() {
             </CardContent>
           </Card>
 
-          {selectedBranch === "all" && (
+          {selectedBranch === "Todas las Sucursales" && (
             <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Top Sucursal</CardTitle>
