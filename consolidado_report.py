@@ -10,12 +10,6 @@ from io import BytesIO
 import docx
 import re
 
-st.set_page_config(
-    page_title="Reporte Final Consolidado",
-    page_icon="🏢",
-    layout="wide"
-)
-
 def parse_txt_file(file):
     """Parsea un archivo .txt y extrae los datos en formato estructurado"""
     try:
@@ -256,6 +250,13 @@ def generate_reporte_consolidado(df):
         )
 
 def main():
+    # Configuración de la página
+    st.set_page_config(
+        page_title="Reporte Final Consolidado",
+        page_icon="🏢",
+        layout="wide"
+    )
+
     # Título y descripción con estilo responsive
     st.markdown("""
         <h1 style='text-align: center;'>🏢 Reporte Final Consolidado</h1>
