@@ -3,43 +3,44 @@ import { storage } from './storage';
 import { SUCURSAL_MAPPING } from './store';
 
 // Función para convertir número serial de Excel a fecha
-function excelSerialDateToJSDate(serial: number) {
-  const utc_days  = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;  
-  const date_info = new Date(utc_value * 1000);
-  const dia = date_info.getDate().toString().padStart(2, '0');
-  const mes = (date_info.getMonth() + 1).toString().padStart(2, '0');
-  const año = date_info.getFullYear();
+function excelSerialDateToJSDate(serial: number): string {
+  // Excel usa 1900 como año base, y tiene un error con el año bisiesto 1900
+  // Ajustamos el offset para manejar esto
+  const EXCEL_START_DATE = new Date(1899, 11, 30);
+  const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  // Convertir el número serial a milisegundos y sumar al inicio de Excel
+  const date = new Date(EXCEL_START_DATE.getTime() + serial * MILLISECONDS_PER_DAY);
+
+  // Formatear la fecha como DD/MM/YYYY
+  const dia = date.getDate().toString().padStart(2, '0');
+  const mes = (date.getMonth() + 1).toString().padStart(2, '0');
+  const año = date.getFullYear();
 
   return `${dia}/${mes}/${año}`;
 }
 
-function formatearFecha(fechaStr: string): string {
+function formatearFecha(fechaStr: string | number): string {
   try {
     // Si es un número, tratar como número serial de Excel
-    if (!isNaN(Number(fechaStr))) {
-      return excelSerialDateToJSDate(Number(fechaStr));
+    if (typeof fechaStr === 'number' || !isNaN(Number(fechaStr))) {
+      const serial = Number(fechaStr);
+      console.log('Convirtiendo número serial de Excel:', serial);
+      const fechaFormateada = excelSerialDateToJSDate(serial);
+      console.log('Fecha convertida:', fechaFormateada);
+      return fechaFormateada;
     }
 
     // Si ya está en formato DD/MM/YYYY, devolverlo tal cual
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fechaStr)) {
+    if (typeof fechaStr === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fechaStr)) {
       return fechaStr;
     }
 
-    // Para otros formatos, intentar convertir
-    const fecha = new Date(fechaStr);
-    if (!isNaN(fecha.getTime())) {
-      const dia = fecha.getDate().toString().padStart(2, '0');
-      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-      const año = fecha.getFullYear();
-      return `${dia}/${mes}/${año}`;
-    }
-
-    console.warn('No se pudo formatear la fecha:', fechaStr);
-    return fechaStr;
+    console.warn('Formato de fecha no reconocido:', fechaStr);
+    return String(fechaStr);
   } catch (error) {
     console.error('Error al formatear fecha:', fechaStr, error);
-    return fechaStr;
+    return String(fechaStr);
   }
 }
 
@@ -58,7 +59,9 @@ export async function importExcelToFirebase(file: File) {
 
       // Formatear la fecha
       const fechaStr = row['Fecha movimiento'];
+      console.log('Fecha original del Excel:', fechaStr);
       const fecha = fechaStr ? formatearFecha(fechaStr) : '';
+      console.log('Fecha formateada:', fecha);
 
       return {
         nroComprobante: Number(row['Nro. comprobante']) || 0,
