@@ -18,28 +18,47 @@ with col1:
 with col2:
     st.title("Seguimiento de muestreo de invierno")
 
-# Selector de Sucursal
-st.selectbox(
-    "Selecciona Sucursal",
-    ["T.Mza", "T.SJuan", "T.SLuis", "Crisa2", "T.SRafael", "T.SMartin", "T.Maipu", "T.Tunuyan", "T.Lujan"],
-    index=None,
-    placeholder="Selecciona una sucursal..."
-)
-
 # Mensaje informativo
 st.info("Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso.")
 st.caption("La comunicación continuará por correo electrónico con el archivo adjunto correspondiente.")
 
-# Título de ranking
-st.subheader("Ranking de Sucursales")
-st.caption("Seleccione una sucursal para ver su detalle")
+# Menú lateral
+st.sidebar.title("Menú")
+opcion = st.sidebar.selectbox(
+    "Seleccione una opción:",
+    ["Inicio", "Cargar Archivo", "Ver Reporte"]
+)
 
-# Tabla de ranking simple
-data = {
-    "Posición": ["1", "2", "3", "4", "5", "6", "7", "8", "9"], #Expanded to match original data size.  Could be improved with dynamic data handling.
-    "Sucursal": ["T.SJuan", "T.SLuis", "T.Maipu", "T.Mendoza", "Crisa2", "T.SRafael", "T.SMartin", "T.Tunuyan", "T.Lujan"],
-    "Progreso": ["100%", "100%", "100%", "63%", "27%", "0%", "0%", "0%", "0%"],
-    "Sin Stock": ["0 items", "0 items", "0 items", "0 items", "7 items", "0 items", "0 items", "0 items", "0 items"]
-}
+# Lógica del menú
+if opcion == "Inicio":
+    st.write("Bienvenido al Sistema de Reportes")
+    st.write("Seleccione una opción del menú lateral para comenzar")
 
-st.table(data)
+elif opcion == "Cargar Archivo":
+    st.subheader("Cargar archivo Excel")
+    # Widget para cargar archivo
+    file = st.file_uploader(
+        "Seleccione un archivo Excel",
+        type=["xlsx"],
+        help="El archivo debe contener las columnas: Sucursal, Comprobante, Codigo, Diferencia"
+    )
+
+elif opcion == "Ver Reporte":
+    # Submenú para Resultados
+    sub_opcion = st.sidebar.radio(
+        "Tipo de Resultado:",
+        ["Por Sucursal", "Por Código", "Consolidado"]
+    )
+
+    # Mostrar contenido según la sub-opción seleccionada
+    if sub_opcion == "Por Sucursal":
+        st.header("Resultados por Sucursal")
+        st.write("Aquí se mostrarán los resultados por sucursal")
+
+    elif sub_opcion == "Por Código":
+        st.header("Resultados por Código")
+        st.write("Aquí se mostrarán los resultados por código")
+
+    elif sub_opcion == "Consolidado":
+        st.header("Resultados Consolidados")
+        st.write("Aquí se mostrarán los resultados consolidados")
