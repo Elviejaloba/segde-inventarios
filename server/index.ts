@@ -1,6 +1,6 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import express from "express";
 import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes";
 import cors from 'cors';
 
 const app = express();
@@ -12,38 +12,35 @@ app.use(cors());
 
 // Logging middleware simplificado
 app.use((req, res, next) => {
-  const start = Date.now();
   log(`${req.method} ${req.url}`);
   next();
 });
 
+// Ruta de salud básica
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+
 // Inicialización del servidor
+const server = app.listen(5000, '0.0.0.0', () => {
+  log('Servidor iniciado en puerto 5000');
+});
+
+// Configuración adicional después de que el servidor esté funcionando
 (async () => {
   try {
-    const server = app.listen(5000, '0.0.0.0', () => {
-      log('Servidor iniciado en puerto 5000');
-    });
-
-    // Configurar Vite primero en desarrollo
+    // Configurar Vite en desarrollo
     if (process.env.NODE_ENV !== 'production') {
-      log('Configurando Vite...');
       await setupVite(app, server);
     } else {
-      log('Configurando archivos estáticos...');
       serveStatic(app);
     }
 
     // Registrar rutas después de Vite
     await registerRoutes(app);
-
-    // Manejo de errores al final
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-      console.error('Error:', err);
-      res.status(500).json({ error: 'Error interno del servidor' });
-    });
-
   } catch (error) {
-    console.error('Error fatal:', error);
+    console.error('Error de configuración:', error);
     process.exit(1);
   }
 })();
