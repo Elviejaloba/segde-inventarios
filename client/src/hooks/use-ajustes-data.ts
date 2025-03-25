@@ -10,18 +10,20 @@ interface AjustesMetrics {
   distribucionTipos: Array<{
     tipo: string;
     cantidad: number;
+    unidades: number;
     porcentaje: number;
   }>;
   topSucursales: Array<{
     sucursal: string;
     cantidad: number;
+    unidades: number;
     variacion: number;
   }>;
   topArticulos: Array<{
     codigo: string;
     articulo: string;
     cantidad: number;
-    precioTotal: number;
+    movimientos: number;
   }>;
   resumen: {
     totalAjustes: number;
@@ -112,7 +114,7 @@ function calcularAjustesPorMes(data: any[]) {
       const fecha = new Date(ajuste.fechaMovimiento);
       const mes = fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
       if (!acc[mes]) acc[mes] = 0;
-      acc[mes]++;
+      acc[mes] += Math.abs(Number(ajuste.cantidad));
       return acc;
     } catch (error) {
       console.error('Error procesando ajuste:', ajuste);
@@ -135,18 +137,25 @@ function calcularDistribucionTipos(data: any[]) {
   console.log('Calculando distribución de tipos...');
   const tipos = data.reduce((acc, ajuste) => {
     const tipo = ajuste.tipoMovimiento;
-    if (!acc[tipo]) acc[tipo] = 0;
-    acc[tipo]++;
+    if (!acc[tipo]) {
+      acc[tipo] = {
+        cantidad: 0,
+        unidades: 0
+      };
+    }
+    acc[tipo].cantidad++;
+    acc[tipo].unidades += Math.abs(Number(ajuste.cantidad));
     return acc;
   }, {});
 
-  const total = Object.values(tipos).reduce((a: any, b: any) => a + b, 0);
+  const total = Object.values(tipos).reduce((a: any, b: any) => a + b.cantidad, 0);
 
   const resultado = Object.entries(tipos)
-    .map(([tipo, cantidad]) => ({
-      tipo,
-      cantidad: cantidad as number,
-      porcentaje: ((cantidad as number) / total) * 100
+    .map(([tipo, data]: [string, any]) => ({
+      tipo: tipo === 'E' ? 'Entrada' : 'Salida',
+      cantidad: data.cantidad,
+      unidades: data.unidades,
+      porcentaje: (data.cantidad / total) * 100
     }))
     .sort((a, b) => b.cantidad - a.cantidad);
 
@@ -160,15 +169,11 @@ function obtenerTopSucursales(data: any[]) {
     if (!acc[ajuste.sucursal]) {
       acc[ajuste.sucursal] = {
         cantidad: 0,
-        valorTotal: 0,
-        historico: []
+        unidades: 0
       };
     }
     acc[ajuste.sucursal].cantidad++;
-    acc[ajuste.sucursal].historico.push({
-      fecha: new Date(ajuste.fechaMovimiento),
-      cantidad: ajuste.cantidad
-    });
+    acc[ajuste.sucursal].unidades += Math.abs(Number(ajuste.cantidad));
     return acc;
   }, {});
 
@@ -176,7 +181,8 @@ function obtenerTopSucursales(data: any[]) {
     .map(([sucursal, data]: [string, any]) => ({
       sucursal,
       cantidad: data.cantidad,
-      variacion: calcularVariacion(data.historico)
+      unidades: data.unidades,
+      variacion: 0 // Se mantiene en 0 hasta implementar comparación histórica
     }))
     .sort((a, b) => b.cantidad - a.cantidad)
     .slice(0, 5);
@@ -194,10 +200,11 @@ function obtenerTopArticulos(data: any[]) {
         codigo: ajuste.codArticulo,
         articulo: ajuste.articulo,
         cantidad: 0,
-        precioTotal: 0
+        movimientos: 0
       };
     }
-    acc[key].cantidad += Math.abs(ajuste.cantidad);
+    acc[key].cantidad += Math.abs(Number(ajuste.cantidad));
+    acc[key].movimientos++;
     return acc;
   }, {});
 
@@ -213,22 +220,19 @@ function calcularResumenGeneral(data: any[]) {
   console.log('Calculando resumen general...');
   const totalAjustes = data.length;
 
-  // Calcular promedio diario de ajustes
+  // Calcular total de unidades en movimientos
+  const valorTotal = data.reduce((acc, ajuste) => acc + Math.abs(Number(ajuste.cantidad)), 0);
+
+  // Calcular promedio diario de movimientos
   const fechas = data.map(d => new Date(d.fechaMovimiento).toLocaleDateString());
   const diasUnicos = new Set(fechas).size;
   const promedioAjustesDiarios = totalAjustes / (diasUnicos || 1);
 
-  // Calcular tendencia
-  const tendencia = calcularTendencia(data);
-
-  // Calcular total de unidades ajustadas
-  const valorTotal = data.reduce((acc, ajuste) => acc + Math.abs(Number(ajuste.cantidad)), 0);
-
   const resultado = {
     totalAjustes,
-    valorTotal, // Ahora representa el total de unidades ajustadas
+    valorTotal,
     promedioAjustesDiarios,
-    tendencia
+    tendencia: 0 // Se mantiene en 0 hasta implementar comparación histórica
   };
 
   console.log('Resumen general calculado:', resultado);
