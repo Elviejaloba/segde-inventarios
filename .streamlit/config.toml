@@ -3,3 +3,8 @@ port = 8504
 address = "0.0.0.0"
 headless = true
 enableCORS = false
+runOnSave = true
+
+[browser]
+serverAddress = "0.0.0.0"
+serverPort = 8504
