@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
+import { ReportsView } from "@/components/reports-view";
 import { useState, useEffect } from "react";
 
 interface DashboardProps {
@@ -144,12 +145,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         </div>
       )}
 
-      {selectedView === 'reporte' && (
-        <div className="p-4 bg-card rounded-md">
-          <h2 className="text-xl font-semibold mb-4">Reportes de Ajustes</h2>
-          {/* Aquí irá el contenido de los reportes */}
-        </div>
-      )}
+      {selectedView === 'reporte' && <ReportsView />}
     </div>
   );
 }
