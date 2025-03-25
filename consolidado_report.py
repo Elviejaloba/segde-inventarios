@@ -7,15 +7,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
-import docx
-import re
+import docx # This import was in the original and not the edited code, so we keep it.
+import re # This import was in the original and not the edited code, so we keep it.
 
 def load_file(uploaded_file):
     """Carga y procesa archivos Excel"""
     try:
-        st.info(f"Procesando archivo de tipo: xlsx")
+        st.info("Procesando archivo Excel")
         df = pd.read_excel(uploaded_file)
-        
+
         # Validar columnas requeridas
         required_columns = ['Sucursal', 'Comprobante', 'Codigo', 'Diferencia']
         missing_columns = [col for col in required_columns if col not in df.columns]
@@ -146,7 +146,6 @@ def generate_reporte_consolidado(df):
             use_container_width=True
         )
 
-
 def main():
     # Configuración de la página
     st.set_page_config(
@@ -156,10 +155,8 @@ def main():
     )
 
     # Título y descripción
-    st.markdown("""
-        <h1 style='text-align: center;'>🏢 Reporte Final Consolidado</h1>
-        <p style='text-align: center;'>Sistema de análisis de ajustes por sucursal</p>
-    """, unsafe_allow_html=True)
+    st.title("🏢 Reporte Final Consolidado")
+    st.write("Sistema de análisis de ajustes por sucursal")
 
     # Crear menú lateral
     with st.sidebar:
