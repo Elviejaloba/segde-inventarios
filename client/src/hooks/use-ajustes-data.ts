@@ -213,7 +213,7 @@ function calcularResumenGeneral(data: any[]) {
   console.log('Calculando resumen general...');
   const totalAjustes = data.length;
 
-  // Calcular promedio diario
+  // Calcular promedio diario de ajustes
   const fechas = data.map(d => new Date(d.fechaMovimiento).toLocaleDateString());
   const diasUnicos = new Set(fechas).size;
   const promedioAjustesDiarios = totalAjustes / (diasUnicos || 1);
@@ -221,12 +221,12 @@ function calcularResumenGeneral(data: any[]) {
   // Calcular tendencia
   const tendencia = calcularTendencia(data);
 
-  // Calcular valor total (usando solo cantidad por ahora)
-  const valorTotal = data.reduce((acc, ajuste) => acc + Math.abs(ajuste.cantidad), 0);
+  // Calcular total de unidades ajustadas
+  const valorTotal = data.reduce((acc, ajuste) => acc + Math.abs(Number(ajuste.cantidad)), 0);
 
   const resultado = {
     totalAjustes,
-    valorTotal,
+    valorTotal, // Ahora representa el total de unidades ajustadas
     promedioAjustesDiarios,
     tendencia
   };

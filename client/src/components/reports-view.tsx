@@ -93,15 +93,15 @@ export function ReportsView() {
 
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Cantidad Ajustes</CardTitle>
               <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${metrics?.resumen.valorTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {metrics?.resumen.valorTotal.toLocaleString()} unidades
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Promedio diario: ${(metrics?.resumen.valorTotal / 30).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                Promedio diario: {(metrics?.resumen.valorTotal / 30).toLocaleString()} unidades
               </p>
             </CardContent>
           </Card>
