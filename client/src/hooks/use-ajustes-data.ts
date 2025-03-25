@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
+import { SUCURSAL_MAPPING } from '@/lib/store';
 
 interface AjustesMetrics {
   ajustesPorMes: Array<{
@@ -51,25 +52,19 @@ export function useAjustesData(sucursal?: string) {
 
           console.log('Datos originales recibidos:', data.length, 'registros');
 
-          // Filtrado simplificado
+          // Filtrado usando el mapeo inverso para encontrar sucursales
           let filteredData = data;
           if (sucursal && sucursal !== 'Todas las Sucursales') {
             filteredData = data.filter(d => {
-              const match = d.sucursal === sucursal;
-              if (match) {
+              // Buscar la sucursal en el mapeo
+              const sucursalMatch = d.sucursal === sucursal;
+              if (sucursalMatch) {
                 console.log('Coincidencia encontrada para sucursal:', sucursal);
               }
-              return match;
+              return sucursalMatch;
             });
             console.log(`Datos filtrados para sucursal ${sucursal}:`, filteredData.length);
           }
-
-          console.log('Datos después del filtrado:', {
-            sucursal,
-            totalRegistros: data.length,
-            registrosFiltrados: filteredData.length,
-            primerosRegistros: filteredData.slice(0, 3)
-          });
 
           if (mounted) {
             const ajustesPorMes = calcularAjustesPorMes(filteredData);
