@@ -1,12 +1,20 @@
 import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface BranchSelectorNewProps {
   value: string;
   onChange: (value: string) => void;
 }
 
+// Lista actualizada de sucursales basada en el Excel
 const SUCURSALES = [
   'Todas las Sucursales',
   'T.Mendoza',
@@ -22,26 +30,19 @@ const SUCURSALES = [
 
 export function BranchSelectorNew({ value, onChange }: BranchSelectorNewProps) {
   return (
-    <Card className="bg-card p-4">
-      <div className="flex items-center gap-4">
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder="Seleccionar Sucursal" />
-          </SelectTrigger>
-          <SelectContent>
-            {SUCURSALES.map((sucursal) => (
-              <SelectItem key={sucursal} value={sucursal}>
-                {sucursal}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="text-sm text-muted-foreground">
-          {value === 'Todas las Sucursales' 
-            ? "Mostrando datos consolidados de todas las sucursales"
-            : `Mostrando datos de ${value}`}
-        </div>
-      </div>
-    </Card>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[200px] bg-white">
+        <SelectValue placeholder="Seleccionar Sucursal" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {SUCURSALES.map((sucursal) => (
+            <SelectItem key={sucursal} value={sucursal}>
+              {sucursal}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
