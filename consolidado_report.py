@@ -61,122 +61,22 @@ elif opcion == "Ver Reporte":
         st.warning("⚠️ Primero debe cargar un archivo")
     else:
         df = st.session_state['datos']
-        
-        def generate_reporte_consolidado(df):
-            """Genera el reporte consolidado final"""
-            st.markdown("### 📊 Análisis Consolidado")
 
-            # Métricas principales
-            with st.container():
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    total_comprobantes = len(df)
-                    st.metric(
-                        "Total de Comprobantes",
-                        f"{total_comprobantes:,}",
-                        help="Número total de comprobantes procesados"
-                    )
-                with col2:
-                    total_diferencia = df['Diferencia'].abs().sum()
-                    st.metric(
-                        "Total de Diferencias",
-                        f"{total_diferencia:,.2f}",
-                        help="Suma total de diferencias en valor absoluto"
-                    )
-                with col3:
-                    promedio_diferencia = df['Diferencia'].abs().mean()
-                    st.metric(
-                        "Promedio de Diferencias",
-                        f"{promedio_diferencia:.2f}",
-                        help="Promedio de diferencias por comprobante"
-                    )
+        # Submenú para Resultados
+        sub_opcion = st.sidebar.radio(
+            "Tipo de Resultado:",
+            ["Por Sucursal", "Por Código", "Consolidado"]
+        )
 
-            # Análisis por sucursal
-            st.markdown("### 📈 Análisis por Sucursal")
+        # Mostrar contenido según la sub-opción seleccionada
+        if sub_opcion == "Por Sucursal":
+            st.header("Resultados por Sucursal")
+            st.write("Aquí se mostrarán los resultados por sucursal")
 
-            # Gráfico de comprobantes por sucursal
-            col1, col2 = st.columns(2)
-            with col1:
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sucursal_counts = df['Sucursal'].value_counts()
-                sns.barplot(x=sucursal_counts.values, y=sucursal_counts.index, orient='h')
-                plt.title('Comprobantes por Sucursal')
-                plt.xlabel('Cantidad de Comprobantes')
-                plt.tight_layout()
-                st.pyplot(fig)
-                plt.close()
+        elif sub_opcion == "Por Código":
+            st.header("Resultados por Código")
+            st.write("Aquí se mostrarán los resultados por código")
 
-            # Gráfico de diferencias por sucursal
-            with col2:
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sucursal_diffs = df.groupby('Sucursal')['Diferencia'].sum()
-                sns.barplot(x=sucursal_diffs.values, y=sucursal_diffs.index, orient='h')
-                plt.title('Total de Diferencias por Sucursal')
-                plt.xlabel('Suma de Diferencias')
-                plt.tight_layout()
-                st.pyplot(fig)
-                plt.close()
-
-            # Análisis de códigos
-            st.markdown("### 📊 Análisis de Códigos")
-
-            # Top 10 códigos con mayores diferencias
-            top_codigos = df.groupby('Codigo')['Diferencia'].agg(['count', 'mean', 'sum']).sort_values('sum', ascending=False).head(10)
-            top_codigos.columns = ['Cantidad', 'Promedio', 'Total']
-            st.dataframe(
-                top_codigos.style.format({
-                    'Cantidad': '{:,.0f}',
-                    'Promedio': '{:,.2f}',
-                    'Total': '{:,.2f}'
-                }),
-                use_container_width=True
-            )
-
-            # Detección de inconsistencias
-            st.markdown("### ⚠️ Detección de Inconsistencias")
-            umbral = df['Diferencia'].abs().mean() + df['Diferencia'].abs().std()
-            inconsistencias = df[df['Diferencia'].abs() > umbral].sort_values('Diferencia', ascending=False)
-
-            if not inconsistencias.empty:
-                st.warning(f"Se detectaron {len(inconsistencias)} comprobantes con diferencias significativas")
-                st.dataframe(
-                    inconsistencias,
-                    use_container_width=True,
-                    hide_index=True
-                )
-            else:
-                st.success("No se detectaron inconsistencias significativas")
-
-            # Exportación de datos
-            st.markdown("### 📥 Exportar Reporte")
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Excel
-                output_excel = BytesIO()
-                with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                    df.to_excel(writer, sheet_name='Datos Completos', index=False)
-                    top_codigos.to_excel(writer, sheet_name='Top Códigos')
-                    inconsistencias.to_excel(writer, sheet_name='Inconsistencias', index=False)
-
-                st.download_button(
-                    "📥 Descargar Excel",
-                    data=output_excel.getvalue(),
-                    file_name="reporte_consolidado.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-
-            with col2:
-                # CSV
-                output_csv = BytesIO()
-                df.to_csv(output_csv, index=False)
-                st.download_button(
-                    "📄 Descargar CSV",
-                    data=output_csv.getvalue(),
-                    file_name="reporte_consolidado.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-
-        generate_reporte_consolidado(df)
+        elif sub_opcion == "Consolidado":
+            st.header("Resultados Consolidados")
+            st.write("Aquí se mostrarán los resultados consolidados")

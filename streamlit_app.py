@@ -1,20 +1,43 @@
 import streamlit as st
 
-# Configuración básica
+# Configurar página
 st.set_page_config(
-    page_title="Test",
+    page_title="Sistema de Reportes",
     page_icon="📊",
     layout="wide"
 )
 
-# Menú lateral simple
-st.sidebar.title("Menú de prueba")
-opcion = st.sidebar.selectbox("Seleccione:", ["Opción 1", "Opción 2"])
+# Crear menú lateral
+st.sidebar.title("Menú")
+opcion = st.sidebar.selectbox(
+    "Seleccione una opción:",
+    ["Inicio", "Resultados"]
+)
 
-# Contenido principal
-st.title("Prueba Streamlit")
+# Título principal
+st.title("Sistema de Reportes")
 
-if opcion == "Opción 1":
-    st.write("Has seleccionado la Opción 1")
-else:
-    st.write("Has seleccionado la Opción 2")
+# Lógica básica del menú
+if opcion == "Inicio":
+    st.write("Bienvenido al Sistema de Reportes")
+    st.write("Seleccione una opción del menú lateral para comenzar")
+
+elif opcion == "Resultados":
+    # Submenú para Resultados
+    sub_opcion = st.sidebar.radio(
+        "Tipo de Resultado:",
+        ["Por Sucursal", "Por Código", "Consolidado"]
+    )
+
+    # Mostrar contenido según la sub-opción seleccionada
+    if sub_opcion == "Por Sucursal":
+        st.header("Resultados por Sucursal")
+        st.write("Aquí se mostrarán los resultados por sucursal")
+
+    elif sub_opcion == "Por Código":
+        st.header("Resultados por Código")
+        st.write("Aquí se mostrarán los resultados por código")
+
+    elif sub_opcion == "Consolidado":
+        st.header("Resultados Consolidados")
+        st.write("Aquí se mostrarán los resultados consolidados")

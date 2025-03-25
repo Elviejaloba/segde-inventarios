@@ -1,3 +1,7 @@
+import os
+# Configurar el puerto mediante variable de entorno
+os.environ['STREAMLIT_SERVER_PORT'] = '8504'
+
 import streamlit as st
 
 st.set_page_config(
