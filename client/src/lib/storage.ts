@@ -10,8 +10,27 @@ interface BranchData {
   lastUpdated?: number;
 }
 
+interface AjusteData {
+  tipo: string;
+  comprobante: string;
+  nroComprobante: number;
+  fechaMovimiento: string;
+  tipoMovimiento: string;
+  codArticulo: string;
+  articulo: string;
+  sucursal: string;
+  codClasificacion?: number;
+  cantidad: number;
+  cantidadDevuelta: number;
+  precioVenta: number;
+  stock1: number;
+  cantidad2: number;
+  cantidad2Devuelta: number;
+}
+
 class FirebaseStorage {
   private dbRef = ref(db, 'branches');
+  private ajustesRef = ref(db, 'ajustes');
 
   async initializeData() {
     try {
@@ -38,16 +57,25 @@ class FirebaseStorage {
     }
   }
 
+  async importAjustesData(ajustes: AjusteData[]) {
+    try {
+      console.log('Importando datos de ajustes a Firebase...');
+      await set(this.ajustesRef, ajustes);
+      console.log('Datos de ajustes importados exitosamente');
+    } catch (error: any) {
+      console.error('Error al importar ajustes:', error);
+      throw new Error('Error al importar datos de ajustes');
+    }
+  }
+
   subscribeToData(callback: (data: BranchData[]) => void) {
     console.log('Estableciendo suscripción a Firebase...');
 
-    // Configurar la suscripción en tiempo real con manejo de errores mejorado
     const unsubscribe = onValue(this.dbRef, 
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
           console.log('Datos recibidos de Firebase:', data);
-          // Asegurar que los datos son válidos antes de llamar al callback
           if (Array.isArray(data)) {
             callback(data);
           } else {
@@ -68,6 +96,23 @@ class FirebaseStorage {
     return unsubscribe;
   }
 
+  subscribeToAjustes(callback: (data: AjusteData[]) => void) {
+    return onValue(this.ajustesRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          callback(data);
+        } else {
+          callback([]);
+        }
+      },
+      (error) => {
+        console.error('Error al obtener ajustes:', error);
+        callback([]);
+      }
+    );
+  }
+
   async updateBranch(branchId: Branch, data: Partial<BranchData>) {
     try {
       console.log(`Actualizando sucursal ${branchId}...`, data);
@@ -75,7 +120,7 @@ class FirebaseStorage {
 
       if (!snapshot.exists()) {
         await this.initializeData();
-        return this.updateBranch(branchId, data); // Reintentar después de inicializar
+        return this.updateBranch(branchId, data);
       }
 
       const currentData = snapshot.val() || [];
@@ -84,7 +129,6 @@ class FirebaseStorage {
 
       let updatedData;
       if (branchIndex !== -1) {
-        // Actualizar sucursal existente
         updatedData = [...currentData];
         updatedData[branchIndex] = {
           ...updatedData[branchIndex],
@@ -96,7 +140,6 @@ class FirebaseStorage {
           lastUpdated: timestamp
         };
       } else {
-        // Crear nueva sucursal
         updatedData = [
           ...currentData,
           {
@@ -112,7 +155,6 @@ class FirebaseStorage {
 
       console.log('Guardando datos actualizados:', updatedData);
 
-      // Usar update en lugar de set para mejor manejo de concurrencia
       const updates = {};
       updatedData.forEach((branch, index) => {
         updates[`/${index}`] = branch;
