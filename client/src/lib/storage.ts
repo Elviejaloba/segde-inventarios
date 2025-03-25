@@ -11,21 +11,13 @@ interface BranchData {
 }
 
 interface AjusteData {
-  tipo: string;
-  comprobante: string;
   nroComprobante: number;
   fechaMovimiento: string;
   tipoMovimiento: string;
   codArticulo: string;
   articulo: string;
   sucursal: string;
-  codClasificacion?: number;
   cantidad: number;
-  cantidadDevuelta: number;
-  precioVenta: number;
-  stock1: number;
-  cantidad2: number;
-  cantidad2Devuelta: number;
 }
 
 class FirebaseStorage {
@@ -67,7 +59,7 @@ class FirebaseStorage {
   subscribeToData(callback: (data: BranchData[]) => void) {
     console.log('Estableciendo suscripción a Firebase...');
 
-    const unsubscribe = onValue(this.dbRef, 
+    const unsubscribe = onValue(this.dbRef,
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
@@ -94,7 +86,7 @@ class FirebaseStorage {
 
   subscribeToAjustes(callback: (data: AjusteData[]) => void) {
     console.log('Estableciendo suscripción a ajustes...');
-    return onValue(this.ajustesRef, 
+    return onValue(this.ajustesRef,
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();

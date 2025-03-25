@@ -54,7 +54,12 @@ export function useAjustesData(sucursal?: string) {
 
           // Filtrar datos por sucursal si es necesario
           const filteredData = sucursal && sucursal !== 'Todas las Sucursales' 
-            ? data.filter(d => d.sucursal.trim() === sucursal.trim())
+            ? data.filter(d => {
+                const sucursalData = d.sucursal?.trim();
+                const sucursalFilter = sucursal?.trim();
+                console.log('Comparando sucursales:', sucursalData, 'con', sucursalFilter);
+                return sucursalData === sucursalFilter;
+              })
             : data;
 
           console.log('Datos filtrados para', sucursal || 'todas', ':', filteredData.length, 'registros');

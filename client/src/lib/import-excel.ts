@@ -10,26 +10,19 @@ export async function importExcelToFirebase(file: File) {
 
     console.log('Procesando', jsonData.length, 'registros de Excel');
 
-    // Transformar datos al formato esperado
+    // Transformar datos al formato esperado, manteniendo los nombres exactos de las columnas
     const ajustes = jsonData.map((row: any) => ({
-      tipo: row['Tipo'] || '',
-      comprobante: row['Comprobante'] || '',
       nroComprobante: Number(row['Nro. comprobante']) || 0,
       fechaMovimiento: row['Fecha movimiento'] || '',
       tipoMovimiento: row['Tipo de Movimiento'] || '',
       codArticulo: row['Cód. Artículo'] || '',
       articulo: row['Artículo'] || '',
-      sucursal: row['Sucursal'] || '',
-      codClasificacion: Number(row['Cód. clasificación']) || 0,
-      cantidad: Number(row['Cantidad']) || 0,
-      cantidadDevuelta: Number(row['Cantidad devuelta']) || 0,
-      precioVenta: Number(row['Precio de venta']) || 0,
-      stock1: Number(row['Stock 1']) || 0,
-      cantidad2: Number(row['Cantidad 2']) || 0,
-      cantidad2Devuelta: Number(row['Cantidad 2 devuelta']) || 0,
+      sucursal: row['Sucursal']?.trim() || '', // Aseguramos que el nombre de la sucursal esté limpio
+      cantidad: Number(row['Cantidad']) || 0
     }));
 
     console.log('Datos transformados:', ajustes.length, 'registros válidos');
+    console.log('Ejemplo de sucursal:', ajustes[0]?.sucursal);
 
     // Cargar datos a Firebase
     await storage.updateAjustes(ajustes);
