@@ -53,11 +53,14 @@ export function useAjustesData(sucursal?: string) {
           console.log('Datos recibidos:', data.length, 'registros');
 
           // Filtrar datos por sucursal si es necesario
-          const filteredData = sucursal ? data.filter(d => d.sucursal === sucursal) : data;
+          const filteredData = sucursal && sucursal !== 'Todas las Sucursales' 
+            ? data.filter(d => d.sucursal.trim() === sucursal.trim())
+            : data;
+
           console.log('Datos filtrados para', sucursal || 'todas', ':', filteredData.length, 'registros');
 
           try {
-            // Calcular métricas
+            // Calcular métricas con los datos filtrados
             const ajustesPorMes = calcularAjustesPorMes(filteredData);
             const distribucionTipos = calcularDistribucionTipos(filteredData);
             const topSucursales = obtenerTopSucursales(filteredData);
