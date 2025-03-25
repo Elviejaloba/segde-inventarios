@@ -2,46 +2,38 @@ import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
 interface AjustesMetrics {
-  // Métricas por sucursal
   ajustesPorSucursal: Array<{
     sucursal: string;
     cantidad: number;
   }>;
-  // Distribución E/S
   distribucionMovimientos: Array<{
     tipo: string;
     cantidad: number;
     porcentaje: number;
   }>;
-  // Cantidades ajustadas
   cantidadesAjustadas: Array<{
     sucursal: string;
     cantidadTotal: number;
   }>;
-  // Evolución stock
   evolucionStock: Array<{
     articulo: string;
     stockAntes: number;
     stockDespues: number;
   }>;
-  // Top artículos
   articulosMasAjustados: Array<{
     codigo: string;
     articulo: string;
     cantidadAjustes: number;
   }>;
-  // Distribución temporal
   distribucionTemporal: Array<{
     fecha: string;
     cantidad: number;
   }>;
-  // Devoluciones
   comparativaDevoluciones: Array<{
     sucursal: string;
     cantidadAjustada: number;
     cantidadDevuelta: number;
   }>;
-  // Impacto económico
   impactoEconomico: Array<{
     cantidad: number;
     precioVenta: number;
@@ -60,26 +52,28 @@ export function useAjustesData(sucursal?: string) {
     const loadData = async () => {
       try {
         setLoading(true);
-
-        // Suscribirse a los datos de ajustes
         const unsubscribe = storage.subscribeToAjustes((data) => {
-          if (!mounted) return;
+          if (!mounted || !data) return;
 
-          // Procesar datos para cada métrica
+          // Filtrar datos por sucursal si es necesario
+          const filteredData = sucursal ? data.filter(d => d.sucursal === sucursal) : data;
+
           const metrics: AjustesMetrics = {
-            ajustesPorSucursal: procesarAjustesPorSucursal(data, sucursal),
-            distribucionMovimientos: calcularDistribucionMovimientos(data, sucursal),
-            cantidadesAjustadas: calcularCantidadesAjustadas(data, sucursal),
-            evolucionStock: calcularEvolucionStock(data, sucursal),
-            articulosMasAjustados: obtenerArticulosMasAjustados(data, sucursal),
-            distribucionTemporal: calcularDistribucionTemporal(data, sucursal),
-            comparativaDevoluciones: calcularComparativaDevoluciones(data, sucursal),
-            impactoEconomico: calcularImpactoEconomico(data, sucursal),
+            ajustesPorSucursal: procesarAjustesPorSucursal(filteredData),
+            distribucionMovimientos: calcularDistribucionMovimientos(filteredData),
+            cantidadesAjustadas: calcularCantidadesAjustadas(filteredData),
+            evolucionStock: calcularEvolucionStock(filteredData),
+            articulosMasAjustados: obtenerArticulosMasAjustados(filteredData),
+            distribucionTemporal: calcularDistribucionTemporal(filteredData),
+            comparativaDevoluciones: calcularComparativaDevoluciones(filteredData),
+            impactoEconomico: calcularImpactoEconomico(filteredData),
           };
 
-          setMetrics(metrics);
-          setError(null);
-          setLoading(false);
+          if (mounted) {
+            setMetrics(metrics);
+            setError(null);
+            setLoading(false);
+          }
         });
 
         return unsubscribe;
@@ -102,43 +96,117 @@ export function useAjustesData(sucursal?: string) {
   return { metrics, loading, error };
 }
 
-// Funciones auxiliares de procesamiento
-function procesarAjustesPorSucursal(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function procesarAjustesPorSucursal(data: any[]) {
+  const sucursales = {};
+  data.forEach(ajuste => {
+    if (!sucursales[ajuste.sucursal]) {
+      sucursales[ajuste.sucursal] = 0;
+    }
+    sucursales[ajuste.sucursal]++;
+  });
+
+  return Object.entries(sucursales).map(([sucursal, cantidad]) => ({
+    sucursal,
+    cantidad: cantidad as number
+  }));
 }
 
-function calcularDistribucionMovimientos(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularDistribucionMovimientos(data: any[]) {
+  const movimientos = data.reduce((acc, ajuste) => {
+    const tipo = ajuste.tipoMovimiento;
+    if (!acc[tipo]) acc[tipo] = 0;
+    acc[tipo]++;
+    return acc;
+  }, {});
+
+  const total = Object.values(movimientos).reduce((a: number, b: number) => a + b, 0);
+
+  return Object.entries(movimientos).map(([tipo, cantidad]) => ({
+    tipo,
+    cantidad: cantidad as number,
+    porcentaje: ((cantidad as number) / total) * 100
+  }));
 }
 
-function calcularCantidadesAjustadas(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularCantidadesAjustadas(data: any[]) {
+  const cantidades = data.reduce((acc, ajuste) => {
+    if (!acc[ajuste.sucursal]) {
+      acc[ajuste.sucursal] = 0;
+    }
+    acc[ajuste.sucursal] += Math.abs(ajuste.cantidad);
+    return acc;
+  }, {});
+
+  return Object.entries(cantidades).map(([sucursal, cantidadTotal]) => ({
+    sucursal,
+    cantidadTotal: cantidadTotal as number
+  }));
 }
 
-function calcularEvolucionStock(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularEvolucionStock(data: any[]) {
+  return data.map(ajuste => ({
+    articulo: ajuste.articulo,
+    stockAntes: ajuste.stock1,
+    stockDespues: ajuste.stock1 + ajuste.cantidad
+  }));
 }
 
-function obtenerArticulosMasAjustados(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function obtenerArticulosMasAjustados(data: any[]) {
+  const articulos = data.reduce((acc, ajuste) => {
+    const key = `${ajuste.codArticulo}-${ajuste.articulo}`;
+    if (!acc[key]) {
+      acc[key] = {
+        codigo: ajuste.codArticulo,
+        articulo: ajuste.articulo,
+        cantidadAjustes: 0
+      };
+    }
+    acc[key].cantidadAjustes++;
+    return acc;
+  }, {});
+
+  return Object.values(articulos)
+    .sort((a: any, b: any) => b.cantidadAjustes - a.cantidadAjustes)
+    .slice(0, 10);
 }
 
-function calcularDistribucionTemporal(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularDistribucionTemporal(data: any[]) {
+  const distribucion = data.reduce((acc, ajuste) => {
+    const fecha = new Date(ajuste.fechaMovimiento).toLocaleDateString();
+    if (!acc[fecha]) acc[fecha] = 0;
+    acc[fecha]++;
+    return acc;
+  }, {});
+
+  return Object.entries(distribucion)
+    .map(([fecha, cantidad]) => ({
+      fecha,
+      cantidad: cantidad as number
+    }))
+    .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 }
 
-function calcularComparativaDevoluciones(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularComparativaDevoluciones(data: any[]) {
+  return data.reduce((acc, ajuste) => {
+    const idx = acc.findIndex(item => item.sucursal === ajuste.sucursal);
+    if (idx === -1) {
+      acc.push({
+        sucursal: ajuste.sucursal,
+        cantidadAjustada: Math.abs(ajuste.cantidad),
+        cantidadDevuelta: ajuste.cantidadDevuelta || 0
+      });
+    } else {
+      acc[idx].cantidadAjustada += Math.abs(ajuste.cantidad);
+      acc[idx].cantidadDevuelta += ajuste.cantidadDevuelta || 0;
+    }
+    return acc;
+  }, []);
 }
 
-function calcularImpactoEconomico(data: any[], sucursal?: string) {
-  // Implementar lógica de procesamiento
-  return [];
+function calcularImpactoEconomico(data: any[]) {
+  return data.map(ajuste => ({
+    cantidad: Math.abs(ajuste.cantidad),
+    precioVenta: ajuste.precioVenta,
+    impacto: Math.abs(ajuste.cantidad) * ajuste.precioVenta
+  }));
 }

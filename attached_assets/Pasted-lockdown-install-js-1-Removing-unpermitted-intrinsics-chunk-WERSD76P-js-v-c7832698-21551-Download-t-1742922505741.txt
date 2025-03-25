@@ -1,0 +1,173 @@
+lockdown-install.js:1 Removing unpermitted intrinsics
+chunk-WERSD76P.js?v=c7832698:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+firebase.ts:6 Environment check: Object
+firebase.ts:23 Firebase configuration: Object
+firebase.ts:40 Using production Firebase database
+firebase.ts:43 Firebase initialization complete
+storage.ts:37 Checking Firebase data...
+storage.ts:37 Checking Firebase data...
+contentView.bundle.js:31 Uncaught (in promise) Error: User not found
+    at t.ExtensionGuideService.<anonymous> (contentView.bundle.js:31:109882)
+    at Generator.next (<anonymous>)
+    at a (contentView.bundle.js:31:109169)
+storage.ts:52 Data structure already exists
+storage.ts:61 Estableciendo suscripción a Firebase...
+storage.ts:67 Datos recibidos de Firebase: Array(9)
+storage.ts:52 Data structure already exists
+storage.ts:61 Estableciendo suscripción a Firebase...
+storage.ts:67 Datos recibidos de Firebase: Array(9)
+storage.ts:37 Checking Firebase data...
+storage.ts:52 Data structure already exists
+storage.ts:61 Estableciendo suscripción a Firebase...
+storage.ts:67 Datos recibidos de Firebase: Array(9)
+@radix-ui_react-select.js?v=c7832698:1944 Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at @radix-ui_react-select.js?v=c7832698:1944:13
+    at renderWithHooks (chunk-WERSD76P.js?v=c7832698:11548:26)
+    at updateForwardRef (chunk-WERSD76P.js?v=c7832698:14325:28)
+    at beginWork (chunk-WERSD76P.js?v=c7832698:15946:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=c7832698:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=c7832698:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=c7832698:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=c7832698:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=c7832698:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=c7832698:19137:13)
+@radix-ui_react-select.js?v=c7832698:1944 Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at @radix-ui_react-select.js?v=c7832698:1944:13
+    at renderWithHooks (chunk-WERSD76P.js?v=c7832698:11548:26)
+    at updateForwardRef (chunk-WERSD76P.js?v=c7832698:14325:28)
+    at beginWork (chunk-WERSD76P.js?v=c7832698:15946:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=c7832698:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=c7832698:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=c7832698:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=c7832698:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=c7832698:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=c7832698:19137:13)
+@radix-ui_react-select.js?v=c7832698:1944 Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at @radix-ui_react-select.js?v=c7832698:1944:13
+    at renderWithHooks (chunk-WERSD76P.js?v=c7832698:11548:26)
+    at updateForwardRef (chunk-WERSD76P.js?v=c7832698:14325:28)
+    at beginWork (chunk-WERSD76P.js?v=c7832698:15946:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=c7832698:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=c7832698:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=c7832698:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=c7832698:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=c7832698:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=c7832698:19137:13)
+@radix-ui_react-select.js?v=c7832698:1944 Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at @radix-ui_react-select.js?v=c7832698:1944:13
+    at renderWithHooks (chunk-WERSD76P.js?v=c7832698:11548:26)
+    at updateForwardRef (chunk-WERSD76P.js?v=c7832698:14325:28)
+    at beginWork (chunk-WERSD76P.js?v=c7832698:15946:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=c7832698:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=c7832698:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=c7832698:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=c7832698:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=c7832698:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=c7832698:19137:13)
+chunk-WERSD76P.js?v=c7832698:14032 The above error occurred in the <SelectItem> component:
+
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1917:7
+    at _c11 (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/ui/select.tsx:207:13)
+    at div
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=c7832698:41:13
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:98:15
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1828:13
+    at div
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:98:15
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1372:58
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=c7832698:41:13
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OMWHH5VK.js?v=c7832698:258:22
+    at SelectPortal
+    at _c7 (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/ui/select.tsx:122:12)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:28:15)
+    at CollectionProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:89:13)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5E5TUVNB.js?v=c7832698:1927:15)
+    at Popper (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5E5TUVNB.js?v=c7832698:1984:11)
+    at Select (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1160:5)
+    at div
+    at div
+    at div
+    at ReportsView (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/reports-view.tsx:46:47)
+    at div
+    at Dashboard (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/dashboard.tsx:28:29)
+    at div
+    at div
+    at Home (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/pages/home.tsx:212:47)
+    at main
+    at div
+    at Layout (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/layout.tsx:22:26)
+    at QueryClientProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=c7832698:2805:3)
+    at ThemeProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/hooks/use-theme.ts:7:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=c7832698:14032
+chunk-WERSD76P.js?v=c7832698:14032 The above error occurred in the <SelectItem> component:
+
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1917:7
+    at _c11 (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/ui/select.tsx:207:13)
+    at div
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=c7832698:41:13
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:98:15
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1828:13
+    at div
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:98:15
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1372:58
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:52:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-TQG5UYZM.js?v=c7832698:33:11
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RDHMCQ3E.js?v=c7832698:41:13
+    at https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OMWHH5VK.js?v=c7832698:258:22
+    at SelectPortal
+    at _c7 (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/ui/select.tsx:122:12)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:28:15)
+    at CollectionProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-FIACSFZ6.js?v=c7832698:89:13)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PIMNZ2IF.js?v=c7832698:32:15)
+    at Provider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5E5TUVNB.js?v=c7832698:1927:15)
+    at Popper (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5E5TUVNB.js?v=c7832698:1984:11)
+    at Select (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=c7832698:1160:5)
+    at div
+    at div
+    at div
+    at ReportsView (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/reports-view.tsx:46:47)
+    at div
+    at Dashboard (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/dashboard.tsx:28:29)
+    at div
+    at div
+    at Home (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/pages/home.tsx:212:47)
+    at main
+    at div
+    at Layout (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/components/layout.tsx:22:26)
+    at QueryClientProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=c7832698:2805:3)
+    at ThemeProvider (https://03532e9b-cfc4-41d0-8512-e0654446a660-00-3kf634f4twjt7.kirk.replit.dev/src/hooks/use-theme.ts:7:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=c7832698:14032
+chunk-WERSD76P.js?v=c7832698:9129 Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at @radix-ui_react-select.js?v=c7832698:1944:13
+    at renderWithHooks (chunk-WERSD76P.js?v=c7832698:11548:26)
+    at updateForwardRef (chunk-WERSD76P.js?v=c7832698:14325:28)
+    at beginWork (chunk-WERSD76P.js?v=c7832698:15946:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=c7832698:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=c7832698:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=c7832698:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=c7832698:19116:15)
+    at recoverFromConcurrentError (chunk-WERSD76P.js?v=c7832698:18736:28)
+    at performSyncWorkOnRoot (chunk-WERSD76P.js?v=c7832698:18879:28)

@@ -28,10 +28,10 @@ import {
 const COLORS = ['#6366f1', '#f43f5e', '#22c55e', '#eab308', '#ec4899', '#8b5cf6'];
 
 export function ReportsView() {
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
-  const [selectedArticulo, setSelectedArticulo] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>("all");
+  const [selectedArticulo, setSelectedArticulo] = useState<string>("all");
   const { data: branchData, loading: branchLoading } = useFirebaseData();
-  const { metrics, loading: metricsLoading } = useAjustesData(selectedBranch);
+  const { metrics, loading: metricsLoading } = useAjustesData(selectedBranch === "all" ? undefined : selectedBranch);
 
   const loading = branchLoading || metricsLoading;
 
@@ -54,10 +54,10 @@ export function ReportsView() {
         <div className="flex gap-2">
           <Select value={selectedBranch} onValueChange={setSelectedBranch}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todas las Sucursales" />
+              <SelectValue placeholder="Seleccionar Sucursal" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las Sucursales</SelectItem>
+              <SelectItem value="all">Todas las Sucursales</SelectItem>
               {AVAILABLE_BRANCHES.map((branch) => (
                 <SelectItem key={branch} value={branch}>{branch}</SelectItem>
               ))}
@@ -66,11 +66,11 @@ export function ReportsView() {
 
           <Select value={selectedArticulo} onValueChange={setSelectedArticulo}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todos los Artículos" />
+              <SelectValue placeholder="Seleccionar Artículo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los Artículos</SelectItem>
-              {/* Lista de artículos */}
+              <SelectItem value="all">Todos los Artículos</SelectItem>
+              {/* Lista de artículos se agregará después */}
             </SelectContent>
           </Select>
         </div>
