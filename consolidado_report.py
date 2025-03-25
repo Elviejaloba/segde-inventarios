@@ -8,26 +8,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 
-# Configuración básica de la página
+# Configurar página
 st.set_page_config(
-    page_title="Reporte Consolidado",
+    page_title="Sistema de Reportes",
     page_icon="📊",
     layout="wide"
+)
+
+# Crear menú lateral
+st.sidebar.title("Menú")
+opcion = st.sidebar.selectbox(
+    "Seleccione una opción:",
+    ["Inicio", "Cargar Archivo", "Ver Reporte"]
 )
 
 # Título principal
 st.title("Sistema de Reportes")
 
-# Menú lateral
-with st.sidebar:
-    st.header("Menú")
-    opcion = st.radio(
-        "Seleccione una opción:",
-        ["Cargar archivo", "Ver reporte"]
-    )
+# Lógica básica del menú
+if opcion == "Inicio":
+    st.write("Bienvenido al Sistema de Reportes")
+    st.write("Seleccione una opción del menú lateral para comenzar")
 
-# Lógica principal
-if opcion == "Cargar archivo":
+elif opcion == "Cargar Archivo":
     st.subheader("Cargar archivo Excel")
 
     # Widget para cargar archivo
@@ -53,7 +56,7 @@ if opcion == "Cargar archivo":
         except Exception as e:
             st.error(f"Error al cargar el archivo: {str(e)}")
 
-elif opcion == "Ver reporte":
+elif opcion == "Ver Reporte":
     if 'datos' not in st.session_state:
         st.warning("⚠️ Primero debe cargar un archivo")
     else:
@@ -177,7 +180,3 @@ elif opcion == "Ver reporte":
                 )
 
         generate_reporte_consolidado(df)
-
-
-if __name__ == "__main__":
-    pass
