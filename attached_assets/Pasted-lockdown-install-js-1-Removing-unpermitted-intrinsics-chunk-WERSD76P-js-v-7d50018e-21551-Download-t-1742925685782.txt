@@ -1,0 +1,55 @@
+lockdown-install.js:1 Removing unpermitted intrinsics
+chunk-WERSD76P.js?v=7d50018e:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+firebase.ts:6 Environment check: Object
+firebase.ts:23 Firebase configuration: Object
+firebase.ts:40 Using production Firebase database
+firebase.ts:43 Firebase initialization complete
+storage.ts:37 Checking Firebase data...
+storage.ts:37 Checking Firebase data...
+contentView.bundle.js:31 Uncaught (in promise) Error: User not found
+    at t.ExtensionGuideService.<anonymous> (contentView.bundle.js:31:109882)
+    at Generator.next (<anonymous>)
+    at a (contentView.bundle.js:31:109169)
+(anónimo) @ contentView.bundle.js:31
+a @ contentView.bundle.js:31
+contentView.bundle.js:31 Uncaught (in promise) Error: User not found
+    at t.ExtensionGuideService.<anonymous> (contentView.bundle.js:31:109882)
+    at Generator.next (<anonymous>)
+    at a (contentView.bundle.js:31:109169)
+(anónimo) @ contentView.bundle.js:31
+a @ contentView.bundle.js:31
+Promise.then
+u @ contentView.bundle.js:31
+a @ contentView.bundle.js:31
+Promise.then
+u @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+r @ contentView.bundle.js:31
+getGuide @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+r @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+Uu @ contentView.bundle.js:9
+t.unstable_runWithPriority @ contentView.bundle.js:31
+$o @ contentView.bundle.js:9
+Mu @ contentView.bundle.js:9
+bu @ contentView.bundle.js:9
+(anónimo) @ contentView.bundle.js:9
+t.unstable_runWithPriority @ contentView.bundle.js:31
+$o @ contentView.bundle.js:9
+Yo @ contentView.bundle.js:9
+Qo @ contentView.bundle.js:9
+hu @ contentView.bundle.js:9
+el @ contentView.bundle.js:9
+al @ contentView.bundle.js:9
+t.render @ contentView.bundle.js:9
+i @ contentView.bundle.js:31
+(anónimo) @ contentView.bundle.js:31
+storage.ts:52 Data structure already exists
+storage.ts:52 Data structure already exists
+storage.ts:68 Estableciendo suscripción a Firebase...
+storage.ts:68 Estableciendo suscripción a Firebase...
+storage.ts:74 Datos recibidos de Firebase: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+storage.ts:74 Datos recibidos de Firebase: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
