@@ -166,6 +166,33 @@ def generate_consolidated_report(df):
         st.pyplot(fig)
         plt.close()
 
+        # Análisis de diferencias por sucursal
+        st.markdown("### 📊 Análisis de Diferencias")
+
+        # Gráfico de diferencias por sucursal
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.boxplot(data=df, x='Sucursal', y='Diferencia')
+        plt.xticks(rotation=45)
+        plt.title('Distribución de Diferencias por Sucursal')
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close()
+
+        # Identificar comprobantes con inconsistencias
+        st.markdown("### ⚠️ Comprobantes con Inconsistencias")
+        umbral_diferencia = df['Diferencia'].abs().mean() + df['Diferencia'].abs().std()
+        inconsistencias = df[df['Diferencia'].abs() > umbral_diferencia].sort_values('Diferencia', ascending=False)
+
+        if not inconsistencias.empty:
+            st.warning(f"Se encontraron {len(inconsistencias)} comprobantes con diferencias significativas")
+            st.dataframe(
+                inconsistencias,
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.success("No se encontraron inconsistencias significativas")
+
         # Detalles por sucursal en formato acordeón
         st.markdown("### 📋 Detalles por Sucursal")
         sucursales = df['Sucursal'].unique()
