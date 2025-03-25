@@ -16,14 +16,14 @@ export function ImportExcel() {
       setLoading(true);
       await importExcelToFirebase(file);
       toast({
-        title: "Importación exitosa",
-        description: "Los datos han sido cargados a Firebase.",
+        title: "¡Datos cargados!",
+        description: "Los datos se han importado correctamente",
       });
     } catch (error) {
       console.error('Error al importar:', error);
       toast({
         title: "Error en la importación",
-        description: "No se pudieron importar los datos. Por favor, intente nuevamente.",
+        description: "No se pudieron cargar los datos. Por favor, intente nuevamente.",
         variant: "destructive",
       });
     } finally {
@@ -54,7 +54,7 @@ export function ImportExcel() {
             className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
           />
         ) : (
-          'Cargar datos de prueba'
+          'Cargar datos de Excel'
         )}
       </label>
     </div>

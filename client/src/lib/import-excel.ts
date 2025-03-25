@@ -8,6 +8,8 @@ export async function importExcelToFirebase(file: File) {
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+    console.log('Procesando', jsonData.length, 'registros de Excel');
+
     // Transformar datos al formato esperado
     const ajustes = jsonData.map((row: any) => ({
       tipo: row['Tipo'] || '',
@@ -18,7 +20,7 @@ export async function importExcelToFirebase(file: File) {
       codArticulo: row['Cód. Artículo'] || '',
       articulo: row['Artículo'] || '',
       sucursal: row['Sucursal'] || '',
-      codClasificacion: Number(row['Cód. clasificación']) || null,
+      codClasificacion: Number(row['Cód. clasificación']) || 0,
       cantidad: Number(row['Cantidad']) || 0,
       cantidadDevuelta: Number(row['Cantidad devuelta']) || 0,
       precioVenta: Number(row['Precio de venta']) || 0,
@@ -27,9 +29,12 @@ export async function importExcelToFirebase(file: File) {
       cantidad2Devuelta: Number(row['Cantidad 2 devuelta']) || 0,
     }));
 
+    console.log('Datos transformados:', ajustes.length, 'registros válidos');
+
     // Cargar datos a Firebase
     await storage.updateAjustes(ajustes);
-    console.log('Datos importados exitosamente:', ajustes.length, 'registros');
+    console.log('Datos cargados exitosamente a Firebase');
+
     return true;
   } catch (error) {
     console.error('Error al importar Excel:', error);
