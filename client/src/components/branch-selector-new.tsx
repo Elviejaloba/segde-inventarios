@@ -8,25 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AVAILABLE_BRANCHES } from "@/lib/store";
 
 interface BranchSelectorNewProps {
   value: string;
   onChange: (value: string) => void;
 }
-
-// Lista actualizada de sucursales basada en el Excel
-const SUCURSALES = [
-  'Todas las Sucursales',
-  'T.Mendoza',
-  'T.SJuan',
-  'T.SLuis',
-  'Crisa2',
-  'T.SMartin',
-  'T.Tunuyan',
-  'T.Lujan',
-  'T.Maipu',
-  'T.SRafael'
-];
 
 export function BranchSelectorNew({ value, onChange }: BranchSelectorNewProps) {
   return (
@@ -36,7 +23,8 @@ export function BranchSelectorNew({ value, onChange }: BranchSelectorNewProps) {
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          {SUCURSALES.map((sucursal) => (
+          <SelectItem value="Todas las Sucursales">Todas las Sucursales</SelectItem>
+          {AVAILABLE_BRANCHES.map((sucursal) => (
             <SelectItem key={sucursal} value={sucursal}>
               {sucursal}
             </SelectItem>

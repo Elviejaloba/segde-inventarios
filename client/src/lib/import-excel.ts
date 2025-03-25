@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { storage } from './storage';
+import { SUCURSAL_MAPPING } from './store';
 
 export async function importExcelToFirebase(file: File) {
   try {
@@ -11,18 +12,23 @@ export async function importExcelToFirebase(file: File) {
     console.log('Procesando', jsonData.length, 'registros de Excel');
 
     // Transformar datos al formato esperado, manteniendo los nombres exactos de las columnas
-    const ajustes = jsonData.map((row: any) => ({
-      nroComprobante: Number(row['Nro. comprobante']) || 0,
-      fechaMovimiento: row['Fecha movimiento'] || '',
-      tipoMovimiento: row['Tipo de Movimiento'] || '',
-      codArticulo: row['Cód. Artículo'] || '',
-      articulo: row['Artículo'] || '',
-      sucursal: row['Sucursal']?.trim() || '', // Aseguramos que el nombre de la sucursal esté limpio
-      cantidad: Number(row['Cantidad']) || 0
-    }));
+    const ajustes = jsonData.map((row: any) => {
+      const sucursalExcel = row['Sucursal']?.trim() || '';
+      const sucursalFirebase = SUCURSAL_MAPPING[sucursalExcel] || sucursalExcel;
+
+      return {
+        nroComprobante: Number(row['Nro. comprobante']) || 0,
+        fechaMovimiento: row['Fecha movimiento'] || '',
+        tipoMovimiento: row['Tipo de Movimiento'] || '',
+        codArticulo: row['Cód. Artículo'] || '',
+        articulo: row['Artículo'] || '',
+        sucursal: sucursalFirebase,
+        cantidad: Number(row['Cantidad']) || 0
+      };
+    });
 
     console.log('Datos transformados:', ajustes.length, 'registros válidos');
-    console.log('Ejemplo de sucursal:', ajustes[0]?.sucursal);
+    console.log('Ejemplo de sucursal transformada:', ajustes[0]?.sucursal);
 
     // Cargar datos a Firebase
     await storage.updateAjustes(ajustes);
