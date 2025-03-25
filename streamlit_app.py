@@ -18,9 +18,49 @@ with col1:
 with col2:
     st.title("Seguimiento de muestreo de invierno")
 
-# Mensaje informativo
+# Selector de Sucursal
+sucursal = st.selectbox(
+    "Selecciona Sucursal",
+    ["T.Mza", "T.SJuan", "T.SLuis", "Crisa2", "T.SRafael", "T.SMartin", "T.Maipu", "T.Tunuyan", "T.Lujan"],
+    index=None,
+    placeholder="Selecciona una sucursal..."
+)
+
+# Mensaje informativo en un recuadro gris claro
 st.info("Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso.")
 st.caption("La comunicación continuará por correo electrónico con el archivo adjunto correspondiente.")
+
+# Título de Ranking
+st.markdown("### 📊 Ranking de Sucursales")
+st.caption("Seleccione una sucursal para ver su detalle")
+
+# Crear tabla de ranking con estilo
+ranking_data = {
+    "Posición": ["🏆", "🥈", "🥉", "4", "5"],
+    "Sucursal": ["T.SJuan", "T.SLuis", "T.Maipu", "T.Mendoza", "Crisa2"],
+    "Progreso": ["100%", "100%", "100%", "63%", "27%"],
+    "Sin Stock": ["0 items", "0 items", "0 items", "0 items", "7 items"]
+}
+
+# Aplicar estilo a la tabla
+st.markdown("""
+<style>
+    .dataframe {
+        font-size: 14px !important;
+    }
+    .dataframe td {
+        text-align: left !important;
+        padding: 8px !important;
+    }
+    .dataframe th {
+        text-align: left !important;
+        padding: 8px !important;
+        background-color: #f8f9fa !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.table(ranking_data)
 
 # Menú lateral
 st.sidebar.title("Menú")
@@ -44,21 +84,4 @@ elif opcion == "Cargar Archivo":
     )
 
 elif opcion == "Ver Reporte":
-    # Submenú para Resultados
-    sub_opcion = st.sidebar.radio(
-        "Tipo de Resultado:",
-        ["Por Sucursal", "Por Código", "Consolidado"]
-    )
-
-    # Mostrar contenido según la sub-opción seleccionada
-    if sub_opcion == "Por Sucursal":
-        st.header("Resultados por Sucursal")
-        st.write("Aquí se mostrarán los resultados por sucursal")
-
-    elif sub_opcion == "Por Código":
-        st.header("Resultados por Código")
-        st.write("Aquí se mostrarán los resultados por código")
-
-    elif sub_opcion == "Consolidado":
-        st.header("Resultados Consolidados")
-        st.write("Aquí se mostrarán los resultados consolidados")
+    pass #The report is already displayed above.
