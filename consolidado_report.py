@@ -20,7 +20,6 @@ def parse_txt_file(file):
     """Parsea un archivo .txt y extrae los datos en formato estructurado"""
     try:
         content = file.getvalue().decode('utf-8')
-        # Asumimos un formato específico en el archivo txt
         pattern = r'Sucursal:\s*(\w+)\s*Comprobante:\s*(\w+)\s*Codigo:\s*(\w+)\s*Diferencia:\s*(-?\d+\.?\d*)'
         matches = re.findall(pattern, content)
 
@@ -248,23 +247,32 @@ def main():
         <p style='text-align: center;'>Sistema de análisis de ajustes por sucursal</p>
     """, unsafe_allow_html=True)
 
-    # Área de carga de archivo con mejor UX
-    with st.container():
-        st.markdown("### 📁 Cargar Datos")
-        uploaded_file = st.file_uploader(
-            "Seleccione el archivo con los datos de ajustes",
-            type=['xlsx', 'txt', 'doc', 'docx'],
-            help="El archivo debe contener los campos: Sucursal, Comprobante, Codigo, Diferencia"
-        )
+    # Crear menú lateral
+    menu = st.sidebar.selectbox(
+        "🔍 Seleccione el tipo de reporte",
+        ["Ajustes por Sucursal", "Reporte Final Consolidado"]
+    )
 
-    if uploaded_file is not None:
-        df = load_file(uploaded_file)
-        if df is not None:
-            generate_consolidated_report(df)
+    if menu == "Reporte Final Consolidado":
+        # Área de carga de archivo con mejor UX
+        with st.container():
+            st.markdown("### 📁 Cargar Datos")
+            uploaded_file = st.file_uploader(
+                "Seleccione el archivo con los datos de ajustes",
+                type=['xlsx', 'txt', 'doc', 'docx'],
+                help="El archivo debe contener los campos: Sucursal, Comprobante, Codigo, Diferencia"
+            )
 
-            # Opción para ver datos crudos
-            with st.expander("🔍 Ver Datos Crudos", expanded=False):
-                st.dataframe(df, use_container_width=True)
+        if uploaded_file is not None:
+            df = load_file(uploaded_file)
+            if df is not None:
+                generate_consolidated_report(df)
+
+                # Opción para ver datos crudos
+                with st.expander("🔍 Ver Datos Crudos", expanded=False):
+                    st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Seleccione 'Reporte Final Consolidado' en el menú lateral para ver el análisis detallado.")
 
 if __name__ == "__main__":
     main()
