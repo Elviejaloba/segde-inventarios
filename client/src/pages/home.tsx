@@ -43,6 +43,7 @@ const desanitizeCode = (code: string) => {
 interface ItemState {
   completed: boolean;
   hasStock: boolean;
+  lastUpdated?: number; // Added lastUpdated field
 }
 
 const MOTIVATION_MESSAGES = {
@@ -210,17 +211,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Registrar vista de página
     analytics.logPageView('home');
-
-    // Registrar duración de sesión
     const startTime = Date.now();
     return () => {
-      const duration = (Date.now() - startTime) / 1000; // Convertir a segundos
+      const duration = (Date.now() - startTime) / 1000;
       analytics.logSessionDuration(duration);
     };
-  }, []); // Added analytics tracking
-
+  }, []);
 
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
@@ -230,7 +227,6 @@ export default function Home() {
 
     try {
       const branchData = branchesData?.find(b => b.id === branch);
-      // Inicializar items con hasStock: true por defecto
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
         const existingItem = branchData?.items?.[sanitizedCode];
@@ -239,9 +235,15 @@ export default function Home() {
       }, {});
 
       setItems(initializedItems);
-
-      // Registrar cambio de sucursal
       analytics.logAction('branch_select', { branch });
+
+      // Restaurar el último progreso guardado
+      if (branchData?.totalCompleted) {
+        const progress = Math.floor(branchData.totalCompleted);
+        setLastToastProgress(progress);
+      } else {
+        setLastToastProgress(0);
+      }
     } catch (error) {
       console.error("Error al cargar datos:", error);
       toast({
@@ -278,7 +280,6 @@ export default function Home() {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
       const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
 
-      // Agregar timestamp para forzar actualización
       const updatedItems = Object.entries(newItems).reduce((acc, [key, value]) => {
         acc[key] = {
           ...value,
@@ -287,8 +288,7 @@ export default function Home() {
         return acc;
       }, {} as Record<string, any>);
 
-      // Verificar progreso y mostrar notificaciones
-      Object.entries(MOTIVATION_MESSAGES).forEach(([threshold, message]) => {
+      for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
           toast({
@@ -298,9 +298,9 @@ export default function Home() {
             duration: 8000,
           });
           setLastToastProgress(thresholdNum);
-          celebrateProgress(thresholdNum);
+          setTimeout(() => celebrateProgress(thresholdNum), 100);
         }
-      });
+      }
 
       await storage.updateBranch(selectedBranch, {
         items: updatedItems,
@@ -308,7 +308,6 @@ export default function Home() {
         noStock: noStockCount,
       });
 
-      // Registrar la acción
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
         code: sanitizedCode,
@@ -317,7 +316,7 @@ export default function Home() {
       });
     } catch (error) {
       console.error("Error al guardar:", error);
-      setItems(items); // Revertir cambios en caso de error
+      setItems(items);
       toast({
         title: "Error al guardar",
         description: "Intente nuevamente",

@@ -26,7 +26,6 @@ export function useFirebaseData() {
         // Establecer la suscripción en tiempo real
         unsubscribe = storage.subscribeToData((newData) => {
           if (isMounted) {
-            console.log('Datos actualizados recibidos:', newData);
             // Ordenar los datos por lastUpdated para mostrar los cambios más recientes
             const sortedData = [...newData].sort((a, b) => 
               (b.lastUpdated || 0) - (a.lastUpdated || 0)

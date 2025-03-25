@@ -1,19 +1,107 @@
+import os
+# Configurar el puerto mediante variable de entorno
+os.environ['STREAMLIT_SERVER_PORT'] = '8504'
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
+import docx
+import re
 
-# Configurar Streamlit para usar el puerto 8503
 st.set_page_config(
     page_title="Reporte Final Consolidado",
     page_icon="🏢",
     layout="wide"
 )
 
-def load_excel_file(uploaded_file):
+def parse_txt_file(file):
+    """Parsea un archivo .txt y extrae los datos en formato estructurado"""
     try:
-        df = pd.read_excel(uploaded_file)
+        content = file.getvalue().decode('utf-8')
+        # Asumimos un formato específico en el archivo txt
+        pattern = r'Sucursal:\s*(\w+)\s*Comprobante:\s*(\w+)\s*Codigo:\s*(\w+)\s*Diferencia:\s*(-?\d+\.?\d*)'
+        matches = re.findall(pattern, content)
+
+        if not matches:
+            st.error("No se encontraron datos en el formato esperado en el archivo .txt")
+            return None
+
+        data = {
+            'Sucursal': [m[0] for m in matches],
+            'Comprobante': [m[1] for m in matches],
+            'Codigo': [m[2] for m in matches],
+            'Diferencia': [float(m[3]) for m in matches]
+        }
+        return pd.DataFrame(data)
+    except Exception as e:
+        st.error(f"Error al procesar el archivo .txt: {str(e)}")
+        return None
+
+def parse_docx_file(file):
+    """Parsea un archivo .docx y extrae los datos en formato estructurado"""
+    try:
+        doc = docx.Document(BytesIO(file.getvalue()))
+        data = []
+        current_record = {}
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text:
+                if current_record and len(current_record) == 4:  # Asegurar que tenga todos los campos
+                    data.append(current_record)
+                current_record = {}
+                continue
+
+            # Buscar campos clave
+            if ':' in text:
+                key, value = text.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+
+                if key == 'Sucursal':
+                    current_record['Sucursal'] = value
+                elif key == 'Comprobante':
+                    current_record['Comprobante'] = value
+                elif key == 'Codigo':
+                    current_record['Codigo'] = value
+                elif key == 'Diferencia':
+                    try:
+                        current_record['Diferencia'] = float(value)
+                    except ValueError:
+                        current_record['Diferencia'] = 0.0
+
+        if current_record and len(current_record) == 4:  # Agregar el último registro si está completo
+            data.append(current_record)
+
+        if not data:
+            st.error("No se encontraron datos en el formato esperado en el archivo .docx")
+            return None
+
+        return pd.DataFrame(data)
+    except Exception as e:
+        st.error(f"Error al procesar el archivo .docx: {str(e)}")
+        return None
+
+def load_file(uploaded_file):
+    """Carga y procesa archivos en diferentes formatos"""
+    try:
+        file_type = uploaded_file.name.split('.')[-1].lower()
+        st.info(f"Procesando archivo de tipo: {file_type}")
+
+        if file_type == 'xlsx':
+            df = pd.read_excel(uploaded_file)
+        elif file_type == 'txt':
+            df = parse_txt_file(uploaded_file)
+        elif file_type in ['doc', 'docx']:
+            df = parse_docx_file(uploaded_file)
+        else:
+            st.error("Formato de archivo no soportado")
+            return None
+
+        if df is None:
+            return None
 
         # Validar columnas requeridas
         required_columns = ['Sucursal', 'Comprobante', 'Codigo', 'Diferencia']
@@ -164,13 +252,13 @@ def main():
     with st.container():
         st.markdown("### 📁 Cargar Datos")
         uploaded_file = st.file_uploader(
-            "Seleccione el archivo Excel (.xlsx) con los datos de ajustes",
-            type=['xlsx'],
-            help="El archivo debe contener las columnas: Sucursal, Comprobante, Codigo, Diferencia"
+            "Seleccione el archivo con los datos de ajustes",
+            type=['xlsx', 'txt', 'doc', 'docx'],
+            help="El archivo debe contener los campos: Sucursal, Comprobante, Codigo, Diferencia"
         )
 
     if uploaded_file is not None:
-        df = load_excel_file(uploaded_file)
+        df = load_file(uploaded_file)
         if df is not None:
             generate_consolidated_report(df)
 

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
+import { useState, useEffect } from "react";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -14,6 +15,12 @@ interface DashboardProps {
 export function Dashboard({ onBranchSelect }: DashboardProps) {
   const { data, loading, error, refetch } = useFirebaseData();
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleRetry = async () => {
     toast({
@@ -22,6 +29,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     });
     await refetch();
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -77,7 +88,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <TableBody>
           {sortedBranches.map((branch, index) => (
             <TableRow
-              key={`branch-${branch.id}-${index}`}
+              key={`branch-${branch.id}-${branch.lastUpdated || index}`}
               className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                 index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
                 index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
