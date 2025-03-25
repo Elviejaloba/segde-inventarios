@@ -2,43 +2,37 @@ import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
 interface AjustesMetrics {
-  ajustesPorSucursal: Array<{
-    sucursal: string;
+  // Métricas mensuales
+  ajustesPorMes: Array<{
+    mes: string;
     cantidad: number;
   }>;
-  distribucionMovimientos: Array<{
+  // Distribución E/S
+  distribucionTipos: Array<{
     tipo: string;
     cantidad: number;
     porcentaje: number;
   }>;
-  cantidadesAjustadas: Array<{
+  // Top sucursales
+  topSucursales: Array<{
     sucursal: string;
-    cantidadTotal: number;
+    cantidad: number;
+    variacion: number;
   }>;
-  evolucionStock: Array<{
-    articulo: string;
-    stockAntes: number;
-    stockDespues: number;
-  }>;
-  articulosMasAjustados: Array<{
+  // Top artículos
+  topArticulos: Array<{
     codigo: string;
     articulo: string;
-    cantidadAjustes: number;
-  }>;
-  distribucionTemporal: Array<{
-    fecha: string;
     cantidad: number;
+    precioTotal: number;
   }>;
-  comparativaDevoluciones: Array<{
-    sucursal: string;
-    cantidadAjustada: number;
-    cantidadDevuelta: number;
-  }>;
-  impactoEconomico: Array<{
-    cantidad: number;
-    precioVenta: number;
-    impacto: number;
-  }>;
+  // Resumen general
+  resumen: {
+    totalAjustes: number;
+    valorTotal: number;
+    promedioAjustesDiarios: number;
+    tendencia: number;
+  };
 }
 
 export function useAjustesData(sucursal?: string) {
@@ -58,19 +52,21 @@ export function useAjustesData(sucursal?: string) {
           // Filtrar datos por sucursal si es necesario
           const filteredData = sucursal ? data.filter(d => d.sucursal === sucursal) : data;
 
-          const metrics: AjustesMetrics = {
-            ajustesPorSucursal: procesarAjustesPorSucursal(filteredData),
-            distribucionMovimientos: calcularDistribucionMovimientos(filteredData),
-            cantidadesAjustadas: calcularCantidadesAjustadas(filteredData),
-            evolucionStock: calcularEvolucionStock(filteredData),
-            articulosMasAjustados: obtenerArticulosMasAjustados(filteredData),
-            distribucionTemporal: calcularDistribucionTemporal(filteredData),
-            comparativaDevoluciones: calcularComparativaDevoluciones(filteredData),
-            impactoEconomico: calcularImpactoEconomico(filteredData),
-          };
+          // Calcular métricas
+          const ajustesPorMes = calcularAjustesPorMes(filteredData);
+          const distribucionTipos = calcularDistribucionTipos(filteredData);
+          const topSucursales = obtenerTopSucursales(filteredData);
+          const topArticulos = obtenerTopArticulos(filteredData);
+          const resumen = calcularResumenGeneral(filteredData);
 
           if (mounted) {
-            setMetrics(metrics);
+            setMetrics({
+              ajustesPorMes,
+              distribucionTipos,
+              topSucursales,
+              topArticulos,
+              resumen
+            });
             setError(null);
             setLoading(false);
           }
@@ -96,117 +92,133 @@ export function useAjustesData(sucursal?: string) {
   return { metrics, loading, error };
 }
 
-function procesarAjustesPorSucursal(data: any[]) {
-  const sucursales = {};
-  data.forEach(ajuste => {
-    if (!sucursales[ajuste.sucursal]) {
-      sucursales[ajuste.sucursal] = 0;
-    }
-    sucursales[ajuste.sucursal]++;
-  });
+function calcularAjustesPorMes(data: any[]) {
+  const meses = data.reduce((acc, ajuste) => {
+    const fecha = new Date(ajuste.fechaMovimiento);
+    const mes = fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+    if (!acc[mes]) acc[mes] = 0;
+    acc[mes]++;
+    return acc;
+  }, {});
 
-  return Object.entries(sucursales).map(([sucursal, cantidad]) => ({
-    sucursal,
-    cantidad: cantidad as number
-  }));
+  return Object.entries(meses)
+    .map(([mes, cantidad]) => ({
+      mes,
+      cantidad: cantidad as number
+    }))
+    .sort((a, b) => new Date(a.mes).getTime() - new Date(b.mes).getTime());
 }
 
-function calcularDistribucionMovimientos(data: any[]) {
-  const movimientos = data.reduce((acc, ajuste) => {
+function calcularDistribucionTipos(data: any[]) {
+  const tipos = data.reduce((acc, ajuste) => {
     const tipo = ajuste.tipoMovimiento;
     if (!acc[tipo]) acc[tipo] = 0;
     acc[tipo]++;
     return acc;
   }, {});
 
-  const total = Object.values(movimientos).reduce((a: number, b: number) => a + b, 0);
+  const total = Object.values(tipos).reduce((a: number, b: number) => a + b, 0);
 
-  return Object.entries(movimientos).map(([tipo, cantidad]) => ({
-    tipo,
-    cantidad: cantidad as number,
-    porcentaje: ((cantidad as number) / total) * 100
-  }));
+  return Object.entries(tipos)
+    .map(([tipo, cantidad]) => ({
+      tipo,
+      cantidad: cantidad as number,
+      porcentaje: ((cantidad as number) / total) * 100
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad);
 }
 
-function calcularCantidadesAjustadas(data: any[]) {
-  const cantidades = data.reduce((acc, ajuste) => {
+function obtenerTopSucursales(data: any[]) {
+  const sucursales = data.reduce((acc, ajuste) => {
     if (!acc[ajuste.sucursal]) {
-      acc[ajuste.sucursal] = 0;
+      acc[ajuste.sucursal] = {
+        cantidad: 0,
+        valorTotal: 0,
+        historico: []
+      };
     }
-    acc[ajuste.sucursal] += Math.abs(ajuste.cantidad);
+    acc[ajuste.sucursal].cantidad++;
+    acc[ajuste.sucursal].valorTotal += Math.abs(ajuste.cantidad * ajuste.precioVenta);
+    acc[ajuste.sucursal].historico.push({
+      fecha: new Date(ajuste.fechaMovimiento),
+      cantidad: ajuste.cantidad
+    });
     return acc;
   }, {});
 
-  return Object.entries(cantidades).map(([sucursal, cantidadTotal]) => ({
-    sucursal,
-    cantidadTotal: cantidadTotal as number
-  }));
+  return Object.entries(sucursales)
+    .map(([sucursal, data]: [string, any]) => ({
+      sucursal,
+      cantidad: data.cantidad,
+      variacion: calcularVariacion(data.historico)
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 5);
 }
 
-function calcularEvolucionStock(data: any[]) {
-  return data.map(ajuste => ({
-    articulo: ajuste.articulo,
-    stockAntes: ajuste.stock1,
-    stockDespues: ajuste.stock1 + ajuste.cantidad
-  }));
-}
-
-function obtenerArticulosMasAjustados(data: any[]) {
+function obtenerTopArticulos(data: any[]) {
   const articulos = data.reduce((acc, ajuste) => {
     const key = `${ajuste.codArticulo}-${ajuste.articulo}`;
     if (!acc[key]) {
       acc[key] = {
         codigo: ajuste.codArticulo,
         articulo: ajuste.articulo,
-        cantidadAjustes: 0
+        cantidad: 0,
+        precioTotal: 0
       };
     }
-    acc[key].cantidadAjustes++;
+    acc[key].cantidad += Math.abs(ajuste.cantidad);
+    acc[key].precioTotal += Math.abs(ajuste.cantidad * ajuste.precioVenta);
     return acc;
   }, {});
 
   return Object.values(articulos)
-    .sort((a: any, b: any) => b.cantidadAjustes - a.cantidadAjustes)
+    .sort((a: any, b: any) => b.cantidad - a.cantidad)
     .slice(0, 10);
 }
 
-function calcularDistribucionTemporal(data: any[]) {
-  const distribucion = data.reduce((acc, ajuste) => {
-    const fecha = new Date(ajuste.fechaMovimiento).toLocaleDateString();
-    if (!acc[fecha]) acc[fecha] = 0;
-    acc[fecha]++;
-    return acc;
-  }, {});
+function calcularResumenGeneral(data: any[]) {
+  const totalAjustes = data.length;
+  const valorTotal = data.reduce((acc, ajuste) => 
+    acc + Math.abs(ajuste.cantidad * ajuste.precioVenta), 0);
 
-  return Object.entries(distribucion)
-    .map(([fecha, cantidad]) => ({
-      fecha,
-      cantidad: cantidad as number
-    }))
-    .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  // Calcular promedio diario
+  const fechas = data.map(d => new Date(d.fechaMovimiento).toLocaleDateString());
+  const diasUnicos = new Set(fechas).size;
+  const promedioAjustesDiarios = totalAjustes / (diasUnicos || 1);
+
+  // Calcular tendencia (comparar último mes vs anterior)
+  const tendencia = calcularTendencia(data);
+
+  return {
+    totalAjustes,
+    valorTotal,
+    promedioAjustesDiarios,
+    tendencia
+  };
 }
 
-function calcularComparativaDevoluciones(data: any[]) {
-  return data.reduce((acc, ajuste) => {
-    const idx = acc.findIndex(item => item.sucursal === ajuste.sucursal);
-    if (idx === -1) {
-      acc.push({
-        sucursal: ajuste.sucursal,
-        cantidadAjustada: Math.abs(ajuste.cantidad),
-        cantidadDevuelta: ajuste.cantidadDevuelta || 0
-      });
-    } else {
-      acc[idx].cantidadAjustada += Math.abs(ajuste.cantidad);
-      acc[idx].cantidadDevuelta += ajuste.cantidadDevuelta || 0;
-    }
-    return acc;
-  }, []);
+function calcularVariacion(historico: any[]) {
+  if (historico.length < 2) return 0;
+  const ordenado = historico.sort((a, b) => b.fecha - a.fecha);
+  const ultimo = ordenado.slice(0, Math.floor(ordenado.length / 2));
+  const anterior = ordenado.slice(Math.floor(ordenado.length / 2));
+  const promedioUltimo = ultimo.reduce((acc, val) => acc + val.cantidad, 0) / ultimo.length;
+  const promedioAnterior = anterior.reduce((acc, val) => acc + val.cantidad, 0) / anterior.length;
+  return ((promedioUltimo - promedioAnterior) / Math.abs(promedioAnterior)) * 100;
 }
 
-function calcularImpactoEconomico(data: any[]) {
-  return data.map(ajuste => ({
-    cantidad: Math.abs(ajuste.cantidad),
-    precioVenta: ajuste.precioVenta,
-    impacto: Math.abs(ajuste.cantidad) * ajuste.precioVenta
-  }));
+function calcularTendencia(data: any[]) {
+  const hoy = new Date();
+  const unMesAtras = new Date(hoy.setMonth(hoy.getMonth() - 1));
+  const dosMesesAtras = new Date(hoy.setMonth(hoy.getMonth() - 2)); // Corrected to 2 months ago
+
+  const ajustesUltimoMes = data.filter(d => new Date(d.fechaMovimiento) >= unMesAtras).length;
+  const ajustesMesAnterior = data.filter(d => {
+    const fecha = new Date(d.fechaMovimiento);
+    return fecha >= dosMesesAtras && fecha < unMesAtras;
+  }).length;
+
+  return ajustesMesAnterior === 0 ? 0 : 
+    ((ajustesUltimoMes - ajustesMesAnterior) / ajustesMesAnterior) * 100;
 }
