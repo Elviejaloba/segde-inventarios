@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sqlalchemy import create_engine, text
 
 # Configurar página
 st.set_page_config(
@@ -13,6 +14,17 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# Establecer conexión a la base de datos
+@st.cache_resource
+def get_db_connection():
+    return create_engine(os.getenv('DATABASE_URL'))
+
+# Función para obtener datos de la base de datos
+@st.cache_data
+def get_data_from_db(query):
+    with get_db_connection().connect() as conn:
+        return pd.read_sql(query, conn)
 
 # Título y logo
 col1, col2 = st.columns([1, 11])
@@ -29,7 +41,6 @@ menu_option = st.sidebar.selectbox(
     index=0
 )
 
-# Resto del código permanece igual...
 if menu_option == "Ranking de Sucursales":
     # Selector de Sucursal
     sucursal = st.selectbox(
@@ -59,20 +70,25 @@ if menu_option == "Ranking de Sucursales":
 
 elif menu_option == "Reporte x Sucursal":
     try:
-        # Cargar datos de referencia
-        df = pd.read_excel("attached_assets/ajustes sucursales2025.xlsx")
+        # Obtener lista de sucursales de la base de datos
+        sucursales_df = get_data_from_db("SELECT DISTINCT \"Sucursal\" FROM ajustes_sucursales ORDER BY \"Sucursal\"")
 
         # Selector de sucursal para el reporte
         sucursal_reporte = st.selectbox(
             "Seleccione la sucursal",
-            df['Sucursal'].unique(),
+            sucursales_df['Sucursal'].tolist(),
             index=None,
             placeholder="Seleccione una sucursal para ver su reporte..."
         )
 
         if sucursal_reporte:
-            # Filtrar datos por sucursal
-            df_sucursal = df[df['Sucursal'] == sucursal_reporte]
+            # Obtener datos de la sucursal seleccionada
+            query = f"""
+            SELECT *
+            FROM ajustes_sucursales
+            WHERE "Sucursal" = '{sucursal_reporte}'
+            """
+            df_sucursal = get_data_from_db(query)
 
             # Métricas principales
             col1, col2, col3 = st.columns(3)
