@@ -1,43 +1,37 @@
+import os
+# Configurar el puerto mediante variable de entorno
+os.environ['STREAMLIT_SERVER_PORT'] = '8504'
+
 import streamlit as st
 
 # Configurar página
 st.set_page_config(
-    page_title="Sistema de Reportes",
+    page_title="Seguimiento de muestreo de invierno",
     page_icon="📊",
     layout="wide"
 )
 
-# Crear menú lateral
-st.sidebar.title("Menú")
-opcion = st.sidebar.selectbox(
-    "Seleccione una opción:",
-    ["Inicio", "Resultados"]
+# Selecciona Sucursal
+sucursal = st.selectbox(
+    "Selecciona Sucursal",
+    ["T.Mza", "T.SJuan", "T.SLuis", "Crisa2", "T.SRafael", "T.SMartin", "T.Maipu", "T.Tunuyan", "T.Lujan"]
 )
 
-# Título principal
-st.title("Sistema de Reportes")
+# Mensaje informativo
+st.text("Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso.")
+st.text("La comunicación continuará por correo electrónico con el archivo adjunto correspondiente.")
 
-# Lógica básica del menú
-if opcion == "Inicio":
-    st.write("Bienvenido al Sistema de Reportes")
-    st.write("Seleccione una opción del menú lateral para comenzar")
+# Título de Ranking
+st.header("Ranking de Sucursales")
+st.text("Seleccione una sucursal para ver su detalle")
 
-elif opcion == "Resultados":
-    # Submenú para Resultados
-    sub_opcion = st.sidebar.radio(
-        "Tipo de Resultado:",
-        ["Por Sucursal", "Por Código", "Consolidado"]
-    )
+# Crear tabla de ranking
+data = {
+    "Posición": range(1, 10),
+    "Sucursal": ["T.SJuan", "T.SLuis", "T.Maipu", "T.Mendoza", "Crisa2", "T.SRafael", "T.SMartin", "T.Tunuyan", "T.Lujan"],
+    "Progreso": ["100%", "100%", "100%", "63%", "27%", "0%", "0%", "0%", "0%"],
+    "Sin Stock": ["0 items", "0 items", "0 items", "0 items", "7 items", "0 items", "0 items", "0 items", "0 items"]
+}
 
-    # Mostrar contenido según la sub-opción seleccionada
-    if sub_opcion == "Por Sucursal":
-        st.header("Resultados por Sucursal")
-        st.write("Aquí se mostrarán los resultados por sucursal")
-
-    elif sub_opcion == "Por Código":
-        st.header("Resultados por Código")
-        st.write("Aquí se mostrarán los resultados por código")
-
-    elif sub_opcion == "Consolidado":
-        st.header("Resultados Consolidados")
-        st.write("Aquí se mostrarán los resultados consolidados")
+# Mostrar tabla
+st.table(data)
