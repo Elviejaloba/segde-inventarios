@@ -2,31 +2,26 @@ import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
 interface AjustesMetrics {
-  // Métricas mensuales
   ajustesPorMes: Array<{
     mes: string;
     cantidad: number;
   }>;
-  // Distribución E/S
   distribucionTipos: Array<{
     tipo: string;
     cantidad: number;
     porcentaje: number;
   }>;
-  // Top sucursales
   topSucursales: Array<{
     sucursal: string;
     cantidad: number;
     variacion: number;
   }>;
-  // Top artículos
   topArticulos: Array<{
     codigo: string;
     articulo: string;
     cantidad: number;
     precioTotal: number;
   }>;
-  // Resumen general
   resumen: {
     totalAjustes: number;
     valorTotal: number;
@@ -42,39 +37,55 @@ export function useAjustesData(sucursal?: string) {
 
   useEffect(() => {
     let mounted = true;
+    console.log('useAjustesData - Iniciando con sucursal:', sucursal);
 
     const loadData = async () => {
       try {
         setLoading(true);
+        console.log('Suscribiéndose a datos de ajustes...');
+
         const unsubscribe = storage.subscribeToAjustes((data) => {
-          if (!mounted || !data) return;
+          if (!mounted || !data) {
+            console.log('No hay datos o componente desmontado');
+            return;
+          }
+
+          console.log('Datos recibidos:', data.length, 'registros');
 
           // Filtrar datos por sucursal si es necesario
           const filteredData = sucursal ? data.filter(d => d.sucursal === sucursal) : data;
+          console.log('Datos filtrados para', sucursal || 'todas', ':', filteredData.length, 'registros');
 
-          // Calcular métricas
-          const ajustesPorMes = calcularAjustesPorMes(filteredData);
-          const distribucionTipos = calcularDistribucionTipos(filteredData);
-          const topSucursales = obtenerTopSucursales(filteredData);
-          const topArticulos = obtenerTopArticulos(filteredData);
-          const resumen = calcularResumenGeneral(filteredData);
+          try {
+            // Calcular métricas
+            const ajustesPorMes = calcularAjustesPorMes(filteredData);
+            const distribucionTipos = calcularDistribucionTipos(filteredData);
+            const topSucursales = obtenerTopSucursales(filteredData);
+            const topArticulos = obtenerTopArticulos(filteredData);
+            const resumen = calcularResumenGeneral(filteredData);
 
-          if (mounted) {
-            setMetrics({
-              ajustesPorMes,
-              distribucionTipos,
-              topSucursales,
-              topArticulos,
-              resumen
-            });
-            setError(null);
+            if (mounted) {
+              console.log('Actualizando métricas con datos calculados');
+              setMetrics({
+                ajustesPorMes,
+                distribucionTipos,
+                topSucursales,
+                topArticulos,
+                resumen
+              });
+              setError(null);
+              setLoading(false);
+            }
+          } catch (calcError) {
+            console.error('Error calculando métricas:', calcError);
+            setError('Error procesando los datos');
             setLoading(false);
           }
         });
 
         return unsubscribe;
       } catch (error) {
-        console.error('Error loading ajustes data:', error);
+        console.error('Error cargando datos:', error);
         if (mounted) {
           setError('Error al cargar los datos');
           setLoading(false);
@@ -85,6 +96,7 @@ export function useAjustesData(sucursal?: string) {
     loadData();
 
     return () => {
+      console.log('useAjustesData - Limpiando suscripción');
       mounted = false;
     };
   }, [sucursal]);
@@ -93,12 +105,18 @@ export function useAjustesData(sucursal?: string) {
 }
 
 function calcularAjustesPorMes(data: any[]) {
+  console.log('Calculando ajustes por mes...');
   const meses = data.reduce((acc, ajuste) => {
-    const fecha = new Date(ajuste.fechaMovimiento);
-    const mes = fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-    if (!acc[mes]) acc[mes] = 0;
-    acc[mes]++;
-    return acc;
+    try {
+      const fecha = new Date(ajuste.fechaMovimiento);
+      const mes = fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+      if (!acc[mes]) acc[mes] = 0;
+      acc[mes]++;
+      return acc;
+    } catch (error) {
+      console.error('Error procesando ajuste:', ajuste);
+      return acc;
+    }
   }, {});
 
   return Object.entries(meses)
@@ -110,6 +128,7 @@ function calcularAjustesPorMes(data: any[]) {
 }
 
 function calcularDistribucionTipos(data: any[]) {
+  console.log('Calculando distribución de tipos...');
   const tipos = data.reduce((acc, ajuste) => {
     const tipo = ajuste.tipoMovimiento;
     if (!acc[tipo]) acc[tipo] = 0;
@@ -129,6 +148,7 @@ function calcularDistribucionTipos(data: any[]) {
 }
 
 function obtenerTopSucursales(data: any[]) {
+  console.log('Obteniendo top sucursales...');
   const sucursales = data.reduce((acc, ajuste) => {
     if (!acc[ajuste.sucursal]) {
       acc[ajuste.sucursal] = {
@@ -157,6 +177,7 @@ function obtenerTopSucursales(data: any[]) {
 }
 
 function obtenerTopArticulos(data: any[]) {
+  console.log('Obteniendo top artículos...');
   const articulos = data.reduce((acc, ajuste) => {
     const key = `${ajuste.codArticulo}-${ajuste.articulo}`;
     if (!acc[key]) {
@@ -178,8 +199,9 @@ function obtenerTopArticulos(data: any[]) {
 }
 
 function calcularResumenGeneral(data: any[]) {
+  console.log('Calculando resumen general...');
   const totalAjustes = data.length;
-  const valorTotal = data.reduce((acc, ajuste) => 
+  const valorTotal = data.reduce((acc, ajuste) =>
     acc + Math.abs(ajuste.cantidad * ajuste.precioVenta), 0);
 
   // Calcular promedio diario
@@ -210,8 +232,8 @@ function calcularVariacion(historico: any[]) {
 
 function calcularTendencia(data: any[]) {
   const hoy = new Date();
-  const unMesAtras = new Date(hoy.setMonth(hoy.getMonth() - 1));
-  const dosMesesAtras = new Date(hoy.setMonth(hoy.getMonth() - 2)); // Corrected to 2 months ago
+  const unMesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 1, hoy.getDate());
+  const dosMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 2, hoy.getDate());
 
   const ajustesUltimoMes = data.filter(d => new Date(d.fechaMovimiento) >= unMesAtras).length;
   const ajustesMesAnterior = data.filter(d => {
@@ -219,6 +241,6 @@ function calcularTendencia(data: any[]) {
     return fecha >= dosMesesAtras && fecha < unMesAtras;
   }).length;
 
-  return ajustesMesAnterior === 0 ? 0 : 
+  return ajustesMesAnterior === 0 ? 0 :
     ((ajustesUltimoMes - ajustesMesAnterior) / ajustesMesAnterior) * 100;
 }

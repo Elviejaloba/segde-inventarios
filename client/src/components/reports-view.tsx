@@ -15,7 +15,6 @@ import {
   DollarSign
 } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
-import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { useAjustesData } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -56,27 +55,40 @@ export function ReportsView() {
     // Implementar exportación
   };
 
+  const handleBranchChange = (value: string) => {
+    setSelectedBranch(value);
+  };
+
   return (
     <div className="space-y-8">
-      {/* Cabecera con filtros */}
-      <div className="flex justify-between items-center">
-        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Seleccionar Sucursal" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las Sucursales</SelectItem>
-            {AVAILABLE_BRANCHES.map((branch) => (
-              <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Selector de Sucursal Mejorado */}
+      <Card className="bg-card p-4">
+        <div className="flex justify-between items-center gap-4">
+          <div className="flex-1">
+            <Select value={selectedBranch} onValueChange={handleBranchChange}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Seleccionar Sucursal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las Sucursales</SelectItem>
+                {AVAILABLE_BRANCHES.map((branch) => (
+                  <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-2">
+              {selectedBranch === "all" 
+                ? "Mostrando datos consolidados de todas las sucursales"
+                : `Mostrando datos de ${selectedBranch}`}
+            </p>
+          </div>
 
-        <Button variant="outline" className="gap-2" onClick={handleExport}>
-          <FileDown className="h-4 w-4" />
-          Exportar Reporte
-        </Button>
-      </div>
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
+            <FileDown className="h-4 w-4" />
+            Exportar Reporte
+          </Button>
+        </div>
+      </Card>
 
       {/* Resumen General */}
       <AnimatePresence>
@@ -134,32 +146,33 @@ export function ReportsView() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Top Sucursal</CardTitle>
-              <Building2 className="h-4 w-4 text-amber-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {metrics?.topSucursales[0]?.sucursal}
-              </div>
-              <motion.div
-                className="mt-4 flex items-center gap-2"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <ArrowUpRight className="h-4 w-4 text-green-600" />
-                <span className="text-xs text-green-600">
-                  {metrics?.topSucursales[0]?.variacion.toFixed(1)}% variación
-                </span>
-              </motion.div>
-            </CardContent>
-          </Card>
+          {selectedBranch === "all" && (
+            <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Top Sucursal</CardTitle>
+                <Building2 className="h-4 w-4 text-amber-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {metrics?.topSucursales[0]?.sucursal}
+                </div>
+                <motion.div
+                  className="mt-4 flex items-center gap-2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                >
+                  <ArrowUpRight className="h-4 w-4 text-green-600" />
+                  <span className="text-xs text-green-600">
+                    {metrics?.topSucursales[0]?.variacion.toFixed(1)}% variación
+                  </span>
+                </motion.div>
+              </CardContent>
+            </Card>
+          )}
         </motion.div>
 
         {/* Gráficos principales */}
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Ajustes por Mes */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">
@@ -186,7 +199,6 @@ export function ReportsView() {
             </CardContent>
           </Card>
 
-          {/* Distribución de Tipos */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">
