@@ -42,7 +42,6 @@ ranking_data = {
     "Sin Stock": ["0 items", "0 items", "0 items", "0 items", "7 items"]
 }
 
-# Aplicar estilo a la tabla
 st.markdown("""
 <style>
     .dataframe {
@@ -61,33 +60,3 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.table(ranking_data)
-
-# Sistema de reportes (en una nueva pestaña)
-st.sidebar.title("Sistema de Reportes")
-reporte_option = st.sidebar.selectbox(
-    "Tipo de Reporte",
-    ["Inicio", "Cargar Archivo", "Generar Reporte"]
-)
-
-if reporte_option == "Cargar Archivo":
-    st.sidebar.subheader("Cargar Archivo Excel")
-    uploaded_file = st.sidebar.file_uploader(
-        "Seleccione un archivo Excel",
-        type=["xlsx"],
-        help="El archivo debe contener las columnas necesarias"
-    )
-
-    if uploaded_file:
-        st.session_state['archivo_cargado'] = True
-        st.sidebar.success("✅ Archivo cargado correctamente")
-
-elif reporte_option == "Generar Reporte":
-    tipo_reporte = st.sidebar.radio(
-        "Seleccione el tipo de reporte:",
-        ["Por Sucursal", "Por Código", "Consolidado"]
-    )
-
-    if 'archivo_cargado' not in st.session_state:
-        st.sidebar.warning("⚠️ Primero debe cargar un archivo")
-    else:
-        st.sidebar.button("Generar Reporte", type="primary")
