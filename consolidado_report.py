@@ -7,8 +7,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
-import docx # This import was in the original and not the edited code, so we keep it.
-import re # This import was in the original and not the edited code, so we keep it.
 
 def load_file(uploaded_file):
     """Carga y procesa archivos Excel"""
@@ -163,7 +161,7 @@ def main():
         st.title("🔍 Menú de Reportes")
         menu = st.radio(
             "Seleccione el tipo de reporte",
-            ["Reporte Final Consolidado"], #Simplified to only the relevant option
+            ["Reporte Final Consolidado"],
             format_func=lambda x: "📊 " + x
         )
 
@@ -178,10 +176,7 @@ def main():
     if uploaded_file is not None:
         df = load_file(uploaded_file)
         if df is not None:
-            if menu == "Reporte Final Consolidado":
-                generate_reporte_consolidado(df)
-            #else: # Removed else block as only one menu option is now available
-            #    st.info("Seleccione 'Reporte Final Consolidado' en el menú lateral para ver el análisis detallado.")
+            generate_reporte_consolidado(df)
     else:
         st.info("Por favor, seleccione un archivo Excel para comenzar el análisis.")
 
