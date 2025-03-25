@@ -1,4 +1,4 @@
-import { ref, set, onValue, get, update } from 'firebase/database';
+import { ref, set, onValue, get } from 'firebase/database';
 import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES } from './store';
 
@@ -54,17 +54,6 @@ class FirebaseStorage {
     } catch (error: any) {
       console.error('Firebase Error:', error);
       throw new Error('Error al conectar con la base de datos');
-    }
-  }
-
-  async importAjustesData(ajustes: AjusteData[]) {
-    try {
-      console.log('Importando datos de ajustes a Firebase...');
-      await set(this.ajustesRef, ajustes);
-      console.log('Datos de ajustes importados exitosamente');
-    } catch (error: any) {
-      console.error('Error al importar ajustes:', error);
-      throw new Error('Error al importar datos de ajustes');
     }
   }
 
@@ -155,12 +144,7 @@ class FirebaseStorage {
 
       console.log('Guardando datos actualizados:', updatedData);
 
-      const updates = {};
-      updatedData.forEach((branch, index) => {
-        updates[`/${index}`] = branch;
-      });
-
-      await update(this.dbRef, updates);
+      await set(this.dbRef, updatedData);
       return updatedData;
     } catch (error: any) {
       console.error('Error al actualizar sucursal:', error);
