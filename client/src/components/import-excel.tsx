@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { importExcelToFirebase } from '@/lib/import-excel';
-import { LoadingMascot } from '@/components/ui/loading-mascot';
+import { motion } from "framer-motion";
 
 export function ImportExcel() {
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export function ImportExcel() {
       await importExcelToFirebase(file);
       toast({
         title: "Importación exitosa",
-        description: "Los datos han sido importados correctamente.",
+        description: "Los datos han sido cargados a Firebase.",
       });
     } catch (error) {
       console.error('Error al importar:', error);
@@ -32,7 +32,7 @@ export function ImportExcel() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4">
+    <div className="fixed bottom-4 right-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
       <input
         type="file"
         accept=".xlsx"
@@ -48,12 +48,15 @@ export function ImportExcel() {
         }`}
       >
         {loading ? (
-          <LoadingMascot size="sm" />
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+          />
         ) : (
-          '📄 Seleccionar archivo Excel'
+          'Cargar datos de prueba'
         )}
       </label>
-      {loading && <p className="text-sm text-muted-foreground">Importando datos...</p>}
     </div>
   );
 }

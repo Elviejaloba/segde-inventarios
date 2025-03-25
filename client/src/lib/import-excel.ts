@@ -27,7 +27,9 @@ export async function importExcelToFirebase(file: File) {
       cantidad2Devuelta: Number(row['Cantidad 2 devuelta']) || 0,
     }));
 
-    await storage.importAjustesData(ajustes);
+    // Cargar datos a Firebase
+    await storage.updateAjustes(ajustes);
+    console.log('Datos importados exitosamente:', ajustes.length, 'registros');
     return true;
   } catch (error) {
     console.error('Error al importar Excel:', error);

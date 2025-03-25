@@ -3,6 +3,7 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ImportExcel } from "@/components/import-excel";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -45,7 +46,10 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
-      <main className="container py-8 mt-20 sm:mt-16">{children}</main>
+      <main className="container py-8 mt-20 sm:mt-16">
+        {children}
+      </main>
+      <ImportExcel />
     </div>
   );
 }

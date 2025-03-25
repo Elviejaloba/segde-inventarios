@@ -51,6 +51,13 @@ class FirebaseStorage {
       } else {
         console.log('Data structure already exists');
       }
+
+      // Inicializar datos de ajustes si no existen
+      const ajustesSnapshot = await get(this.ajustesRef);
+      if (!ajustesSnapshot.exists()) {
+        console.log('Initializing ajustes data structure...');
+        await set(this.ajustesRef, []);
+      }
     } catch (error: any) {
       console.error('Firebase Error:', error);
       throw new Error('Error al conectar con la base de datos');
@@ -86,12 +93,15 @@ class FirebaseStorage {
   }
 
   subscribeToAjustes(callback: (data: AjusteData[]) => void) {
+    console.log('Estableciendo suscripción a ajustes...');
     return onValue(this.ajustesRef, 
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
+          console.log('Datos de ajustes recibidos:', data);
           callback(data);
         } else {
+          console.log('No hay datos de ajustes');
           callback([]);
         }
       },
@@ -143,7 +153,6 @@ class FirebaseStorage {
       }
 
       console.log('Guardando datos actualizados:', updatedData);
-
       await set(this.dbRef, updatedData);
       return updatedData;
     } catch (error: any) {
@@ -151,6 +160,19 @@ class FirebaseStorage {
       throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
     }
   }
+
+  async updateAjustes(ajustes: AjusteData[]) {
+    try {
+      console.log('Actualizando datos de ajustes...', ajustes);
+      await set(this.ajustesRef, ajustes);
+      console.log('Datos de ajustes actualizados exitosamente');
+      return ajustes;
+    } catch (error: any) {
+      console.error('Error al actualizar ajustes:', error);
+      throw new Error('Error al actualizar datos de ajustes');
+    }
+  }
+
   async resetAllData() {
     try {
       const initialData = AVAILABLE_BRANCHES.map(branch => ({
@@ -161,6 +183,7 @@ class FirebaseStorage {
         lastUpdated: Date.now()
       }));
       await set(this.dbRef, initialData);
+      await set(this.ajustesRef, []);
       console.log('Base de datos reinicializada exitosamente');
       return initialData;
     } catch (error: any) {
