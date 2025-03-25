@@ -16,9 +16,13 @@ export async function importExcelToFirebase(file: File) {
       const sucursalExcel = row['Sucursal']?.trim() || '';
       const sucursalFirebase = SUCURSAL_MAPPING[sucursalExcel] || sucursalExcel;
 
+      // Formatear la fecha correctamente
+      const fechaStr = row['Fecha movimiento'];
+      const fecha = fechaStr ? formatearFecha(fechaStr) : '';
+
       return {
         nroComprobante: Number(row['Nro. comprobante']) || 0,
-        fechaMovimiento: row['Fecha movimiento'] || '',
+        fechaMovimiento: fecha,
         tipoMovimiento: row['Tipo de Movimiento'] || '',
         codArticulo: row['Cód. Artículo'] || '',
         articulo: row['Artículo'] || '',
@@ -28,15 +32,47 @@ export async function importExcelToFirebase(file: File) {
     });
 
     console.log('Datos transformados:', ajustes.length, 'registros válidos');
-    console.log('Ejemplo de sucursal transformada:', ajustes[0]?.sucursal);
+    console.log('Ejemplo de datos transformados:', {
+      sucursal: ajustes[0]?.sucursal,
+      fecha: ajustes[0]?.fechaMovimiento
+    });
 
     // Cargar datos a Firebase
     await storage.updateAjustes(ajustes);
-    console.log('Datos cargados exitosamente a Firebase');
 
     return true;
   } catch (error) {
     console.error('Error al importar Excel:', error);
     throw new Error('Error al procesar el archivo Excel');
+  }
+}
+
+function formatearFecha(fechaStr: string): string {
+  try {
+    // Verificar si la fecha ya está en formato DD/MM/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fechaStr)) {
+      return fechaStr;
+    }
+
+    // Si es un número de serie de Excel, convertirlo
+    if (!isNaN(Number(fechaStr))) {
+      const date = XLSX.SSF.parse_date_code(Number(fechaStr));
+      return `${date.d.toString().padStart(2, '0')}/${date.m.toString().padStart(2, '0')}/${date.y}`;
+    }
+
+    // Intentar parsear como fecha normal
+    const fecha = new Date(fechaStr);
+    if (!isNaN(fecha.getTime())) {
+      return fecha.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    return fechaStr;
+  } catch (error) {
+    console.error('Error al formatear fecha:', fechaStr, error);
+    return fechaStr;
   }
 }

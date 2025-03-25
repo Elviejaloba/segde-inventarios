@@ -181,7 +181,7 @@ export function ReportsView() {
               {metrics?.ajustesPorComprobante.map((comprobante) => (
                 <TableRow key={comprobante.nroComprobante}>
                   <TableCell className="font-medium">{comprobante.nroComprobante}</TableCell>
-                  <TableCell>{new Date(comprobante.fecha).toLocaleDateString()}</TableCell>
+                  <TableCell>{comprobante.fecha}</TableCell>
                   <TableCell>{comprobante.sucursal}</TableCell>
                   <TableCell>{Math.abs(comprobante.cantidad).toLocaleString()}</TableCell>
                 </TableRow>
