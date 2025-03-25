@@ -62,26 +62,32 @@ st.markdown("""
 
 st.table(ranking_data)
 
-# Menú lateral
-st.sidebar.title("Menú")
-opcion = st.sidebar.selectbox(
-    "Seleccione una opción:",
-    ["Inicio", "Cargar Archivo", "Ver Reporte"]
+# Sistema de reportes (en una nueva pestaña)
+st.sidebar.title("Sistema de Reportes")
+reporte_option = st.sidebar.selectbox(
+    "Tipo de Reporte",
+    ["Inicio", "Cargar Archivo", "Generar Reporte"]
 )
 
-# Lógica del menú
-if opcion == "Inicio":
-    st.write("Bienvenido al Sistema de Reportes")
-    st.write("Seleccione una opción del menú lateral para comenzar")
-
-elif opcion == "Cargar Archivo":
-    st.subheader("Cargar archivo Excel")
-    # Widget para cargar archivo
-    file = st.file_uploader(
+if reporte_option == "Cargar Archivo":
+    st.sidebar.subheader("Cargar Archivo Excel")
+    uploaded_file = st.sidebar.file_uploader(
         "Seleccione un archivo Excel",
         type=["xlsx"],
-        help="El archivo debe contener las columnas: Sucursal, Comprobante, Codigo, Diferencia"
+        help="El archivo debe contener las columnas necesarias"
     )
 
-elif opcion == "Ver Reporte":
-    pass #The report is already displayed above.
+    if uploaded_file:
+        st.session_state['archivo_cargado'] = True
+        st.sidebar.success("✅ Archivo cargado correctamente")
+
+elif reporte_option == "Generar Reporte":
+    tipo_reporte = st.sidebar.radio(
+        "Seleccione el tipo de reporte:",
+        ["Por Sucursal", "Por Código", "Consolidado"]
+    )
+
+    if 'archivo_cargado' not in st.session_state:
+        st.sidebar.warning("⚠️ Primero debe cargar un archivo")
+    else:
+        st.sidebar.button("Generar Reporte", type="primary")
