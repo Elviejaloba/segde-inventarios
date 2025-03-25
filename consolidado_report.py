@@ -163,7 +163,7 @@ def main():
         st.title("🔍 Menú de Reportes")
         menu = st.radio(
             "Seleccione el tipo de reporte",
-            ["Ajustes por Sucursal", "Reporte Final Consolidado"],
+            ["Reporte Final Consolidado"], #Simplified to only the relevant option
             format_func=lambda x: "📊 " + x
         )
 
@@ -180,10 +180,8 @@ def main():
         if df is not None:
             if menu == "Reporte Final Consolidado":
                 generate_reporte_consolidado(df)
-                with st.expander("🔍 Ver Datos Crudos", expanded=False):
-                    st.dataframe(df, use_container_width=True)
-            else:
-                st.info("Seleccione 'Reporte Final Consolidado' en el menú lateral para ver el análisis detallado.")
+            #else: # Removed else block as only one menu option is now available
+            #    st.info("Seleccione 'Reporte Final Consolidado' en el menú lateral para ver el análisis detallado.")
     else:
         st.info("Por favor, seleccione un archivo Excel para comenzar el análisis.")
 
