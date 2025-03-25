@@ -8,6 +8,26 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 
+# Configuración de la página
+st.set_page_config(
+    page_title="Reporte Consolidado",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Menú lateral
+with st.sidebar:
+    st.title("📊 Menú Principal")
+    opcion = st.radio(
+        "Seleccione una opción:",
+        ["Cargar Datos", "Ver Reporte"]
+    )
+
+# Título principal
+st.title("Sistema de Reportes")
+st.write("Análisis de ajustes por sucursal")
+
+
 def load_file(uploaded_file):
     """Carga y procesa archivos Excel"""
     try:
@@ -26,6 +46,7 @@ def load_file(uploaded_file):
     except Exception as e:
         st.error(f"Error al cargar el archivo: {str(e)}")
         return None
+
 
 def generate_reporte_consolidado(df):
     """Genera el reporte consolidado final"""
@@ -144,41 +165,33 @@ def generate_reporte_consolidado(df):
             use_container_width=True
         )
 
-def main():
-    # Configuración de la página
-    st.set_page_config(
-        page_title="Reporte Final Consolidado",
-        page_icon="🏢",
-        layout="wide"
+
+
+# Funcionalidad principal
+if opcion == "Cargar Datos":
+    st.header("📁 Carga de Datos")
+    archivo = st.file_uploader(
+        "Seleccione el archivo Excel",
+        type=["xlsx"],
+        help="El archivo debe contener las columnas: Sucursal, Comprobante, Codigo, Diferencia"
     )
 
-    # Título y descripción
-    st.title("🏢 Reporte Final Consolidado")
-    st.write("Sistema de análisis de ajustes por sucursal")
+    if archivo:
+        try:
+            df = load_file(archivo)
+            if df is not None:
+                st.session_state['datos'] = df
+                st.success("✅ Archivo cargado correctamente")
+                st.dataframe(df.head())
+        except Exception as e:
+            st.error(f"Error al cargar el archivo: {str(e)}")
 
-    # Crear menú lateral
-    with st.sidebar:
-        st.title("🔍 Menú de Reportes")
-        menu = st.radio(
-            "Seleccione el tipo de reporte",
-            ["Reporte Final Consolidado"],
-            format_func=lambda x: "📊 " + x
-        )
-
-    # Área de carga de archivo
-    st.markdown("### 📁 Cargar Datos")
-    uploaded_file = st.file_uploader(
-        "Seleccione el archivo con los datos de ajustes",
-        type=['xlsx'],
-        help="El archivo debe contener los campos: Sucursal, Comprobante, Codigo, Diferencia"
-    )
-
-    if uploaded_file is not None:
-        df = load_file(uploaded_file)
-        if df is not None:
-            generate_reporte_consolidado(df)
+elif opcion == "Ver Reporte":
+    if 'datos' not in st.session_state:
+        st.warning("⚠️ Primero debe cargar un archivo de datos")
     else:
-        st.info("Por favor, seleccione un archivo Excel para comenzar el análisis.")
+        df = st.session_state['datos']
+        generate_reporte_consolidado(df)
 
 if __name__ == "__main__":
-    main()
+    pass
