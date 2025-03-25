@@ -264,10 +264,13 @@ def main():
     """, unsafe_allow_html=True)
 
     # Crear menú lateral
-    menu = st.sidebar.selectbox(
-        "🔍 Seleccione el tipo de reporte",
-        ["Ajustes por Sucursal", "Reporte Final Consolidado"]
-    )
+    with st.sidebar:
+        st.title("🔍 Menú de Reportes")
+        menu = st.radio(
+            "Seleccione el tipo de reporte",
+            ["Ajustes por Sucursal", "Reporte Final Consolidado"],
+            format_func=lambda x: "📊 " + x
+        )
 
     # Área de carga de archivo con mejor UX
     with st.container():
