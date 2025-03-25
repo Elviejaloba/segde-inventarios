@@ -14,12 +14,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Menú lateral principal
-menu_option = st.sidebar.radio(
-    "Menú Principal",
-    ["Ranking de Sucursales", "Reporte x Sucursal"]
-)
-
 # Título y logo
 col1, col2 = st.columns([1, 11])
 with col1:
@@ -27,6 +21,15 @@ with col1:
 with col2:
     st.title("Seguimiento de muestreo de invierno")
 
+# Menú lateral con estilo más visible
+st.sidebar.markdown("## 📋 Menú Principal")
+menu_option = st.sidebar.selectbox(
+    "",
+    ["Ranking de Sucursales", "Reporte x Sucursal"],
+    index=0
+)
+
+# Resto del código permanece igual...
 if menu_option == "Ranking de Sucursales":
     # Selector de Sucursal
     sucursal = st.selectbox(
