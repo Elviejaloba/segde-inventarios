@@ -62,6 +62,13 @@ const itemAnimation = {
   show: { opacity: 1, y: 0 }
 };
 
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('es-AR', {
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0
+  }).format(Math.round(num));
+};
+
 export function ReportsView() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
   const { metrics, loading } = useAjustesData(selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch);
@@ -77,8 +84,6 @@ export function ReportsView() {
       </div>
     );
   }
-
-  const formatNumber = (num: number) => new Intl.NumberFormat('es-AR').format(num);
 
   return (
     <motion.div 
@@ -163,24 +168,24 @@ export function ReportsView() {
         <motion.div variants={itemAnimation}>
           <Card className={`bg-gradient-to-br ${COLORS.amber} hover:shadow-lg transition-shadow`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Rendimiento</CardTitle>
+              <CardTitle className="text-sm font-medium">Promedio Diario</CardTitle>
               <BarChart2 className="h-4 w-4 text-amber-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatNumber(Math.round((metrics?.resumen.totalAjustes || 0) / 30))}
+                {formatNumber((metrics?.resumen.totalAjustes || 0) / 30)}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Promedio diario
+                Ajustes por día
               </p>
             </CardContent>
           </Card>
         </motion.div>
       </motion.div>
 
-      {/* Gráficos de Análisis */}
+      {/* Gráficos Principales */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Gráfico de Barras - Top 5 Sucursales */}
+        {/* Distribución por Sucursal */}
         <motion.div variants={itemAnimation}>
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -197,7 +202,7 @@ export function ReportsView() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="sucursal" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => formatNumber(Number(value))} />
                     <Legend />
                     <Bar dataKey="unidades" name="Unidades Ajustadas" fill="#0ea5e9" />
                     <Bar dataKey="cantidad" name="Cantidad de Ajustes" fill="#8b5cf6" />
@@ -208,7 +213,7 @@ export function ReportsView() {
           </Card>
         </motion.div>
 
-        {/* Gráfico de Línea - Tendencia de Ajustes */}
+        {/* Tendencia de Ajustes */}
         <motion.div variants={itemAnimation}>
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -225,9 +230,15 @@ export function ReportsView() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="fecha" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => formatNumber(Number(value))} />
                     <Legend />
-                    <Line type="monotone" dataKey="cantidad" name="Unidades Ajustadas" stroke="#0ea5e9" />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cantidad" 
+                      name="Unidades Ajustadas" 
+                      stroke="#0ea5e9"
+                      dot={false}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
