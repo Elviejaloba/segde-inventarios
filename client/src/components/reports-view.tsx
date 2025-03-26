@@ -7,9 +7,8 @@ import {
   TrendingUp,
   ArrowUpDown,
   BarChart2,
-  LineChart,
-  PieChart,
-  Activity
+  Activity,
+  AlertCircle
 } from "lucide-react";
 import { useAjustesData } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,6 +21,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 const COLORS = {
   blue: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20',
@@ -29,6 +43,8 @@ const COLORS = {
   purple: 'from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20',
   amber: 'from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20'
 };
+
+const CHART_COLORS = ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];
 
 const containerAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -62,9 +78,7 @@ export function ReportsView() {
     );
   }
 
-  const handleBranchChange = (value: string) => {
-    setSelectedBranch(value);
-  };
+  const formatNumber = (num: number) => new Intl.NumberFormat('es-AR').format(num);
 
   return (
     <motion.div 
@@ -73,10 +87,11 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
+      {/* Header y Selector */}
       <div className="flex justify-between items-center mb-8">
         <BranchSelectorNew 
           value={selectedBranch}
-          onChange={handleBranchChange}
+          onChange={(value) => setSelectedBranch(value)}
         />
         <motion.div 
           className="text-sm text-muted-foreground"
@@ -89,7 +104,7 @@ export function ReportsView() {
         </motion.div>
       </div>
 
-      {/* Dashboard General */}
+      {/* KPIs */}
       <motion.div 
         className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
         variants={containerAnimation}
@@ -102,7 +117,7 @@ export function ReportsView() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {metrics?.resumen.totalAjustes.toLocaleString()}
+                {formatNumber(metrics?.resumen.totalAjustes || 0)}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Movimientos registrados
@@ -119,7 +134,7 @@ export function ReportsView() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {metrics?.resumen.totalUnidades.toLocaleString()}
+                {formatNumber(metrics?.resumen.totalUnidades || 0)}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Unidades ajustadas
@@ -139,7 +154,7 @@ export function ReportsView() {
                 {metrics?.resumen.sucursalMasImpacto.nombre}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {metrics?.resumen.sucursalMasImpacto.cantidad.toLocaleString()} unidades
+                {formatNumber(metrics?.resumen.sucursalMasImpacto.cantidad || 0)} unidades
               </p>
             </CardContent>
           </Card>
@@ -153,7 +168,7 @@ export function ReportsView() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {((metrics?.resumen.totalAjustes || 0) / 30).toFixed(1)}
+                {formatNumber(Math.round((metrics?.resumen.totalAjustes || 0) / 30))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Promedio diario
@@ -163,40 +178,65 @@ export function ReportsView() {
         </motion.div>
       </motion.div>
 
-      {/* Top 5 Sucursales */}
-      <motion.div variants={itemAnimation}>
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
-            <div>
-              <CardTitle className="text-xl font-semibold">Top 5 Sucursales</CardTitle>
-              <p className="text-sm text-muted-foreground">Análisis de movimientos por sucursal</p>
-            </div>
-            <Building2 className="h-6 w-6 text-primary" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sucursal</TableHead>
-                  <TableHead>Cantidad de Ajustes</TableHead>
-                  <TableHead>Total Unidades</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {metrics?.topSucursales.map((sucursal, index) => (
-                  <TableRow key={sucursal.sucursal} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{sucursal.sucursal}</TableCell>
-                    <TableCell>{sucursal.cantidad.toLocaleString()}</TableCell>
-                    <TableCell>{sucursal.unidades.toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Gráficos de Análisis */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Gráfico de Barras - Top 5 Sucursales */}
+        <motion.div variants={itemAnimation}>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
+              <div>
+                <CardTitle className="text-xl font-semibold">Distribución por Sucursal</CardTitle>
+                <p className="text-sm text-muted-foreground">Comparativa de ajustes entre sucursales</p>
+              </div>
+              <Building2 className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metrics?.topSucursales}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="sucursal" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="unidades" name="Unidades Ajustadas" fill="#0ea5e9" />
+                    <Bar dataKey="cantidad" name="Cantidad de Ajustes" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Top 10 Artículos */}
+        {/* Gráfico de Línea - Tendencia de Ajustes */}
+        <motion.div variants={itemAnimation}>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
+              <div>
+                <CardTitle className="text-xl font-semibold">Tendencia de Ajustes</CardTitle>
+                <p className="text-sm text-muted-foreground">Evolución temporal de los ajustes</p>
+              </div>
+              <AlertCircle className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics?.ajustesPorComprobante}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="fecha" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="cantidad" name="Unidades Ajustadas" stroke="#0ea5e9" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Tablas Detalladas */}
       <motion.div variants={itemAnimation}>
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -222,7 +262,7 @@ export function ReportsView() {
                     <TableCell className="font-medium">{articulo.codigo}</TableCell>
                     <TableCell>{articulo.articulo}</TableCell>
                     <TableCell>{articulo.sucursal}</TableCell>
-                    <TableCell>{Math.abs(articulo.cantidad).toLocaleString()}</TableCell>
+                    <TableCell>{formatNumber(Math.abs(articulo.cantidad))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -231,7 +271,7 @@ export function ReportsView() {
         </Card>
       </motion.div>
 
-      {/* Ajustes por Comprobante */}
+      {/* Detalles por Comprobante */}
       <motion.div variants={itemAnimation}>
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -261,7 +301,7 @@ export function ReportsView() {
                     <TableCell>{comprobante.sucursal}</TableCell>
                     <TableCell>{comprobante.articulo}</TableCell>
                     <TableCell>{comprobante.codArticulo}</TableCell>
-                    <TableCell>{Math.abs(comprobante.cantidad).toLocaleString()}</TableCell>
+                    <TableCell>{formatNumber(Math.abs(comprobante.cantidad))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
