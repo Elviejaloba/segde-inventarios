@@ -174,6 +174,8 @@ export function ReportsView() {
                 <TableHead>N° Comprobante</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Sucursal</TableHead>
+                <TableHead>Artículo</TableHead>
+                <TableHead>Código</TableHead>
                 <TableHead>Cantidad</TableHead>
               </TableRow>
             </TableHeader>
@@ -183,6 +185,8 @@ export function ReportsView() {
                   <TableCell className="font-medium">{comprobante.nroComprobante}</TableCell>
                   <TableCell>{comprobante.fecha}</TableCell>
                   <TableCell>{comprobante.sucursal}</TableCell>
+                  <TableCell>{comprobante.articulo}</TableCell>
+                  <TableCell>{comprobante.codArticulo}</TableCell>
                   <TableCell>{Math.abs(comprobante.cantidad).toLocaleString()}</TableCell>
                 </TableRow>
               ))}

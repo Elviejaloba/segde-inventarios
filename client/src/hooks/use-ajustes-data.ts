@@ -16,9 +16,11 @@ interface AjustesMetrics {
   }>;
   ajustesPorComprobante: Array<{
     nroComprobante: number;
-    cantidad: number;
-    sucursal: string;
     fecha: string;
+    sucursal: string;
+    cantidad: number;
+    articulo: string;
+    codArticulo: string;
   }>;
   resumen: {
     totalAjustes: number;
@@ -140,9 +142,11 @@ function calcularAjustesPorComprobante(data: any[]) {
     if (!acc[key]) {
       acc[key] = {
         nroComprobante: ajuste.nroComprobante,
-        cantidad: 0,
+        fecha: ajuste.fechaMovimiento,
         sucursal: ajuste.sucursal,
-        fecha: ajuste.fechaMovimiento
+        cantidad: 0,
+        articulo: ajuste.articulo,
+        codArticulo: ajuste.codArticulo
       };
     }
     acc[key].cantidad += Math.abs(Number(ajuste.cantidad));
@@ -157,7 +161,6 @@ function calcularResumen(data: any[]) {
   const totalAjustes = data.length;
   const totalUnidades = data.reduce((acc, ajuste) => acc + Math.abs(Number(ajuste.cantidad)), 0);
 
-  // Encontrar la sucursal con mayor impacto en cantidad
   const impactoPorSucursal = data.reduce((acc, ajuste) => {
     if (!acc[ajuste.sucursal]) {
       acc[ajuste.sucursal] = 0;
