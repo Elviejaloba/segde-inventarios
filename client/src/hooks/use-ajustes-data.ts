@@ -1,6 +1,47 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
+export type Temporada = 'todas' | 'invierno' | 'verano';
+
+function estaEnTemporada(fechaStr: string | number, temporada: Temporada): boolean {
+  if (temporada === 'todas') return true;
+
+  try {
+    // Si es un string, verificar si ya está en formato DD/MM/YYYY
+    if (typeof fechaStr === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fechaStr)) {
+      const [dia, mes] = fechaStr.split('/').map(Number);
+
+      if (temporada === 'invierno') {
+        // 1/3 al 31/8
+        return mes >= 3 && mes <= 8;
+      } else if (temporada === 'verano') {
+        // 1/9 al 28/2
+        return mes >= 9 || mes <= 2;
+      }
+    }
+
+    // Si es un número serial de Excel, convertirlo a fecha
+    const EXCEL_START_DATE = new Date(1899, 11, 30);
+    const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+    const fecha = typeof fechaStr === 'number' 
+      ? new Date(EXCEL_START_DATE.getTime() + fechaStr * MILLISECONDS_PER_DAY)
+      : new Date(fechaStr);
+
+    const mes = fecha.getMonth() + 1; // getMonth() devuelve 0-11
+
+    if (temporada === 'invierno') {
+      return mes >= 3 && mes <= 8;
+    } else if (temporada === 'verano') {
+      return mes >= 9 || mes <= 2;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error procesando fecha:', fechaStr, error);
+    return true; // En caso de error, incluir el registro
+  }
+}
+
 interface AjustesMetrics {
   topSucursales: Array<{
     sucursal: string;
@@ -30,24 +71,6 @@ interface AjustesMetrics {
       cantidad: number;
     };
   };
-}
-
-export type Temporada = 'todas' | 'invierno' | 'verano';
-
-function estaEnTemporada(fecha: string, temporada: Temporada): boolean {
-  if (temporada === 'todas') return true;
-
-  const [dia, mes] = fecha.split('/').map(Number);
-
-  if (temporada === 'invierno') {
-    // 1/3 al 31/8
-    return mes >= 3 && mes <= 8;
-  } else if (temporada === 'verano') {
-    // 1/9 al 28/2
-    return mes >= 9 || mes <= 2;
-  }
-
-  return true;
 }
 
 export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas') {
