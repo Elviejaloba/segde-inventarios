@@ -10,9 +10,10 @@ import {
   Activity,
   AlertCircle
 } from "lucide-react";
-import { useAjustesData } from "@/hooks/use-ajustes-data";
+import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
 import { BranchSelectorNew } from "@/components/branch-selector-new";
+import { SeasonSelector } from "@/components/season-selector";
 import {
   Table,
   TableBody,
@@ -71,7 +72,11 @@ const formatNumber = (num: number) => {
 
 export function ReportsView() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
-  const { metrics, loading } = useAjustesData(selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch);
+  const [selectedSeason, setSelectedSeason] = useState<Temporada>("todas");
+  const { metrics, loading } = useAjustesData(
+    selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch,
+    selectedSeason
+  );
 
   if (loading) {
     return (
@@ -94,18 +99,24 @@ export function ReportsView() {
     >
       {/* Header y Selector */}
       <div className="flex justify-between items-center mb-8">
-        <BranchSelectorNew 
-          value={selectedBranch}
-          onChange={(value) => setSelectedBranch(value)}
-        />
+        <div className="flex gap-4">
+          <BranchSelectorNew 
+            value={selectedBranch}
+            onChange={(value) => setSelectedBranch(value)}
+          />
+          <SeasonSelector
+            value={selectedSeason}
+            onChange={(value) => setSelectedSeason(value as Temporada)}
+          />
+        </div>
         <motion.div 
           className="text-sm text-muted-foreground"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
           {selectedBranch === "Todas las Sucursales" 
-            ? "Vista consolidada de todas las sucursales"
-            : `Mostrando datos de ${selectedBranch}`}
+            ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
+            : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
         </motion.div>
       </div>
 

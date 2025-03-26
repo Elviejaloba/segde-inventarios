@@ -32,14 +32,31 @@ interface AjustesMetrics {
   };
 }
 
-export function useAjustesData(sucursal?: string) {
+export type Temporada = 'todas' | 'invierno' | 'verano';
+
+function estaEnTemporada(fecha: string, temporada: Temporada): boolean {
+  if (temporada === 'todas') return true;
+
+  const [dia, mes] = fecha.split('/').map(Number);
+
+  if (temporada === 'invierno') {
+    // 1/3 al 31/8
+    return mes >= 3 && mes <= 8;
+  } else if (temporada === 'verano') {
+    // 1/9 al 28/2
+    return mes >= 9 || mes <= 2;
+  }
+
+  return true;
+}
+
+export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas') {
   const [metrics, setMetrics] = useState<AjustesMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    console.log('useAjustesData - Iniciando con sucursal:', sucursal);
 
     const loadData = async () => {
       try {
@@ -47,14 +64,17 @@ export function useAjustesData(sucursal?: string) {
 
         const unsubscribe = storage.subscribeToAjustes((data) => {
           if (!mounted || !data) {
-            console.log('No hay datos o componente desmontado');
             return;
           }
 
+          // Filtrar por sucursal y temporada
           let filteredData = data;
           if (sucursal && sucursal !== 'Todas las Sucursales') {
-            filteredData = data.filter(d => d.sucursal === sucursal);
+            filteredData = filteredData.filter(d => d.sucursal === sucursal);
           }
+
+          // Aplicar filtro de temporada
+          filteredData = filteredData.filter(d => estaEnTemporada(d.fechaMovimiento, temporada));
 
           // Calcular métricas
           const topSucursales = calcularTopSucursales(filteredData);
@@ -87,7 +107,7 @@ export function useAjustesData(sucursal?: string) {
     return () => {
       mounted = false;
     };
-  }, [sucursal]);
+  }, [sucursal, temporada]);
 
   return { metrics, loading, error };
 }
