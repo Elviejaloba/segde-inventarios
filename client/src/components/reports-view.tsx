@@ -70,6 +70,39 @@ const formatNumber = (num: number) => {
   }).format(Math.round(num));
 };
 
+function formatDate(serialDate: string | number): string {
+  try {
+    // Si es un número serial de Excel
+    if (!isNaN(Number(serialDate))) {
+      const EXCEL_START_DATE = new Date(1899, 11, 30);
+      const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+      const date = new Date(EXCEL_START_DATE.getTime() + Number(serialDate) * MILLISECONDS_PER_DAY);
+
+      return date.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    // Si ya está en formato fecha, devolverlo tal cual
+    if (typeof serialDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(serialDate)) {
+      return serialDate;
+    }
+
+    // Para otros casos, intentar convertir
+    const date = new Date(serialDate);
+    return date.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', serialDate, error);
+    return String(serialDate);
+  }
+}
+
 export function ReportsView() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
   const [selectedSeason, setSelectedSeason] = useState<Temporada>("todas");
@@ -319,7 +352,7 @@ export function ReportsView() {
                 {metrics?.ajustesPorComprobante.map((comprobante) => (
                   <TableRow key={comprobante.nroComprobante} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{comprobante.nroComprobante}</TableCell>
-                    <TableCell>{comprobante.fecha}</TableCell>
+                    <TableCell>{formatDate(comprobante.fecha)}</TableCell>
                     <TableCell>{comprobante.sucursal}</TableCell>
                     <TableCell>{comprobante.articulo}</TableCell>
                     <TableCell>{comprobante.codArticulo}</TableCell>
