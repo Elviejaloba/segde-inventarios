@@ -78,15 +78,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-            <LineChart className="h-6 w-6" />
-            Ranking de Sucursales
-          </h2>
-          <p className="text-muted-foreground">
-            Seleccione una sucursal para ver su detalle
-          </p>
-        </div>
+        {selectedView === 'ranking' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+              <LineChart className="h-6 w-6" />
+              Ranking de Sucursales
+            </h2>
+            <p className="text-muted-foreground">
+              Seleccione una sucursal para ver su detalle
+            </p>
+          </div>
+        )}
         <div className="flex gap-4">
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -132,7 +134,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         </div>
       </div>
 
-      {selectedView === 'ranking' && (
+      {selectedView === 'ranking' ? (
         <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
@@ -182,9 +184,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             </TableBody>
           </Table>
         </div>
+      ) : (
+        <ReportsView />
       )}
-
-      {selectedView === 'reporte' && <ReportsView />}
     </div>
   );
 }
