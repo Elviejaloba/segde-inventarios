@@ -23,6 +23,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line
+} from 'recharts';
 
 const COLORS = {
   blue: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20',
