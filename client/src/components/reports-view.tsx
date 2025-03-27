@@ -63,6 +63,28 @@ const itemAnimation = {
   show: { opacity: 1, y: 0 }
 };
 
+const hoverScale = {
+  hover: { 
+    scale: 1.02,
+    transition: { duration: 0.2 }
+  },
+  tap: { 
+    scale: 0.98,
+    transition: { duration: 0.1 }
+  }
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.3
+    }
+  }
+};
+
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat('es-AR', {
     maximumFractionDigits: 0,
@@ -155,7 +177,11 @@ export function ReportsView() {
     >
       {/* Header y Selector */}
       <div className="flex justify-between items-center mb-8">
-        <div className="flex gap-4">
+        <motion.div 
+          className="flex gap-4"
+          whileHover={{ x: 2 }}
+          transition={{ duration: 0.2 }}
+        >
           <BranchSelectorNew 
             value={selectedBranch}
             onChange={(value) => setSelectedBranch(value)}
@@ -164,11 +190,12 @@ export function ReportsView() {
             value={selectedSeason}
             onChange={(value) => setSelectedSeason(value as Temporada)}
           />
-        </div>
+        </motion.div>
         <motion.div 
           className="text-sm text-muted-foreground"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
         >
           {selectedBranch === "Todas las Sucursales" 
             ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
@@ -181,8 +208,8 @@ export function ReportsView() {
         className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
         variants={containerAnimation}
       >
-        <motion.div variants={itemAnimation}>
-          <Card className={`bg-gradient-to-br ${COLORS.blue} hover:shadow-lg transition-shadow`}>
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className={`bg-gradient-to-br ${COLORS.blue} hover:shadow-lg transition-all duration-300`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Ajustes</CardTitle>
               <Activity className="h-4 w-4 text-blue-600" />
@@ -198,8 +225,8 @@ export function ReportsView() {
           </Card>
         </motion.div>
 
-        <motion.div variants={itemAnimation}>
-          <Card className={`bg-gradient-to-br ${COLORS.green} hover:shadow-lg transition-shadow`}>
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className={`bg-gradient-to-br ${COLORS.green} hover:shadow-lg transition-all duration-300`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Unidades</CardTitle>
               <Package className="h-4 w-4 text-emerald-600" />
@@ -215,8 +242,8 @@ export function ReportsView() {
           </Card>
         </motion.div>
 
-        <motion.div variants={itemAnimation}>
-          <Card className={`bg-gradient-to-br ${COLORS.purple} hover:shadow-lg transition-shadow`}>
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className={`bg-gradient-to-br ${COLORS.purple} hover:shadow-lg transition-all duration-300`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Mayor Impacto</CardTitle>
               <TrendingUp className="h-4 w-4 text-purple-600" />
@@ -232,8 +259,8 @@ export function ReportsView() {
           </Card>
         </motion.div>
 
-        <motion.div variants={itemAnimation}>
-          <Card className={`bg-gradient-to-br ${COLORS.amber} hover:shadow-lg transition-shadow`}>
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className={`bg-gradient-to-br ${COLORS.amber} hover:shadow-lg transition-all duration-300`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Promedio Diario</CardTitle>
               <BarChart2 className="h-4 w-4 text-amber-600" />
@@ -253,8 +280,8 @@ export function ReportsView() {
       {/* Gráficos Principales */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Distribución por Sucursal */}
-        <motion.div variants={itemAnimation}>
-          <Card className="hover:shadow-lg transition-shadow">
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
               <div>
                 <CardTitle className="text-xl font-semibold">Distribución por Sucursal</CardTitle>
@@ -281,8 +308,8 @@ export function ReportsView() {
         </motion.div>
 
         {/* Tendencia de Ajustes */}
-        <motion.div variants={itemAnimation}>
-          <Card className="hover:shadow-lg transition-shadow">
+        <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
+          <Card className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
               <div>
                 <CardTitle className="text-xl font-semibold">Tendencia de Ajustes</CardTitle>
@@ -324,8 +351,8 @@ export function ReportsView() {
       </div>
 
       {/* Tablas Detalladas */}
-      <motion.div variants={itemAnimation}>
-        <Card className="hover:shadow-lg transition-shadow">
+      <motion.div variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+        <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
             <div>
               <CardTitle className="text-xl font-semibold">Top 10 Artículos más Ajustados</CardTitle>
@@ -359,8 +386,8 @@ export function ReportsView() {
       </motion.div>
 
       {/* Detalles por Comprobante */}
-      <motion.div variants={itemAnimation}>
-        <Card className="hover:shadow-lg transition-shadow">
+      <motion.div variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+        <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
             <div>
               <CardTitle className="text-xl font-semibold">Ajustes por N° de Comprobante</CardTitle>
@@ -399,3 +426,10 @@ export function ReportsView() {
     </motion.div>
   );
 }
+
+<style jsx global>{`
+  .hover\\:bg-muted\\/50:hover {
+    transform: translateX(4px);
+    transition: all 0.2s ease;
+  }
+`}</style>
