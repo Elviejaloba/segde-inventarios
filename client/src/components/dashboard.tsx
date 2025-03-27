@@ -77,7 +77,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         {selectedView === 'ranking' && (
           <div>
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
@@ -89,15 +89,16 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             </p>
           </div>
         )}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            className="w-full sm:w-auto"
           >
             <Button
               variant={selectedView === 'ranking' ? "default" : "outline"}
               onClick={() => setSelectedView('ranking')}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               <Trophy className="h-4 w-4" />
               Ranking
@@ -106,12 +107,12 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="relative"
+            className="relative w-full sm:w-auto"
           >
             <Button
               variant={selectedView === 'reporte' ? "default" : "ghost"}
               onClick={() => setSelectedView('reporte')}
-              className={`gap-2 relative bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg ${
+              className={`gap-2 relative bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg w-full sm:w-auto ${
                 selectedView === 'reporte' ? 'ring-2 ring-purple-300 ring-offset-2' : ''
               }`}
             >

@@ -192,16 +192,16 @@ export function ReportsView() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full md:w-auto">
           <h3 className="text-sm font-medium flex items-center gap-2">
             <Filter className="h-4 w-4" />
             Filtros
           </h3>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div className="w-full sm:w-auto">
                     <BranchSelectorNew 
                       value={selectedBranch}
                       onChange={(value) => setSelectedBranch(value)}
@@ -218,7 +218,7 @@ export function ReportsView() {
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
-                  <div>
+                  <div className="w-full sm:w-auto">
                     <SeasonSelector
                       value={selectedSeason}
                       onChange={(value) => setSelectedSeason(value as Temporada)}
@@ -234,7 +234,7 @@ export function ReportsView() {
         </div>
 
         <motion.div 
-          className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm"
+          className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm w-full md:w-auto"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
@@ -250,7 +250,7 @@ export function ReportsView() {
       </motion.div>
 
       <motion.div 
-        className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
         variants={containerAnimation}
       >
         <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
@@ -446,7 +446,7 @@ export function ReportsView() {
         </Card>
       </motion.div>
 
-      <motion.div variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+      <div className="overflow-x-auto">
         <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
             <div>
@@ -502,7 +502,7 @@ export function ReportsView() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
