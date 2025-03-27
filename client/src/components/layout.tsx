@@ -8,9 +8,10 @@ import { ImportExcel } from "@/components/import-excel";
 interface LayoutProps {
   children: React.ReactNode;
   hideImport?: boolean;
+  hideBranchSelector?: boolean;
 }
 
-export function Layout({ children, hideImport = false }: LayoutProps) {
+export function Layout({ children, hideImport = false, hideBranchSelector = false }: LayoutProps) {
   const { theme, setTheme } = useTheme();
 
   return (

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { BranchSelectorNew } from "@/components/branch-selector-new";
 import { SeasonSelector } from "@/components/season-selector";
 import {
   Table,
@@ -22,21 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 
 const COLORS = {
   blue: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20',
@@ -94,21 +80,18 @@ const formatNumber = (num: number) => {
 
 function formatDate(serialDate: string | number, shortFormat: boolean = false): string {
   try {
-    // Si es un número serial de Excel
     if (!isNaN(Number(serialDate))) {
       const EXCEL_START_DATE = new Date(1899, 11, 30);
       const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
       const date = new Date(EXCEL_START_DATE.getTime() + Number(serialDate) * MILLISECONDS_PER_DAY);
 
       if (shortFormat) {
-        // Formato corto: MMM YYYY (ej: Ene 2025)
         return date.toLocaleDateString('es-AR', {
           month: 'short',
           year: 'numeric'
         }).replace('/', ' ');
       }
 
-      // Formato completo para las tablas: DD/MM/YYYY
       return date.toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -116,7 +99,6 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
       });
     }
 
-    // Si ya está en formato fecha, devolverlo según el formato requerido
     if (typeof serialDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(serialDate)) {
       if (shortFormat) {
         const [dia, mes, año] = serialDate.split('/');
@@ -129,7 +111,6 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
       return serialDate;
     }
 
-    // Para otros casos, intentar convertir
     const date = new Date(serialDate);
     if (shortFormat) {
       return date.toLocaleDateString('es-AR', {
@@ -177,13 +158,17 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
-      {/* Header y Selector */}
       <div className="flex justify-between items-center mb-8">
         <motion.div 
           className="flex gap-4"
           whileHover={{ x: 2 }}
           transition={{ duration: 0.2 }}
         >
+          <BranchSelectorNew 
+            value={selectedBranch}
+            onChange={(value) => setSelectedBranch(value)}
+            showPlaceholder={true}
+          />
           <SeasonSelector
             value={selectedSeason}
             onChange={(value) => setSelectedSeason(value as Temporada)}
@@ -201,7 +186,6 @@ export function ReportsView() {
         </motion.div>
       </div>
 
-      {/* KPIs */}
       <motion.div 
         className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
         variants={containerAnimation}
@@ -275,9 +259,7 @@ export function ReportsView() {
         </motion.div>
       </motion.div>
 
-      {/* Gráficos Principales */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Distribución por Sucursal */}
         <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
           <Card className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -305,7 +287,6 @@ export function ReportsView() {
           </Card>
         </motion.div>
 
-        {/* Tendencia de Ajustes */}
         <motion.div variants={fadeInUp} whileHover={hoverScale.hover} whileTap={hoverScale.tap}>
           <Card className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -348,7 +329,6 @@ export function ReportsView() {
         </motion.div>
       </div>
 
-      {/* Tablas Detalladas */}
       <motion.div variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
         <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
@@ -403,7 +383,6 @@ export function ReportsView() {
         </Card>
       </motion.div>
 
-      {/* Detalles por Comprobante */}
       <motion.div variants={fadeInUp} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
         <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
