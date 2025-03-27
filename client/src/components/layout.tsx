@@ -7,9 +7,10 @@ import { ImportExcel } from "@/components/import-excel";
 
 interface LayoutProps {
   children: React.ReactNode;
+  hideImport?: boolean;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, hideImport = false }: LayoutProps) {
   const { theme, setTheme } = useTheme();
 
   return (
@@ -49,7 +50,7 @@ export function Layout({ children }: LayoutProps) {
       <main className="container py-8 mt-20 sm:mt-16">
         {children}
       </main>
-      <ImportExcel />
+      {!hideImport && <ImportExcel />}
     </div>
   );
 }
