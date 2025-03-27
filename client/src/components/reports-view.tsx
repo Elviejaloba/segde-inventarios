@@ -188,6 +188,7 @@ export function ReportsView() {
           <BranchSelectorNew 
             value={selectedBranch}
             onChange={(value) => setSelectedBranch(value)}
+            showPlaceholder={false}
           />
           <SeasonSelector
             value={selectedSeason}
