@@ -70,7 +70,7 @@ const formatNumber = (num: number) => {
   }).format(Math.round(num));
 };
 
-function formatDate(serialDate: string | number): string {
+function formatDate(serialDate: string | number, shortFormat: boolean = false): string {
   try {
     // Si es un número serial de Excel
     if (!isNaN(Number(serialDate))) {
@@ -78,6 +78,15 @@ function formatDate(serialDate: string | number): string {
       const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
       const date = new Date(EXCEL_START_DATE.getTime() + Number(serialDate) * MILLISECONDS_PER_DAY);
 
+      if (shortFormat) {
+        // Formato corto: MMM/YYYY (ej: Ene/2025)
+        return date.toLocaleDateString('es-AR', {
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+
+      // Formato completo para las tablas: DD/MM/YYYY
       return date.toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
@@ -85,16 +94,24 @@ function formatDate(serialDate: string | number): string {
       });
     }
 
-    // Si ya está en formato fecha, devolverlo tal cual
+    // Si ya está en formato fecha, devolverlo según el formato requerido
     if (typeof serialDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(serialDate)) {
+      if (shortFormat) {
+        const [dia, mes, año] = serialDate.split('/');
+        const fecha = new Date(Number(año), Number(mes) - 1, Number(dia));
+        return fecha.toLocaleDateString('es-AR', {
+          month: 'short',
+          year: 'numeric'
+        });
+      }
       return serialDate;
     }
 
     // Para otros casos, intentar convertir
     const date = new Date(serialDate);
     return date.toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
+      day: shortFormat ? undefined : '2-digit',
+      month: shortFormat ? 'short' : '2-digit',
       year: 'numeric'
     });
   } catch (error) {
@@ -272,9 +289,18 @@ export function ReportsView() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={metrics?.ajustesPorComprobante}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" />
+                    <XAxis 
+                      dataKey="fecha" 
+                      tickFormatter={(value) => formatDate(value, true)}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
                     <YAxis />
-                    <Tooltip formatter={(value) => formatNumber(Number(value))} />
+                    <Tooltip 
+                      labelFormatter={(value) => formatDate(value, true)}
+                      formatter={(value) => formatNumber(Number(value))} 
+                    />
                     <Legend />
                     <Line 
                       type="monotone" 
