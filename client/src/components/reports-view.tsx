@@ -79,11 +79,11 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
       const date = new Date(EXCEL_START_DATE.getTime() + Number(serialDate) * MILLISECONDS_PER_DAY);
 
       if (shortFormat) {
-        // Formato corto: MMM/YYYY (ej: Ene/2025)
+        // Formato corto: MMM YYYY (ej: Ene 2025)
         return date.toLocaleDateString('es-AR', {
           month: 'short',
           year: 'numeric'
-        });
+        }).replace('/', ' ');
       }
 
       // Formato completo para las tablas: DD/MM/YYYY
@@ -102,16 +102,22 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
         return fecha.toLocaleDateString('es-AR', {
           month: 'short',
           year: 'numeric'
-        });
+        }).replace('/', ' ');
       }
       return serialDate;
     }
 
     // Para otros casos, intentar convertir
     const date = new Date(serialDate);
+    if (shortFormat) {
+      return date.toLocaleDateString('es-AR', {
+        month: 'short',
+        year: 'numeric'
+      }).replace('/', ' ');
+    }
     return date.toLocaleDateString('es-AR', {
-      day: shortFormat ? undefined : '2-digit',
-      month: shortFormat ? 'short' : '2-digit',
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric'
     });
   } catch (error) {
