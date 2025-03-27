@@ -19,7 +19,7 @@ interface BranchSelectorNewProps {
 export function BranchSelectorNew({ value, onChange, showPlaceholder = true }: BranchSelectorNewProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[200px] bg-white">
+      <SelectTrigger className="w-[200px] bg-background border-border/50">
         {showPlaceholder ? (
           <SelectValue placeholder="Seleccionar Sucursal" />
         ) : (

@@ -17,7 +17,7 @@ interface SeasonSelectorProps {
 export function SeasonSelector({ value, onChange }: SeasonSelectorProps) {
   return (
     <Select value={value} onValueChange={onChange as any}>
-      <SelectTrigger className="w-[200px] bg-white">
+      <SelectTrigger className="w-[200px] bg-background border-border/50">
         <SelectValue placeholder="Seleccionar Temporada" />
       </SelectTrigger>
       <SelectContent>
