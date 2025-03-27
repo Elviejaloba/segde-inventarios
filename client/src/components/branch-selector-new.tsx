@@ -13,13 +13,15 @@ import { AVAILABLE_BRANCHES } from "@/lib/store";
 interface BranchSelectorNewProps {
   value: string;
   onChange: (value: string) => void;
+  showPlaceholder?: boolean; // Added prop to control placeholder visibility
 }
 
-export function BranchSelectorNew({ value, onChange }: BranchSelectorNewProps) {
+export function BranchSelectorNew({ value, onChange, showPlaceholder = true }: BranchSelectorNewProps) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-[200px] bg-white">
-        <SelectValue placeholder="Seleccionar Sucursal" />
+        {showPlaceholder && <SelectValue placeholder="Seleccionar Sucursal" />} {/* Conditional rendering of placeholder */}
+        {!showPlaceholder && <SelectValue />} {/* Empty SelectValue if showPlaceholder is false */}
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
