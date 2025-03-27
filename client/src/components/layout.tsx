@@ -50,7 +50,7 @@ export function Layout({ children, hideImport = false }: LayoutProps) {
       <main className="container py-8 mt-20 sm:mt-16">
         {children}
       </main>
-      {!hideImport && <ImportExcel />}
+      <ImportExcel isHidden={hideImport} />
     </div>
   );
 }

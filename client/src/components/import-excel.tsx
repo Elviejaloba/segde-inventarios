@@ -4,9 +4,16 @@ import { useToast } from "@/hooks/use-toast";
 import { importExcelToFirebase } from '@/lib/import-excel';
 import { motion } from "framer-motion";
 
-export function ImportExcel() {
+interface ImportExcelProps {
+  isHidden?: boolean;
+}
+
+export function ImportExcel({ isHidden = false }: ImportExcelProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Si isHidden es true, no renderizar nada
+  if (isHidden) return null;
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
