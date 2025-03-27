@@ -25,7 +25,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               className="h-8 sm:h-10 w-auto"
             />
             <h1 className="text-lg sm:text-xl font-bold text-center sm:text-left">
-              Seguimiento de muestreo de invierno
+              Seguimiento de Muestreos
             </h1>
           </div>
           <div className="flex items-center gap-4">
