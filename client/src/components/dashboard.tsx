@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
-import { Trophy, AlertCircle, RefreshCw, LineChart } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { ReportsView } from "@/components/reports-view";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -86,19 +87,48 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             Seleccione una sucursal para ver su detalle
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={selectedView === 'ranking' ? "default" : "outline"}
-            onClick={() => setSelectedView('ranking')}
+        <div className="flex gap-4">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Ranking de Sucursales
-          </Button>
-          <Button
-            variant={selectedView === 'reporte' ? "default" : "outline"}
-            onClick={() => setSelectedView('reporte')}
+            <Button
+              variant={selectedView === 'ranking' ? "default" : "outline"}
+              onClick={() => setSelectedView('ranking')}
+              className="gap-2"
+            >
+              <Trophy className="h-4 w-4" />
+              Ranking
+            </Button>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative"
           >
-            Reportes
-          </Button>
+            <Button
+              variant={selectedView === 'reporte' ? "default" : "ghost"}
+              onClick={() => setSelectedView('reporte')}
+              className={`gap-2 relative bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg ${
+                selectedView === 'reporte' ? 'ring-2 ring-purple-300 ring-offset-2' : ''
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              Reportes
+              <motion.div
+                className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [1, 0.8, 1]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </Button>
+          </motion.div>
         </div>
       </div>
 
