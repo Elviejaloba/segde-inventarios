@@ -9,7 +9,9 @@ import {
   ArrowUpDown,
   BarChart2,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Filter
 } from "lucide-react";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,6 +37,12 @@ import {
   LineChart,
   Line
 } from 'recharts';
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const COLORS = {
   blue: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20',
@@ -155,10 +163,18 @@ export function ReportsView() {
     return (
       <div className="flex items-center justify-center p-8">
         <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
-        />
+          className="flex flex-col items-center gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"
+          />
+          <p className="text-muted-foreground animate-pulse">Cargando datos...</p>
+        </motion.div>
       </div>
     );
   }
@@ -170,33 +186,68 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+      <motion.div 
+        className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 bg-muted/30 p-4 rounded-lg border border-border/50"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Filtros
+          </h3>
+          <div className="flex gap-4">
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <BranchSelectorNew 
+                      value={selectedBranch}
+                      onChange={(value) => setSelectedBranch(value)}
+                      showPlaceholder={true}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Seleccione una sucursal para filtrar los datos</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <SeasonSelector
+                      value={selectedSeason}
+                      onChange={(value) => setSelectedSeason(value as Temporada)}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Filtre por temporada del año</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
         <motion.div 
-          className="flex gap-4"
-          whileHover={{ x: 2 }}
+          className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm"
+          whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
-          <BranchSelectorNew 
-            value={selectedBranch}
-            onChange={(value) => setSelectedBranch(value)}
-            showPlaceholder={true}
-          />
-          <SeasonSelector
-            value={selectedSeason}
-            onChange={(value) => setSelectedSeason(value as Temporada)}
-          />
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span>
+              {selectedBranch === "Todas las Sucursales" 
+                ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
+                : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
+            </span>
+          </div>
         </motion.div>
-        <motion.div 
-          className="text-sm text-muted-foreground"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {selectedBranch === "Todas las Sucursales" 
-            ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
-            : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
-        </motion.div>
-      </div>
+      </motion.div>
 
       <motion.div 
         className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
