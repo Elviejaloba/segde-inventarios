@@ -38,7 +38,8 @@ export function ImportExcel({ isHidden = false }: ImportExcelProps) {
     }
   };
 
-  return (
+  // Si no estamos en modo oculto, renderizar el componente
+  return isHidden ? null : (
     <div className="fixed bottom-4 right-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
       <input
         type="file"
@@ -48,22 +49,31 @@ export function ImportExcel({ isHidden = false }: ImportExcelProps) {
         id="excel-upload"
         disabled={loading}
       />
-      <label
-        htmlFor="excel-upload"
-        className={`inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${
-          loading ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        {loading ? (
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
-          />
-        ) : (
-          'Cargar datos de Excel'
+        {/* Aquí está el botón que necesitamos ocultar/mostrar */}
+        {!isHidden && (
+          <label
+            htmlFor="excel-upload"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {loading ? (
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+              />
+            ) : (
+              'Cargar datos de Excel'
+            )}
+          </label>
         )}
-      </label>
+      </motion.div>
     </div>
   );
 }
