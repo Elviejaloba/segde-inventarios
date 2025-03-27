@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Building2,
   Package,
@@ -151,6 +152,8 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
 export function ReportsView() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
   const [selectedSeason, setSelectedSeason] = useState<Temporada>("todas");
+  const [visibleArticulos, setVisibleArticulos] = useState(5);
+  const [visibleComprobantes, setVisibleComprobantes] = useState(5);
   const { metrics, loading } = useAjustesData(
     selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch,
     selectedSeason
@@ -355,7 +358,7 @@ export function ReportsView() {
         <Card className="hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
             <div>
-              <CardTitle className="text-xl font-semibold">Top 10 Artículos más Ajustados</CardTitle>
+              <CardTitle className="text-xl font-semibold">Top Artículos más Ajustados</CardTitle>
               <p className="text-sm text-muted-foreground">Artículos con mayor movimiento</p>
             </div>
             <Package className="h-6 w-6 text-primary" />
@@ -371,16 +374,36 @@ export function ReportsView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {metrics?.topArticulos.map((articulo) => (
-                  <TableRow key={`${articulo.codigo}-${articulo.sucursal}`} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{articulo.codigo}</TableCell>
-                    <TableCell>{articulo.articulo}</TableCell>
-                    <TableCell>{articulo.sucursal}</TableCell>
-                    <TableCell>{formatNumber(Math.abs(articulo.cantidad))}</TableCell>
-                  </TableRow>
-                ))}
+                <AnimatePresence>
+                  {metrics?.topArticulos.slice(0, visibleArticulos).map((articulo) => (
+                    <motion.tr
+                      key={`${articulo.codigo}-${articulo.sucursal}`}
+                      className="hover:bg-muted/50"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <TableCell className="font-medium">{articulo.codigo}</TableCell>
+                      <TableCell>{articulo.articulo}</TableCell>
+                      <TableCell>{articulo.sucursal}</TableCell>
+                      <TableCell>{formatNumber(Math.abs(articulo.cantidad))}</TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </TableBody>
             </Table>
+            {metrics?.topArticulos.length > visibleArticulos && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setVisibleArticulos(prev => prev + 5)}
+                  className="transition-all duration-200 hover:scale-105"
+                >
+                  Mostrar más artículos
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
@@ -408,18 +431,38 @@ export function ReportsView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {metrics?.ajustesPorComprobante.map((comprobante) => (
-                  <TableRow key={comprobante.nroComprobante} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{comprobante.nroComprobante}</TableCell>
-                    <TableCell>{formatDate(comprobante.fecha)}</TableCell>
-                    <TableCell>{comprobante.sucursal}</TableCell>
-                    <TableCell>{comprobante.articulo}</TableCell>
-                    <TableCell>{comprobante.codArticulo}</TableCell>
-                    <TableCell>{formatNumber(Math.abs(comprobante.cantidad))}</TableCell>
-                  </TableRow>
-                ))}
+                <AnimatePresence>
+                  {metrics?.ajustesPorComprobante.slice(0, visibleComprobantes).map((comprobante) => (
+                    <motion.tr
+                      key={comprobante.nroComprobante}
+                      className="hover:bg-muted/50"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <TableCell className="font-medium">{comprobante.nroComprobante}</TableCell>
+                      <TableCell>{formatDate(comprobante.fecha)}</TableCell>
+                      <TableCell>{comprobante.sucursal}</TableCell>
+                      <TableCell>{comprobante.articulo}</TableCell>
+                      <TableCell>{comprobante.codArticulo}</TableCell>
+                      <TableCell>{formatNumber(Math.abs(comprobante.cantidad))}</TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </TableBody>
             </Table>
+            {metrics?.ajustesPorComprobante.length > visibleComprobantes && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setVisibleComprobantes(prev => prev + 5)}
+                  className="transition-all duration-200 hover:scale-105"
+                >
+                  Mostrar más comprobantes
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
