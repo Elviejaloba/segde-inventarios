@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { BranchSelectorNew } from "@/components/branch-selector-new";
 import { SeasonSelector } from "@/components/season-selector";
 import {
   Table,
@@ -185,11 +184,6 @@ export function ReportsView() {
           whileHover={{ x: 2 }}
           transition={{ duration: 0.2 }}
         >
-          <BranchSelectorNew 
-            value={selectedBranch}
-            onChange={(value) => setSelectedBranch(value)}
-            showPlaceholder={false}
-          />
           <SeasonSelector
             value={selectedSeason}
             onChange={(value) => setSelectedSeason(value as Temporada)}

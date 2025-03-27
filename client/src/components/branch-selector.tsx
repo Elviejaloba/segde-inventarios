@@ -11,12 +11,15 @@ import { Branch, AVAILABLE_BRANCHES } from "@/lib/store";
 interface BranchSelectorProps {
   value: Branch | undefined;
   onChange: (branch: Branch) => void;
+  hidden?: boolean;  // Nueva prop para controlar visibilidad
 }
 
-export function BranchSelector({ value, onChange }: BranchSelectorProps) {
+export function BranchSelector({ value, onChange, hidden = false }: BranchSelectorProps) {
   const handleChange = useCallback((newValue: string) => {
     onChange(newValue as Branch);
   }, [onChange]);
+
+  if (hidden) return null;  // Si hidden es true, no renderizar nada
 
   return (
     <Select value={value} onValueChange={handleChange}>
