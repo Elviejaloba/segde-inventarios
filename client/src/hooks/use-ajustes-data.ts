@@ -23,7 +23,7 @@ function estaEnTemporada(fechaStr: string | number, temporada: Temporada): boole
     // Si es un número serial de Excel, convertirlo a fecha
     const EXCEL_START_DATE = new Date(1899, 11, 30);
     const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
-    const fecha = typeof fechaStr === 'number' 
+    const fecha = typeof fechaStr === 'number'
       ? new Date(EXCEL_START_DATE.getTime() + fechaStr * MILLISECONDS_PER_DAY)
       : new Date(fechaStr);
 
@@ -159,20 +159,22 @@ function calcularTopSucursales(data: any[]) {
 }
 
 function calcularTopArticulos(data: any[]) {
-  const articulos = data.reduce((acc, ajuste) => {
-    const key = `${ajuste.codArticulo}-${ajuste.sucursal}`;
-    if (!acc[key]) {
-      acc[key] = {
-        codigo: ajuste.codArticulo,
-        articulo: ajuste.articulo,
-        cantidad: 0,
-        sucursal: ajuste.sucursal,
-        nroComprobante: ajuste.nroComprobante
-      };
-    }
-    acc[key].cantidad += Math.abs(Number(ajuste.cantidad));
-    return acc;
-  }, {});
+  const articulos = data
+    .filter(ajuste => !ajuste.codArticulo.startsWith('BO')) // Filtrar artículos que empiezan con BO
+    .reduce((acc, ajuste) => {
+      const key = `${ajuste.codArticulo}-${ajuste.sucursal}`;
+      if (!acc[key]) {
+        acc[key] = {
+          codigo: ajuste.codArticulo,
+          articulo: ajuste.articulo,
+          cantidad: 0,
+          sucursal: ajuste.sucursal,
+          nroComprobante: ajuste.nroComprobante
+        };
+      }
+      acc[key].cantidad += Math.abs(Number(ajuste.cantidad));
+      return acc;
+    }, {});
 
   return Object.values(articulos)
     .sort((a: any, b: any) => Math.abs(b.cantidad) - Math.abs(a.cantidad))
@@ -213,7 +215,7 @@ function calcularResumen(data: any[]) {
   }, {});
 
   const sucursalMasImpacto = Object.entries(impactoPorSucursal)
-    .reduce((max, [sucursal, cantidad]) => 
+    .reduce((max, [sucursal, cantidad]) =>
       (cantidad as number) > max.cantidad ? { nombre: sucursal, cantidad: cantidad as number } : max,
       { nombre: '', cantidad: 0 }
     );
