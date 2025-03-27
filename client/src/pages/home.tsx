@@ -10,7 +10,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { storage } from "@/lib/storage";
 import confetti from 'canvas-confetti';
-import { analytics } from "@/lib/analytics"; // Added import
+import { analytics } from "@/lib/analytics";
 
 
 // Lista de códigos sanitizados (reemplazando caracteres no permitidos)
@@ -43,7 +42,7 @@ const desanitizeCode = (code: string) => {
 interface ItemState {
   completed: boolean;
   hasStock: boolean;
-  lastUpdated?: number; // Added lastUpdated field
+  lastUpdated?: number;
 }
 
 const MOTIVATION_MESSAGES = {
@@ -350,7 +349,7 @@ export default function Home() {
               className="gap-2 w-full sm:w-auto bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <ArrowLeft className="h-4 w-4 text-primary" />
-              Ver Ranking
+              Volver al Dashboard
             </Button>
           )}
           <BranchSelector
@@ -376,9 +375,6 @@ export default function Home() {
                 <span>Checklist de {selectedBranch}</span>
                 {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
               </CardTitle>
-              <CardDescription>
-                Marque los items completados y los que no tienen stock disponible
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -468,16 +464,7 @@ export default function Home() {
           )}
         </div>
       ) : (
-        <div>
-          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-            <LineChart className="h-6 w-6" />
-            Ranking de Sucursales
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Seleccione una sucursal para ver su detalle
-          </p>
-          <Dashboard onBranchSelect={loadBranchData} />
-        </div>
+        <Dashboard onBranchSelect={loadBranchData} />
       )}
     </div>
   );

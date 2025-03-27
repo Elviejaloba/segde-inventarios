@@ -165,12 +165,12 @@ export function ReportsView() {
 
   return (
     <motion.div 
-      className="space-y-8 p-4"
+      className="space-y-8"
       variants={containerAnimation}
       initial="hidden"
       animate="show"
     >
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <motion.div 
           className="flex gap-4"
           whileHover={{ x: 2 }}

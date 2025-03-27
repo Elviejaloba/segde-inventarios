@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
-import { Trophy, AlertCircle, RefreshCw } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCw, LineChart } from "lucide-react";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +77,15 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            <LineChart className="h-6 w-6" />
+            Ranking de Sucursales
+          </h2>
+          <p className="text-muted-foreground">
+            Seleccione una sucursal para ver su detalle
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button
             variant={selectedView === 'ranking' ? "default" : "outline"}
