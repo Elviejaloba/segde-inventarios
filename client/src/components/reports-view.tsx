@@ -179,6 +179,25 @@ export function ReportsView() {
     );
   }
 
+  // Calcular el rango de fechas disponible
+  const fechaMin = metrics?.ajustesPorComprobante?.reduce((min, item) => {
+    try {
+      if (!min || new Date(formatDate(item.fecha)) < new Date(formatDate(min))) {
+        return item.fecha;
+      }
+    } catch (e) {}
+    return min;
+  }, '');
+  
+  const fechaMax = metrics?.ajustesPorComprobante?.reduce((max, item) => {
+    try {
+      if (!max || new Date(formatDate(item.fecha)) > new Date(formatDate(max))) {
+        return item.fecha;
+      }
+    } catch (e) {}
+    return max;
+  }, '');
+  
   return (
     <motion.div 
       className="space-y-8"
@@ -233,20 +252,33 @@ export function ReportsView() {
           </div>
         </div>
 
-        <motion.div 
-          className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm w-full md:w-auto"
-          whileHover={{ scale: 1.02 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {selectedBranch === "Todas las Sucursales" 
-                ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
-                : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
-            </span>
-          </div>
-        </motion.div>
+        <div className="flex flex-col gap-2 w-full md:w-auto">
+          <motion.div 
+            className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>
+                {selectedBranch === "Todas las Sucursales" 
+                  ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
+                  : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
+              </span>
+            </div>
+          </motion.div>
+          
+          {fechaMin && fechaMax && (
+            <div className="text-xs text-muted-foreground bg-primary/5 p-2 rounded-md border border-primary/20">
+              <div className="flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 text-primary" />
+                <span>
+                  Datos disponibles: {formatDate(fechaMin)} - {formatDate(fechaMax)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       <motion.div 
