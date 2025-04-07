@@ -6,22 +6,17 @@ import requests
 import datetime
 from urllib.parse import quote
 
-# Mapeo de sucursales (copiado del archivo store.ts)
+# Mapeo de sucursales (actualizado según store.ts)
 SUCURSAL_MAPPING = {
-    "LA TIJERA SMARTIN": "T.S.Martin",
-    "TIJERITA TREP": "T.Trelew",
-    "LA TIJERA TREP": "T.Trelew",
-    "TRELEW": "Trelew",
-    "LA TIJERA RADA": "T.Rada Tilly",
-    "C.RIVADAVIA": "C.Rivadavia",
-    "RADA TILLY": "Rada Tilly",
-    "SUCURSAL ESQUEL": "Esquel",
-    "POSADAS": "Posadas",
-    "SUCU. TRELEW": "Trelew",
-    "SUCURSAL TREP": "Trelew",
-    "SUCURSAL S.MARTIN": "S.Martin",
-    "VILLA LA ANGOSTURA": "V.Angostura",
-    "SAN MARTIN DE LOS ANDES": "S.Martin"
+    'LA TIJERA SMARTIN': 'T.S.Martin',
+    'LA TIJERA LUJAN': 'T.Lujan',
+    'LA TIJERA MAIPU': 'T.Maipu',
+    'LA TIJERA TUNUYAN': 'T.Tunuyan',
+    'LA TIJERA SAN JUAN': 'T.Sjuan',
+    'LA TIJERA MENDOZA': 'T.Mendoza',
+    'LA TIJERA SAN LUIS': 'T.Luis',
+    'CRISA 2': 'Crisa2',
+    'LA TIJERA SAN RAFAEL': 'T.Srafael'
 }
 
 def excel_serial_date_to_js_date(serial):
