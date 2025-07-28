@@ -252,6 +252,7 @@ export default function Home() {
       }, {} as Record<string, ItemState>);
 
       console.log('Items inicializados con CODES:', Object.keys(initializedItems).slice(0, 10));
+      console.log('Ejemplo de items inicializados:', Object.entries(initializedItems).slice(0, 3));
       setItems(initializedItems);
       analytics.logAction('branch_select', { branch });
 
@@ -357,6 +358,8 @@ export default function Home() {
     const noStockPercentage = (noStockCount / totalItems) * 100;
     
     console.log(`Progreso calculado: ${completedCount}/${totalItems} = ${completedPercentage.toFixed(1)}%`);
+    console.log('Items disponibles:', Object.keys(items).length);
+    console.log('Items completados:', Object.values(items).filter(i => i?.completed).length);
     
     return {
       completed: completedPercentage,
