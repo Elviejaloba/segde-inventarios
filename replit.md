@@ -73,6 +73,38 @@ The system follows a hybrid architecture combining multiple technologies:
 - **Framer Motion**: Animation library for enhanced user experience
 - **React Query**: Data fetching and caching for optimal performance
 
+## Deployment Configuration
+
+### Production Build Process
+- **Build Command**: `npm run build` - Compiles both frontend and backend for production
+- **Frontend Build**: Vite builds React application to `dist/public/`
+- **Backend Build**: esbuild compiles server code to `dist/index.js`
+- **Start Command**: `npm start` - Runs production server with NODE_ENV=production
+
+### Port Configuration
+- **Production Port**: 5000 (configured in server/index.ts)
+- **Host Binding**: 0.0.0.0 for external access
+- **Static Files**: Served from `dist/public/` in production mode
+
+### Required .replit Configuration Changes for Deployment
+To enable production deployment, the following changes are needed in .replit file:
+
+```toml
+[deployment]
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "npm run build && npm start"]
+```
+
+### Environment Variables
+- **NODE_ENV**: Set to "production" for deployment
+- **DATABASE_URL**: PostgreSQL connection string
+- **Firebase configuration**: Various FIREBASE_* environment variables
+
+### Build Verification
+- Build output creates optimized bundles in `dist/public/assets/`
+- Production server serves static files and API routes on port 5000
+- Application automatically switches between development and production modes based on NODE_ENV
+
 ### Python Dependencies
 - **Streamlit**: Web application framework for reporting tools
 - **Pandas**: Data manipulation and analysis
