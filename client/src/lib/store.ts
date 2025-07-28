@@ -9,7 +9,8 @@ export type Branch =
   | 'T.Mendoza' 
   | 'T.Luis' 
   | 'Crisa2' 
-  | 'T.Srafael';
+  | 'T.Srafael'
+  | 'Ctro. de Distribucion';
 
 export type Season = 'temporada-verano' | null;
 
@@ -23,7 +24,8 @@ export const SUCURSAL_MAPPING: Record<string, Branch> = {
   'LA TIJERA MENDOZA': 'T.Mendoza',
   'LA TIJERA SAN LUIS': 'T.Luis',
   'CRISA 2': 'Crisa2',
-  'LA TIJERA SAN RAFAEL': 'T.Srafael'
+  'LA TIJERA SAN RAFAEL': 'T.Srafael',
+  'CENTRO DE DISTRIBUCION': 'Ctro. de Distribucion'
 };
 
 // Códigos reales para la temporada de verano
@@ -151,5 +153,6 @@ export const AVAILABLE_BRANCHES: Branch[] = [
   'T.Tunuyan',
   'T.Lujan',
   'T.Maipu',
-  'T.Srafael'
+  'T.Srafael',
+  'Ctro. de Distribucion'
 ];

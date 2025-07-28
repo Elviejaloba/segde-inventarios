@@ -60,6 +60,65 @@ class FirebaseStorage {
         console.log('Initial data created successfully with summer season codes');
       } else {
         console.log('Data structure already exists');
+        
+        // Verificar si falta la nueva sucursal y agregarla
+        const currentData = snapshot.val();
+        const existingBranches = currentData.map((branch: any) => branch.id);
+        const missingBranches = AVAILABLE_BRANCHES.filter(branch => !existingBranches.includes(branch));
+        
+        if (missingBranches.length > 0) {
+          console.log('🏢 Agregando nuevas sucursales:', missingBranches);
+          
+          const newBranches = missingBranches.map(branch => {
+            const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+            
+            SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
+              items[code] = {
+                completed: false,
+                hasStock: true,
+                lastUpdated: Date.now()
+              };
+            });
+
+            return {
+              id: branch,
+              totalCompleted: 0,
+              noStock: 0,
+              items,
+              lastUpdated: Date.now()
+            };
+          });
+          
+          const updatedData = [...currentData, ...newBranches];
+          await set(this.dbRef, updatedData);
+          console.log('✅ Nuevas sucursales agregadas exitosamente');
+        }
+        
+        // Forzar agregado de "Ctro. de Distribucion" si no existe
+        if (!existingBranches.includes('Ctro. de Distribucion')) {
+          console.log('🚛 Forzando agregado de Centro de Distribución...');
+          const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+          
+          SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
+            items[code] = {
+              completed: false,
+              hasStock: true,
+              lastUpdated: Date.now()
+            };
+          });
+
+          const newBranch = {
+            id: 'Ctro. de Distribucion',
+            totalCompleted: 0,
+            noStock: 0,
+            items,
+            lastUpdated: Date.now()
+          };
+          
+          const updatedData = [...currentData, newBranch];
+          await set(this.dbRef, updatedData);
+          console.log('✅ Centro de Distribución agregado exitosamente');
+        }
       }
 
       // Inicializar datos de ajustes si no existen
