@@ -221,7 +221,31 @@ class FirebaseStorage {
   async migrateToSeasonCodes() {
     try {
       console.log('Migrando datos existentes a códigos de temporada de verano...');
-      await this.resetAllData();
+      
+      // Reinicializar completamente con códigos de verano
+      const initialData = AVAILABLE_BRANCHES.map(branch => {
+        const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+        
+        // Usar solo los códigos de temporada de verano
+        SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
+          items[code] = {
+            completed: false,
+            hasStock: true,
+            lastUpdated: Date.now()
+          };
+        });
+
+        return {
+          id: branch,
+          totalCompleted: 0,
+          noStock: 0,
+          items,
+          lastUpdated: Date.now()
+        };
+      });
+      
+      // Forzar la actualización en Firebase
+      await set(this.dbRef, initialData);
       console.log('Migración completada exitosamente');
       return true;
     } catch (error: any) {

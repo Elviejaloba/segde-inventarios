@@ -217,13 +217,14 @@ export default function Home() {
         if (branchesData && branchesData.length > 0) {
           const firstBranch = branchesData[0];
           const hasOldCodes = firstBranch.items && Object.keys(firstBranch.items).some(key => 
-            key.includes('505') || key.includes('114f') || key.includes('118m')
+            !SEASON_CODES_TEMPORADA_VERANO.includes(key)
           );
           
           if (hasOldCodes) {
-            console.log('Detectados códigos antiguos, ejecutando migración...');
+            console.log('Detectados códigos que no son de temporada de verano, ejecutando migración...');
             await storage.migrateToSeasonCodes();
-            window.location.reload(); // Recargar para obtener los nuevos datos
+            // Esperar un momento y recargar
+            setTimeout(() => window.location.reload(), 1000);
           }
         }
       } catch (error) {
