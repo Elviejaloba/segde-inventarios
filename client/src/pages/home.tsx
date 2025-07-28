@@ -210,39 +210,14 @@ export default function Home() {
     analytics.logPageView('home');
     const startTime = Date.now();
     
-    // Migrar datos al cargar la página si es necesario
-    const migrateDataIfNeeded = async () => {
-      try {
-        // Verificar si los datos necesitan migración (si contienen códigos antiguos)
-        if (branchesData && branchesData.length > 0) {
-          const firstBranch = branchesData[0];
-          const hasOldCodes = firstBranch.items && Object.keys(firstBranch.items).some(key => 
-            !SEASON_CODES_TEMPORADA_VERANO.includes(key)
-          );
-          
-          if (hasOldCodes) {
-            console.log('Detectados códigos que no son de temporada de verano, ejecutando migración...');
-            await storage.migrateToSeasonCodes();
-            // Esperar un momento y recargar
-            setTimeout(() => window.location.reload(), 1000);
-          }
-        }
-      } catch (error) {
-        console.error('Error durante la migración:', error);
-      }
-    };
+    // Migración automática deshabilitada para evitar bucles
+    console.log('Sistema iniciado con códigos de temporada de verano');
     
-    migrateDataIfNeeded();
-    
-    // Ejecutar verificación automática después de un momento
+    // Verificación única sin migración automática
     setTimeout(() => {
       if (branchesData && branchesData.length > 0) {
-        // Ejecutar migración forzada con los códigos correctos
-        storage.migrateToSeasonCodes().then(() => {
-          console.log('Migración forzada completada con códigos reales');
-          setTimeout(() => window.location.reload(), 1000);
-        }).catch(error => {
-          console.error('Error en migración forzada:', error);
+        storage.verifyAllCodes().catch(error => {
+          console.error('Error en verificación:', error);
         });
       }
     }, 3000);
@@ -270,7 +245,7 @@ export default function Home() {
       
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
-        const existingItem = branchData?.items?.[code]; // Usar código directo en lugar de sanitizado
+        const existingItem = branchData?.items?.[sanitizeCode(code)];
         acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
         return acc;
       }, {} as Record<string, ItemState>);
