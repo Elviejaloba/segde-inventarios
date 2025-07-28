@@ -183,7 +183,12 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
-      console.log(`Actualizando sucursal ${branchId}...`, data);
+      console.log(`🔄 [MULTI-USER] Actualizando sucursal ${branchId}...`, {
+        userId: `user_${Date.now() % 10000}`,
+        timestamp: new Date().toISOString(),
+        changes: Object.keys(data)
+      });
+      
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
@@ -197,16 +202,39 @@ class FirebaseStorage {
 
       let updatedData;
       if (branchIndex !== -1) {
+        const existingBranch = currentData[branchIndex];
         updatedData = [...currentData];
+        
+        // Merge inteligente de items para evitar conflictos
+        const mergedItems = {
+          ...existingBranch.items,
+          ...data.items
+        };
+        
+        // Solo actualizar items que realmente cambiaron
+        if (data.items) {
+          Object.entries(data.items).forEach(([code, newState]) => {
+            const existing = existingBranch.items?.[code];
+            if (!existing || 
+                existing.completed !== newState.completed || 
+                existing.hasStock !== newState.hasStock) {
+              mergedItems[code] = {
+                ...newState,
+                lastUpdated: timestamp
+              };
+              console.log(`📝 [CAMBIO] ${branchId}/${code}: completed=${newState.completed}, hasStock=${newState.hasStock}`);
+            }
+          });
+        }
+        
         updatedData[branchIndex] = {
-          ...updatedData[branchIndex],
+          ...existingBranch,
           ...data,
-          items: {
-            ...updatedData[branchIndex].items,
-            ...data.items
-          },
+          items: mergedItems,
           lastUpdated: timestamp
         };
+        
+        console.log(`✅ [MULTI-USER] Sucursal ${branchId} actualizada por usuario`);
       } else {
         updatedData = [
           ...currentData,
@@ -219,9 +247,9 @@ class FirebaseStorage {
             lastUpdated: timestamp
           }
         ];
+        console.log(`🆕 [MULTI-USER] Nueva sucursal ${branchId} creada`);
       }
 
-      console.log('Guardando datos actualizados:', updatedData);
       await set(this.dbRef, updatedData);
       return updatedData[branchIndex >= 0 ? branchIndex : updatedData.length - 1] as BranchData;
     } catch (error: any) {
