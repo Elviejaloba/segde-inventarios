@@ -71,6 +71,8 @@ const MOTIVATION_MESSAGES = {
 };
 
 const celebrateProgress = (progress: number) => {
+  console.log(`🎆 Iniciando celebración para ${progress}%`);
+  
   const defaults = {
     spread: 360,
     ticks: 100,
@@ -313,9 +315,15 @@ export default function Home() {
         return acc;
       }, {} as Record<string, any>);
 
+      console.log(`Verificando animaciones: ${completedPercentage}% vs último: ${lastToastProgress}%`);
+      
       for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
+        console.log(`Verificando umbral ${thresholdNum}: ${completedPercentage >= thresholdNum} && ${lastToastProgress < thresholdNum}`);
+        
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
+          console.log(`🎉 ACTIVANDO ANIMACIÓN para ${thresholdNum}%!`);
+          
           toast({
             title: message.title,
             description: message.description,
@@ -323,7 +331,15 @@ export default function Home() {
             duration: 8000,
           });
           setLastToastProgress(thresholdNum);
-          setTimeout(() => celebrateProgress(thresholdNum), 100);
+          
+          // Llamar inmediatamente a la animación
+          celebrateProgress(thresholdNum);
+          
+          // También llamar después de un pequeño delay por si el estado no se ha actualizado
+          setTimeout(() => {
+            console.log(`🎊 Ejecutando confetti para ${thresholdNum}%`);
+            celebrateProgress(thresholdNum);
+          }, 200);
         }
       }
 
