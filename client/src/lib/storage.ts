@@ -35,16 +35,29 @@ class FirebaseStorage {
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
-        console.log('Creating initial data structure...');
-        const initialData = AVAILABLE_BRANCHES.map(branch => ({
-          id: branch,
-          totalCompleted: 0,
-          noStock: 0,
-          items: {},
-          lastUpdated: Date.now()
-        }));
+        console.log('Creating initial data structure with summer season codes...');
+        const initialData = AVAILABLE_BRANCHES.map(branch => {
+          const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+          
+          // Inicializar todos los códigos de temporada de verano
+          SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
+            items[code] = {
+              completed: false,
+              hasStock: true,
+              lastUpdated: Date.now()
+            };
+          });
+
+          return {
+            id: branch,
+            totalCompleted: 0,
+            noStock: 0,
+            items,
+            lastUpdated: Date.now()
+          };
+        });
         await set(this.dbRef, initialData);
-        console.log('Initial data created successfully');
+        console.log('Initial data created successfully with summer season codes');
       } else {
         console.log('Data structure already exists');
       }
@@ -172,20 +185,48 @@ class FirebaseStorage {
 
   async resetAllData() {
     try {
-      const initialData = AVAILABLE_BRANCHES.map(branch => ({
-        id: branch,
-        totalCompleted: 0,
-        noStock: 0,
-        items: {},
-        lastUpdated: Date.now()
-      }));
+      // Inicializar con códigos de temporada de verano
+      const initialData = AVAILABLE_BRANCHES.map(branch => {
+        const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+        
+        // Inicializar todos los códigos de temporada de verano
+        SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
+          items[code] = {
+            completed: false,
+            hasStock: true,
+            lastUpdated: Date.now()
+          };
+        });
+
+        return {
+          id: branch,
+          totalCompleted: 0,
+          noStock: 0,
+          items,
+          lastUpdated: Date.now()
+        };
+      });
+      
       await set(this.dbRef, initialData);
       await set(this.ajustesRef, []);
-      console.log('Base de datos reinicializada exitosamente');
+      console.log('Base de datos reinicializada exitosamente con códigos de temporada de verano');
       return initialData;
     } catch (error: any) {
       console.error('Error al reiniciar datos:', error);
       throw new Error('No se pudo reiniciar la base de datos');
+    }
+  }
+
+  // Función especial para migrar datos existentes a códigos de temporada de verano
+  async migrateToSeasonCodes() {
+    try {
+      console.log('Migrando datos existentes a códigos de temporada de verano...');
+      await this.resetAllData();
+      console.log('Migración completada exitosamente');
+      return true;
+    } catch (error: any) {
+      console.error('Error durante la migración:', error);
+      throw new Error('No se pudo completar la migración');
     }
   }
 
@@ -301,7 +342,8 @@ class FirebaseStorage {
 
       if (!snapshot.exists()) {
         // Si la temporada no existe, inicializarla primero
-        await this.initializeSeasonData(season);
+        const codes = season === 'temporada-verano' ? SEASON_CODES_TEMPORADA_VERANO : [];
+        await this.initializeSeasonData(season, codes);
         return this.updateSeasonBranch(season, branchId, data);
       }
 

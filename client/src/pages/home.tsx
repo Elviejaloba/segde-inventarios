@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Branch } from "@/lib/store";
+import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
 import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp, Calendar, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,8 @@ import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
 
 
-// Lista de códigos sanitizados (reemplazando caracteres no permitidos)
-const CODES = [
-  '114F', '505', '138P', '118M', '400I', '505X', '506M', '305K',
-  '605E', '605T', '510M', '506C', '90-91-92-COLOR', '507M', '98KS00',
-  '158S00', '99-COLOR', 'TI125', '98KM', '150P', '30P-30S', '150M-P',
-  '451I', '81M', '81SM', '15S-15C', '7095-color', 'Cortinas-black-out',
-  'Cortinas-tropical', 'Cover'
-];
+// Lista de códigos para temporada de verano
+const CODES = SEASON_CODES_TEMPORADA_VERANO;
 
 // Función para sanitizar códigos al guardar
 const sanitizeCode = (code: string) => {
