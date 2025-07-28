@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { storage } from "@/lib/storage";
+// @ts-ignore
 import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
 
@@ -208,11 +209,35 @@ export default function Home() {
   useEffect(() => {
     analytics.logPageView('home');
     const startTime = Date.now();
+    
+    // Migrar datos al cargar la página si es necesario
+    const migrateDataIfNeeded = async () => {
+      try {
+        // Verificar si los datos necesitan migración (si contienen códigos antiguos)
+        if (branchesData && branchesData.length > 0) {
+          const firstBranch = branchesData[0];
+          const hasOldCodes = firstBranch.items && Object.keys(firstBranch.items).some(key => 
+            key.includes('505') || key.includes('114f') || key.includes('118m')
+          );
+          
+          if (hasOldCodes) {
+            console.log('Detectados códigos antiguos, ejecutando migración...');
+            await storage.migrateToSeasonCodes();
+            window.location.reload(); // Recargar para obtener los nuevos datos
+          }
+        }
+      } catch (error) {
+        console.error('Error durante la migración:', error);
+      }
+    };
+    
+    migrateDataIfNeeded();
+    
     return () => {
       const duration = (Date.now() - startTime) / 1000;
       analytics.logSessionDuration(duration);
     };
-  }, []);
+  }, [branchesData]);
 
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
@@ -227,7 +252,7 @@ export default function Home() {
         const existingItem = branchData?.items?.[sanitizedCode];
         acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
         return acc;
-      }, {});
+      }, {} as Record<string, ItemState>);
 
       setItems(initializedItems);
       analytics.logAction('branch_select', { branch });
@@ -484,7 +509,7 @@ export default function Home() {
           )}
         </div>
       ) : (
-        <Dashboard onBranchSelect={loadBranchData} />
+        <Dashboard onBranchSelect={(branch: string) => loadBranchData(branch as Branch)} />
       )}
     </div>
   );
