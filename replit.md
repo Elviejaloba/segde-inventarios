@@ -103,5 +103,14 @@ The system follows a hybrid architecture combining multiple technologies:
 3. **Branch Isolation**: Each branch operates independently to prevent cross-contamination of data
 4. **Real-time Synchronization**: Firebase enables multiple users to work simultaneously without conflicts
 5. **Excel Integration**: Direct Excel file processing to accommodate existing business workflows
+6. **Season-Specific Codes**: System uses real product codes (TA02B, TA139S00, TV02, etc.) for summer season tracking
 
-The system prioritizes real-time collaboration, data accuracy, and ease of use for inventory tracking across multiple retail locations.
+### Recent Changes
+
+**July 28, 2025**
+- Updated to use actual product codes for summer season (86 specific codes)
+- Replaced generic sequential codes with real codes: TA02B, TA139S00, TA139V00, etc.
+- Implemented forced migration system to update existing data
+- Fixed code visualization issues in branch checklists
+
+The system prioritizes real-time collaboration, data accuracy, and ease of use for inventory tracking across multiple retail locations using authentic product codes.

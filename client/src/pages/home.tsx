@@ -237,8 +237,12 @@ export default function Home() {
     // Ejecutar verificación automática después de un momento
     setTimeout(() => {
       if (branchesData && branchesData.length > 0) {
-        storage.verifyAllCodes().catch(error => {
-          console.error('Error en verificación automática:', error);
+        // Ejecutar migración forzada con los códigos correctos
+        storage.migrateToSeasonCodes().then(() => {
+          console.log('Migración forzada completada con códigos reales');
+          setTimeout(() => window.location.reload(), 1000);
+        }).catch(error => {
+          console.error('Error en migración forzada:', error);
         });
       }
     }, 3000);
