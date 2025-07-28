@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
 import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp, Calendar, Settings } from "lucide-react";
@@ -245,7 +245,8 @@ export default function Home() {
       
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
-        const existingItem = branchData?.items?.[sanitizeCode(code)];
+        // Buscar el item en Firebase usando el código original primero, luego el sanitizado
+        const existingItem = branchData?.items?.[code] || branchData?.items?.[sanitizedCode];
         acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
         return acc;
       }, {} as Record<string, ItemState>);
@@ -343,14 +344,25 @@ export default function Home() {
     }
   };
 
-  const progress = {
-    completed: selectedBranch
-      ? (Object.values(items).filter(i => i.completed).length / CODES.length) * 100
-      : 0,
-    noStock: selectedBranch
-      ? (Object.values(items).filter(i => i.hasStock === false).length / CODES.length) * 100
-      : 0
-  };
+  const progress = useMemo(() => {
+    if (!selectedBranch || Object.keys(items).length === 0) {
+      return { completed: 0, noStock: 0 };
+    }
+    
+    const totalItems = CODES.length;
+    const completedCount = Object.values(items).filter(i => i.completed).length;
+    const noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
+    
+    const completedPercentage = (completedCount / totalItems) * 100;
+    const noStockPercentage = (noStockCount / totalItems) * 100;
+    
+    console.log(`Progreso calculado: ${completedCount}/${totalItems} = ${completedPercentage.toFixed(1)}%`);
+    
+    return {
+      completed: completedPercentage,
+      noStock: noStockPercentage
+    };
+  }, [selectedBranch, items]);
 
   return (
     <div className="space-y-8">
