@@ -257,13 +257,21 @@ export default function Home() {
 
     try {
       const branchData = branchesData?.find(b => b.id === branch);
+      console.log('Cargando datos de sucursal:', branch, branchData);
+      
+      // Verificar qué códigos hay en los datos de la sucursal
+      if (branchData?.items) {
+        console.log('Códigos encontrados en Firebase:', Object.keys(branchData.items).slice(0, 10));
+      }
+      
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
-        const existingItem = branchData?.items?.[sanitizedCode];
+        const existingItem = branchData?.items?.[code]; // Usar código directo en lugar de sanitizado
         acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
         return acc;
       }, {} as Record<string, ItemState>);
 
+      console.log('Items inicializados con CODES:', Object.keys(initializedItems).slice(0, 10));
       setItems(initializedItems);
       analytics.logAction('branch_select', { branch });
 
@@ -506,7 +514,7 @@ export default function Home() {
                       items[sanitizeCode(code)]?.completed ? 'bg-primary/10' : ''
                     }`}
                   >
-                    <span className="flex-1 font-mono">{desanitizeCode(code)}</span>
+                    <span className="flex-1 font-mono">{code}</span>
                     <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Completado</span>
