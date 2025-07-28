@@ -9,13 +9,21 @@ Your application is already properly configured for production! The build proces
 ## Step-by-Step Fix
 
 ### 1. Update .replit File (Manual Action Required)
-Since the agent cannot modify the `.replit` file directly, you need to manually update it:
+Since the agent cannot modify the `.replit` file directly, you need to manually update it with TWO changes:
 
-**Open your `.replit` file and change line 10 from:**
+**Change #1: Update the main run command on line 2 from:**
+```toml
+run = "npm run dev"
+```
+**To:**
+```toml
+run = "npm run build && npm start"
+```
+
+**Change #2: Update the deployment run command on line 10 from:**
 ```toml
 run = ["sh", "-c", "npm run dev"]
 ```
-
 **To:**
 ```toml
 run = ["sh", "-c", "npm run build && npm start"]

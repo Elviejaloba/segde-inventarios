@@ -89,11 +89,25 @@ The system follows a hybrid architecture combining multiple technologies:
 ### Required .replit Configuration Changes for Deployment
 To enable production deployment, the following changes are needed in .replit file:
 
-```toml
-[deployment]
-deploymentTarget = "cloudrun"
-run = ["sh", "-c", "npm run build && npm start"]
-```
+**IMPORTANT:** The agent cannot edit .replit files directly. You must manually make these changes:
+
+1. **Update line 2** from:
+   ```toml
+   run = "npm run dev"
+   ```
+   to:
+   ```toml
+   run = "npm run build && npm start"
+   ```
+
+2. **Update line 10** in the deployment section from:
+   ```toml
+   run = ["sh", "-c", "npm run dev"]
+   ```
+   to:
+   ```toml
+   run = ["sh", "-c", "npm run build && npm start"]
+   ```
 
 ### Environment Variables
 - **NODE_ENV**: Set to "production" for deployment
