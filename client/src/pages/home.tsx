@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, LineChart, PartyPopper, Trophy, Star, ArrowUp, Calendar, Settings } from "lucide-react";
+import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
-import { SeasonManager } from "@/components/season-manager";
+
 import {
   Card,
   CardContent,
@@ -20,6 +20,7 @@ import { storage } from "@/lib/storage";
 // @ts-ignore
 import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
+import { cleanDuplicatesForBranch } from "@/lib/clean-duplicates";
 
 
 // Lista de códigos para temporada de verano
@@ -192,7 +193,7 @@ export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<'checklist' | 'seasons'>('checklist');
+
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -371,7 +372,7 @@ export default function Home() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
         <div className="flex flex-wrap items-center gap-4">
-          {selectedBranch && currentView === 'checklist' && (
+          {selectedBranch && (
             <Button
               variant="outline"
               onClick={() => {
@@ -386,54 +387,45 @@ export default function Home() {
             </Button>
           )}
           
-          {currentView === 'checklist' && (
+          {!selectedBranch && (
             <BranchSelector
               value={selectedBranch}
               onChange={loadBranchData}
             />
           )}
           
-          <div className="flex gap-2">
-            <Button
-              variant={currentView === 'checklist' ? 'default' : 'outline'}
-              onClick={() => setCurrentView('checklist')}
-              className="gap-2"
-            >
-              <LineChart className="h-4 w-4" />
-              Checklist
-            </Button>
-            <Button
-              variant={currentView === 'seasons' ? 'default' : 'outline'}
-              onClick={() => setCurrentView('seasons')}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              Temporadas
-            </Button>
+          {selectedBranch && (
             <Button
               variant="outline"
               onClick={async () => {
+                if (!selectedBranch) return;
+                setLoading(true);
                 try {
-                  const report = await storage.verifyAllCodes();
+                  await cleanDuplicatesForBranch(selectedBranch);
                   toast({
-                    title: "Verificación Completada",
-                    description: `${report.branchesWithAllCodes}/${report.totalBranches} sucursales tienen todos los códigos correctos`,
-                    variant: report.branchesWithAllCodes === report.totalBranches ? "default" : "destructive",
+                    title: "Datos Limpiados",
+                    description: "Se eliminaron los códigos duplicados. Recargando datos...",
                   });
+                  // Recargar datos después de limpiar
+                  setTimeout(() => {
+                    loadBranchData(selectedBranch);
+                  }, 1000);
                 } catch (error) {
                   toast({
-                    title: "Error en Verificación",
-                    description: "No se pudo completar la verificación",
+                    title: "Error",
+                    description: "No se pudieron limpiar los datos",
                     variant: "destructive",
                   });
+                } finally {
+                  setLoading(false);
                 }
               }}
-              className="gap-2"
+              className="gap-2 text-xs"
             >
-              <Settings className="h-4 w-4" />
-              Verificar Códigos
+              🧹 Limpiar Duplicados
             </Button>
-          </div>
+          )}
+
         </div>
         <div className="text-sm text-foreground bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
           <p className="font-medium text-primary">Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso.</p>
@@ -441,9 +433,7 @@ export default function Home() {
         </div>
       </div>
 
-      {currentView === 'seasons' ? (
-        <SeasonManager />
-      ) : loading ? (
+      {loading ? (
         <div className="flex items-center justify-center p-8">
           <LoadingMascot message="Actualizando datos..." />
         </div>
