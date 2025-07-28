@@ -315,7 +315,9 @@ export default function Home() {
         return acc;
       }, {} as Record<string, any>);
 
-      console.log(`Verificando animaciones: ${completedPercentage}% vs último: ${lastToastProgress}%`);
+      console.log(`🔄 USUARIO ACTUALIZA: ${sanitizedCode} -> ${field} = ${!items[sanitizedCode]?.[field]}`);
+      console.log(`📊 Progreso actual: ${completedPercentage}% (${Object.values(newItems).filter(i => i.completed).length}/${CODES.length})`);
+      console.log(`🎯 Verificando animaciones: ${completedPercentage}% vs último: ${lastToastProgress}%`);
       
       for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
