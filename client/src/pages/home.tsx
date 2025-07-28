@@ -287,6 +287,9 @@ export default function Home() {
     if (!selectedBranch || loading) return;
 
     const sanitizedCode = sanitizeCode(code);
+    const originalCode = code; // Mantener el código original para Firebase
+    
+    // Actualizar estado local con código sanitizado
     const newItems = {
       ...items,
       [sanitizedCode]: {
@@ -307,8 +310,11 @@ export default function Home() {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
       const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
 
-      const updatedItems = Object.entries(newItems).reduce((acc, [key, value]) => {
-        acc[key] = {
+      // Crear objeto para Firebase usando códigos originales (no sanitizados)
+      const firebaseItems = Object.entries(newItems).reduce((acc, [sanitizedKey, value]) => {
+        // Buscar el código original correspondiente al sanitizado
+        const originalCode = CODES.find(c => sanitizeCode(c) === sanitizedKey) || sanitizedKey;
+        acc[originalCode] = {
           ...value,
           lastUpdated: Date.now()
         };
@@ -345,8 +351,14 @@ export default function Home() {
         }
       }
 
+      console.log('💾 Guardando en Firebase:', {
+        branch: selectedBranch,
+        itemsCount: Object.keys(firebaseItems).length,
+        completed: completedPercentage
+      });
+
       await storage.updateBranch(selectedBranch, {
-        items: updatedItems,
+        items: firebaseItems,
         totalCompleted: completedPercentage,
         noStock: noStockCount,
       });
