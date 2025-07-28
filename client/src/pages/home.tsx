@@ -20,7 +20,7 @@ import { storage } from "@/lib/storage";
 // @ts-ignore
 import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
-import { cleanDuplicatesForBranch } from "@/lib/clean-duplicates";
+
 
 
 // Lista de códigos para temporada de verano
@@ -242,13 +242,18 @@ export default function Home() {
       // Verificar qué códigos hay en los datos de la sucursal
       if (branchData?.items) {
         console.log('Códigos encontrados en Firebase:', Object.keys(branchData.items).slice(0, 10));
+        console.log('Total de códigos en Firebase:', Object.keys(branchData.items).length);
       }
       
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
         // Buscar el item en Firebase usando el código original primero, luego el sanitizado
         const existingItem = branchData?.items?.[code] || branchData?.items?.[sanitizedCode];
-        acc[sanitizedCode] = existingItem || { completed: false, hasStock: true };
+        if (existingItem) {
+          acc[sanitizedCode] = existingItem;
+        } else {
+          acc[sanitizedCode] = { completed: false, hasStock: true };
+        }
         return acc;
       }, {} as Record<string, ItemState>);
 
@@ -394,37 +399,7 @@ export default function Home() {
             />
           )}
           
-          {selectedBranch && (
-            <Button
-              variant="outline"
-              onClick={async () => {
-                if (!selectedBranch) return;
-                setLoading(true);
-                try {
-                  await cleanDuplicatesForBranch(selectedBranch);
-                  toast({
-                    title: "Datos Limpiados",
-                    description: "Se eliminaron los códigos duplicados. Recargando datos...",
-                  });
-                  // Recargar datos después de limpiar
-                  setTimeout(() => {
-                    loadBranchData(selectedBranch);
-                  }, 1000);
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: "No se pudieron limpiar los datos",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="gap-2 text-xs"
-            >
-              🧹 Limpiar Duplicados
-            </Button>
-          )}
+
 
         </div>
         <div className="text-sm text-foreground bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm animate-[fadeIn_1s_ease-in] italic w-full md:w-auto">
