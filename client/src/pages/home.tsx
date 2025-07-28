@@ -234,6 +234,15 @@ export default function Home() {
     
     migrateDataIfNeeded();
     
+    // Ejecutar verificación automática después de un momento
+    setTimeout(() => {
+      if (branchesData && branchesData.length > 0) {
+        storage.verifyAllCodes().catch(error => {
+          console.error('Error en verificación automática:', error);
+        });
+      }
+    }, 3000);
+    
     return () => {
       const duration = (Date.now() - startTime) / 1000;
       analytics.logSessionDuration(duration);
@@ -398,6 +407,29 @@ export default function Home() {
             >
               <Calendar className="h-4 w-4" />
               Temporadas
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const report = await storage.verifyAllCodes();
+                  toast({
+                    title: "Verificación Completada",
+                    description: `${report.branchesWithAllCodes}/${report.totalBranches} sucursales tienen todos los códigos correctos`,
+                    variant: report.branchesWithAllCodes === report.totalBranches ? "default" : "destructive",
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Error en Verificación",
+                    description: "No se pudo completar la verificación",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Verificar Códigos
             </Button>
           </div>
         </div>

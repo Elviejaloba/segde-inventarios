@@ -183,6 +183,91 @@ class FirebaseStorage {
     }
   }
 
+  // Función para verificar que todos los códigos estén presentes
+  async verifyAllCodes() {
+    try {
+      console.log('=== VERIFICACIÓN DE CÓDIGOS DE TEMPORADA DE VERANO ===');
+      console.log(`Códigos esperados: ${SEASON_CODES_TEMPORADA_VERANO.length} códigos`);
+      console.log(`Sucursales a verificar: ${AVAILABLE_BRANCHES.length} sucursales`);
+      
+      const snapshot = await get(this.dbRef);
+      const data = snapshot.val() || [];
+      const report = {
+        totalBranches: AVAILABLE_BRANCHES.length,
+        expectedCodes: SEASON_CODES_TEMPORADA_VERANO.length,
+        branchesWithAllCodes: 0,
+        branchesWithMissingCodes: 0,
+        branchesWithExtraCodes: 0,
+        details: [] as any[]
+      };
+      
+      for (const branch of AVAILABLE_BRANCHES) {
+        const branchData = data.find((b: any) => b.id === branch);
+        const branchReport = {
+          branch,
+          status: 'error',
+          existingCodes: 0,
+          missingCodes: [] as string[],
+          extraCodes: [] as string[]
+        };
+        
+        console.log(`--- Verificando sucursal: ${branch} ---`);
+        
+        if (!branchData) {
+          console.log('❌ No se encontraron datos para esta sucursal');
+          branchReport.status = 'no_data';
+        } else if (!branchData.items) {
+          console.log('❌ No se encontraron items para esta sucursal');
+          branchReport.status = 'no_items';
+        } else {
+          const existingCodes = Object.keys(branchData.items);
+          const missingCodes = SEASON_CODES_TEMPORADA_VERANO.filter(code => !existingCodes.includes(code));
+          const extraCodes = existingCodes.filter(code => !SEASON_CODES_TEMPORADA_VERANO.includes(code));
+          
+          branchReport.existingCodes = existingCodes.length;
+          branchReport.missingCodes = missingCodes;
+          branchReport.extraCodes = extraCodes;
+          
+          console.log(`Códigos encontrados: ${existingCodes.length}/${SEASON_CODES_TEMPORADA_VERANO.length}`);
+          
+          if (missingCodes.length > 0) {
+            console.log(`❌ Códigos faltantes (${missingCodes.length}):`, missingCodes.slice(0, 5).join(', '), missingCodes.length > 5 ? '...' : '');
+            branchReport.status = 'missing_codes';
+            report.branchesWithMissingCodes++;
+          }
+          
+          if (extraCodes.length > 0) {
+            console.log(`⚠️ Códigos extra (${extraCodes.length}):`, extraCodes.slice(0, 5).join(', '), extraCodes.length > 5 ? '...' : '');
+            report.branchesWithExtraCodes++;
+            if (branchReport.status !== 'missing_codes') {
+              branchReport.status = 'extra_codes';
+            }
+          }
+          
+          if (missingCodes.length === 0 && extraCodes.length === 0) {
+            console.log('✅ Todos los códigos están correctos');
+            branchReport.status = 'complete';
+            report.branchesWithAllCodes++;
+          }
+        }
+        
+        report.details.push(branchReport);
+        console.log('');
+      }
+      
+      console.log('=== RESUMEN FINAL ===');
+      console.log(`✅ Sucursales completas: ${report.branchesWithAllCodes}/${report.totalBranches}`);
+      console.log(`❌ Sucursales con códigos faltantes: ${report.branchesWithMissingCodes}`);
+      console.log(`⚠️ Sucursales con códigos extra: ${report.branchesWithExtraCodes}`);
+      console.log(`📊 Total de códigos esperados por sucursal: ${report.expectedCodes}`);
+      
+      return report;
+    } catch (error: any) {
+      console.error('Error durante la verificación:', error);
+      throw new Error('No se pudo completar la verificación');
+    }
+  }
+
   async resetAllData() {
     try {
       // Inicializar con códigos de temporada de verano
@@ -247,7 +332,7 @@ class FirebaseStorage {
       // Forzar la actualización en Firebase
       await set(this.dbRef, initialData);
       console.log('Migración completada exitosamente');
-      return true;
+      return initialData;
     } catch (error: any) {
       console.error('Error durante la migración:', error);
       throw new Error('No se pudo completar la migración');
