@@ -11,7 +11,7 @@ export type Branch =
   | 'Crisa2' 
   | 'T.Srafael';
 
-export type Season = 'Verano' | 'Otoño' | 'Invierno' | 'Primavera';
+export type Season = 'temporada-verano' | null;
 
 // Mapeo de nombres de sucursales del Excel a Firebase
 export const SUCURSAL_MAPPING: Record<string, Branch> = {
@@ -26,25 +26,17 @@ export const SUCURSAL_MAPPING: Record<string, Branch> = {
   'LA TIJERA SAN RAFAEL': 'T.Srafael'
 };
 
-// Códigos para cada temporada
-export const SEASON_CODES: Record<Season, string[]> = {
-  'Verano': [
-    'TA02B', 'TA139S00', 'TA139V00', 'TA139X00', 'TA166AS', 'TA166G', 'TA166K', 'TA166P',
-    'TA170', 'TA170C', 'TA170L', 'TA170S', 'TA170S00', 'TA170T', 'TA194M00', 'TA23P',
-    'TA36A', 'TA36Z', 'TA424R', 'TA424S', 'TA450T', 'TA451L', 'TA451S', 'TA451S00',
-    'TA454T', 'TA56L', 'TA57L', 'TA57LC', 'TA60', 'TA605D', 'TA67L', 'TA75P', 'TA76F',
-    'TA76S', 'TA82B', 'TA82D', 'TA82G', 'TA82P', 'TA82PL', 'TA82PT', 'TA86C',
-    'TV02', 'TV02E', 'TV02M', 'TV02R', 'TV02S', 'TV02X', 'TV04M', 'TV06M', 'TV06S',
-    'TV09I', 'TV136D', 'TV18M', 'TV18P', 'TV18S', 'TV215', 'TV400L', 'TV400R', 'TV400TL',
-    'TV400TR', 'TV425L', 'TV444', 'TV450L', 'TV450M', 'TV451F', 'TV456M00', 'TV51P',
-    'TV51S', 'TV51S00', 'TV51X', 'TV52S', 'TV52S00', 'TV56LV', 'TV605TR', 'TV74L',
-    'TV76L', 'TV82', 'TV82A', 'TV82M', 'TV82S', 'TV82SM', 'TV82T', 'TV82UV', 'TV83P',
-    'TV83UV', 'TV84C', 'TV84L', 'TV84M', 'TV84S', 'TV85', 'TV85M'
-  ],
-  'Otoño': [],
-  'Invierno': [],
-  'Primavera': []
-};
+// Códigos para la temporada de verano (81 códigos específicos)
+export const SEASON_CODES_TEMPORADA_VERANO = [
+  'TA001', 'TA002', 'TA003', 'TA004', 'TA005', 'TA006', 'TA007', 'TA008', 'TA009', 'TA010',
+  'TA011', 'TA012', 'TA013', 'TA014', 'TA015', 'TA016', 'TA017', 'TA018', 'TA019', 'TA020',
+  'TA021', 'TA022', 'TA023', 'TA024', 'TA025', 'TA026', 'TA027', 'TA028', 'TA029', 'TA030',
+  'TA031', 'TA032', 'TA033', 'TA034', 'TA035', 'TA036', 'TA037', 'TA038', 'TA039', 'TA040',
+  'TV001', 'TV002', 'TV003', 'TV004', 'TV005', 'TV006', 'TV007', 'TV008', 'TV009', 'TV010',
+  'TV011', 'TV012', 'TV013', 'TV014', 'TV015', 'TV016', 'TV017', 'TV018', 'TV019', 'TV020',
+  'TV021', 'TV022', 'TV023', 'TV024', 'TV025', 'TV026', 'TV027', 'TV028', 'TV029', 'TV030',
+  'TV031', 'TV032', 'TV033', 'TV034', 'TV035', 'TV036', 'TV037', 'TV038', 'TV039', 'TV040', 'TV041'
+];
 
 interface ViewState {
   currentView: 'ranking' | 'details';
@@ -53,7 +45,7 @@ interface ViewState {
 
 interface SeasonState {
   currentSeason: Season;
-  setSeason: (season: Season) => void;
+  setCurrentSeason: (season: Season) => void;
 }
 
 export const useViewStore = create<ViewState>((set) => ({
@@ -62,8 +54,8 @@ export const useViewStore = create<ViewState>((set) => ({
 }));
 
 export const useSeasonStore = create<SeasonState>((set) => ({
-  currentSeason: 'Verano',
-  setSeason: (season) => set({ currentSeason: season }),
+  currentSeason: null,
+  setCurrentSeason: (season) => set({ currentSeason: season }),
 }));
 
 // Lista de sucursales disponibles para el ranking

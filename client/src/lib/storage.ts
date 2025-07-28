@@ -1,6 +1,6 @@
 import { ref, set, onValue, get } from 'firebase/database';
 import { db } from './firebase';
-import { Branch, AVAILABLE_BRANCHES, Season, SEASON_CODES } from './store';
+import { Branch, AVAILABLE_BRANCHES, Season, SEASON_CODES_TEMPORADA_VERANO } from './store';
 
 interface BranchData {
   id: string;
@@ -190,11 +190,10 @@ class FirebaseStorage {
   }
 
   // Funciones para manejo de temporadas
-  async initializeSeasonData(season: Season) {
+  async initializeSeasonData(season: Season, codes: string[]) {
     try {
       console.log(`Inicializando temporada ${season}...`);
       const seasonRef = this.getSeasonRef(season);
-      const codes = SEASON_CODES[season];
       
       if (codes.length === 0) {
         throw new Error(`No hay códigos definidos para la temporada ${season}`);
@@ -230,11 +229,10 @@ class FirebaseStorage {
     }
   }
 
-  async resetSeasonData(season: Season) {
+  async resetSeasonData(season: Season, codes: string[]) {
     try {
       console.log(`Reiniciando temporada ${season}...`);
       const seasonRef = this.getSeasonRef(season);
-      const codes = SEASON_CODES[season];
       
       const seasonData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
