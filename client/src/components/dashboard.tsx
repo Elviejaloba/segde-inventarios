@@ -85,7 +85,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               Ranking de Sucursales
             </h2>
             <p className="text-muted-foreground">
-              Seleccione una sucursal para ver su detalle
+              Seleccione su sucursal para ver los articulos solicitados:
             </p>
           </div>
         )}
