@@ -1,6 +1,6 @@
 import { ref, set, onValue, get } from 'firebase/database';
 import { db } from './firebase';
-import { Branch, AVAILABLE_BRANCHES } from './store';
+import { Branch, AVAILABLE_BRANCHES, Season, SEASON_CODES } from './store';
 
 interface BranchData {
   id: string;
@@ -23,6 +23,11 @@ interface AjusteData {
 class FirebaseStorage {
   private dbRef = ref(db, 'branches');
   private ajustesRef = ref(db, 'ajustes');
+  
+  // Referencias para temporadas
+  private getSeasonRef(season: Season) {
+    return ref(db, `seasons/${season}`);
+  }
 
   async initializeData() {
     try {
@@ -104,7 +109,7 @@ class FirebaseStorage {
     );
   }
 
-  async updateBranch(branchId: Branch, data: Partial<BranchData>) {
+  async updateBranch(branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
       console.log(`Actualizando sucursal ${branchId}...`, data);
       const snapshot = await get(this.dbRef);
@@ -146,7 +151,7 @@ class FirebaseStorage {
 
       console.log('Guardando datos actualizados:', updatedData);
       await set(this.dbRef, updatedData);
-      return updatedData;
+      return updatedData[branchIndex >= 0 ? branchIndex : updatedData.length - 1] as BranchData;
     } catch (error: any) {
       console.error('Error al actualizar sucursal:', error);
       throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
@@ -181,6 +186,158 @@ class FirebaseStorage {
     } catch (error: any) {
       console.error('Error al reiniciar datos:', error);
       throw new Error('No se pudo reiniciar la base de datos');
+    }
+  }
+
+  // Funciones para manejo de temporadas
+  async initializeSeasonData(season: Season) {
+    try {
+      console.log(`Inicializando temporada ${season}...`);
+      const seasonRef = this.getSeasonRef(season);
+      const codes = SEASON_CODES[season];
+      
+      if (codes.length === 0) {
+        throw new Error(`No hay códigos definidos para la temporada ${season}`);
+      }
+
+      const seasonData = AVAILABLE_BRANCHES.map(branch => {
+        const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+        
+        // Inicializar todos los códigos de la temporada
+        codes.forEach(code => {
+          items[code] = {
+            completed: false,
+            hasStock: true,
+            lastUpdated: Date.now()
+          };
+        });
+
+        return {
+          id: branch,
+          totalCompleted: 0,
+          noStock: 0,
+          items,
+          lastUpdated: Date.now()
+        };
+      });
+
+      await set(seasonRef, seasonData);
+      console.log(`Temporada ${season} inicializada con ${codes.length} códigos`);
+      return seasonData;
+    } catch (error: any) {
+      console.error(`Error al inicializar temporada ${season}:`, error);
+      throw new Error(`No se pudo inicializar la temporada ${season}`);
+    }
+  }
+
+  async resetSeasonData(season: Season) {
+    try {
+      console.log(`Reiniciando temporada ${season}...`);
+      const seasonRef = this.getSeasonRef(season);
+      const codes = SEASON_CODES[season];
+      
+      const seasonData = AVAILABLE_BRANCHES.map(branch => {
+        const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+        
+        // Reinicializar todos los códigos de la temporada
+        codes.forEach(code => {
+          items[code] = {
+            completed: false,
+            hasStock: true,
+            lastUpdated: Date.now()
+          };
+        });
+
+        return {
+          id: branch,
+          totalCompleted: 0,
+          noStock: 0,
+          items,
+          lastUpdated: Date.now()
+        };
+      });
+
+      await set(seasonRef, seasonData);
+      console.log(`Temporada ${season} reiniciada`);
+      return seasonData;
+    } catch (error: any) {
+      console.error(`Error al reiniciar temporada ${season}:`, error);
+      throw new Error(`No se pudo reiniciar la temporada ${season}`);
+    }
+  }
+
+  subscribeToSeasonData(season: Season, callback: (data: BranchData[]) => void) {
+    console.log(`Estableciendo suscripción a temporada ${season}...`);
+    const seasonRef = this.getSeasonRef(season);
+
+    const unsubscribe = onValue(seasonRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          console.log(`Datos de temporada ${season} recibidos:`, data);
+          if (Array.isArray(data)) {
+            callback(data);
+          } else {
+            console.error('Datos de temporada no son un array:', data);
+            callback([]);
+          }
+        } else {
+          console.log(`No hay datos para la temporada ${season}`);
+          callback([]);
+        }
+      },
+      (error) => {
+        console.error(`Error en suscripción a temporada ${season}:`, error);
+        callback([]);
+      }
+    );
+
+    return unsubscribe;
+  }
+
+  async updateSeasonBranch(season: Season, branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
+    try {
+      console.log(`Actualizando sucursal ${branchId} en temporada ${season}...`, data);
+      const seasonRef = this.getSeasonRef(season);
+      const snapshot = await get(seasonRef);
+
+      if (!snapshot.exists()) {
+        // Si la temporada no existe, inicializarla primero
+        await this.initializeSeasonData(season);
+        return this.updateSeasonBranch(season, branchId, data);
+      }
+
+      const currentData = snapshot.val() || [];
+      const branchIndex = currentData.findIndex((b: BranchData) => b.id === branchId);
+      const timestamp = Date.now();
+
+      let updatedData;
+      if (branchIndex !== -1) {
+        updatedData = [...currentData];
+        updatedData[branchIndex] = {
+          ...updatedData[branchIndex],
+          ...data,
+          lastUpdated: timestamp
+        };
+      } else {
+        // Crear nueva sucursal si no existe
+        const newBranchData = {
+          id: branchId,
+          totalCompleted: 0,
+          noStock: 0,
+          items: {},
+          ...data,
+          lastUpdated: timestamp
+        };
+        updatedData = [...currentData, newBranchData];
+      }
+
+      await set(seasonRef, updatedData);
+      console.log(`Sucursal ${branchId} actualizada exitosamente en temporada ${season}`);
+      return updatedData[branchIndex];
+    } catch (error: any) {
+      console.error(`Error al actualizar sucursal en temporada ${season}:`, error);
+      throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
     }
   }
 }
