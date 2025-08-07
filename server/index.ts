@@ -16,31 +16,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ruta de salud básica
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-
-// Inicialización del servidor
-const server = app.listen(5000, '0.0.0.0', () => {
-  log('Servidor iniciado en puerto 5000');
-});
-
-// Configuración adicional después de que el servidor esté funcionando
-(async () => {
+// Función asíncrona para inicializar todo
+async function startServer() {
   try {
-    // Configurar Vite en desarrollo
+    // 1. Registrar rutas API PRIMERO
+    log('Registrando rutas API...');
+    await registerRoutes(app);
+    
+    // 2. Configurar Vite (que maneja el frontend y fallback)
     if (process.env.NODE_ENV !== 'production') {
+      log('Configurando Vite...');
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
-
-    // Registrar rutas después de Vite
-    await registerRoutes(app);
+    
+    log('Servidor configurado correctamente');
   } catch (error) {
     console.error('Error de configuración:', error);
     process.exit(1);
   }
-})();
+}
+
+// Inicializar el servidor
+const server = app.listen(5000, '0.0.0.0', () => {
+  log('Servidor iniciado en puerto 5000');
+  // Configurar todo después de que el servidor esté en funcionamiento
+  startServer();
+});
