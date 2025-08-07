@@ -34,7 +34,7 @@ SUCURSAL_MAPPING = {
 
 def formatear_fecha(fecha_excel):
     """
-    Convierte fecha de Excel a formato DD/MM/YYYY
+    Convierte fecha de Excel a formato YYYY-MM-DD para PostgreSQL
     """
     try:
         if pd.isna(fecha_excel):
@@ -44,11 +44,11 @@ def formatear_fecha(fecha_excel):
         if isinstance(fecha_excel, (int, float)):
             # Convertir número serial de Excel a fecha
             fecha = datetime(1900, 1, 1) + pd.Timedelta(days=fecha_excel - 2)
-            return fecha.strftime('%d/%m/%Y')
+            return fecha.strftime('%Y-%m-%d')
         
         # Si ya es una fecha
         if isinstance(fecha_excel, datetime):
-            return fecha_excel.strftime('%d/%m/%Y')
+            return fecha_excel.strftime('%Y-%m-%d')
         
         # Si es string, intentar parsearlo
         if isinstance(fecha_excel, str):
@@ -57,11 +57,11 @@ def formatear_fecha(fecha_excel):
             for formato in formatos:
                 try:
                     fecha = datetime.strptime(fecha_excel, formato)
-                    return fecha.strftime('%d/%m/%Y')
+                    return fecha.strftime('%Y-%m-%d')
                 except ValueError:
                     continue
         
-        return str(fecha_excel)  # Si no se puede convertir, devolver como string
+        return None  # Si no se puede convertir, devolver None
     except Exception as e:
         print(f"Error al formatear fecha {fecha_excel}: {e}")
         return None
@@ -167,8 +167,10 @@ def importar_ajustes(ruta_archivo):
                 
                 registros_insertados += 1
                 
-                if registros_insertados % 100 == 0:
+                if registros_insertados % 500 == 0:
                     print(f"Procesados {registros_insertados} registros...")
+                    # Hacer commit parcial para evitar transacciones muy largas
+                    conn.commit()
                     
             except Exception as e:
                 errores += 1
