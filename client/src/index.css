@@ -10,4 +10,29 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* Mejoras responsive adicionales */
+  .container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Asegurar que las tablas sean siempre scrolleables horizontalmente en móviles */
+  .table-responsive {
+    @apply overflow-x-auto;
+  }
+  
+  /* Optimizar texto para dispositivos pequeños */
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  /* Espaciado responsive para cards */
+  .card-responsive {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+  
+  /* Grid responsive mejorado */
+  .grid-responsive {
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
 }

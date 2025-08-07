@@ -136,16 +136,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       </div>
 
       {selectedView === 'ranking' ? (
-        <div className="rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[80px]">Posición</TableHead>
-                <TableHead>Sucursal</TableHead>
-                <TableHead className="text-right">Progreso</TableHead>
-                <TableHead className="text-right">Sin Stock</TableHead>
-              </TableRow>
-            </TableHeader>
+        <div className="rounded-md border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Pos.</TableHead>
+                  <TableHead className="min-w-[120px] text-xs sm:text-sm">Sucursal</TableHead>
+                  <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Progreso</TableHead>
+                  <TableHead className="text-right min-w-[80px] text-xs sm:text-sm hidden sm:table-cell">Sin Stock</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {sortedBranches.map((branch, index) => (
                 <TableRow
@@ -157,33 +158,34 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   }`}
                   onClick={() => onBranchSelect?.(branch.id)}
                 >
-                  <TableCell>
+                  <TableCell className="text-xs sm:text-sm">
                     {index < 3 ? (
                       <Trophy 
-                        className={`h-5 w-5 ${
+                        className={`h-4 w-4 sm:h-5 sm:w-5 ${
                           index === 0 ? 'text-yellow-500' :
                           index === 1 ? 'text-gray-400' :
                           'text-amber-600'
                         }`} 
                       />
                     ) : (
-                      <span>{index + 1}</span>
+                      <span className="text-xs sm:text-sm">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell>{branch.id}</TableCell>
+                  <TableCell className="text-xs sm:text-sm font-medium">{branch.id}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Progress value={branch.totalCompleted} className="w-24 h-2" />
                       <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-sm">{branch.noStock} items</span>
+                  <TableCell className="text-right hidden sm:table-cell">
+                    <span className="text-xs sm:text-sm">{branch.noStock} items</span>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </div>
       ) : (
         <ReportsView />
