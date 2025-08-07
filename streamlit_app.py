@@ -82,11 +82,13 @@ elif menu_option == "Reporte x Sucursal":
         )
 
         if sucursal_reporte:
-            # Obtener datos de la sucursal seleccionada
+            # Obtener datos de la sucursal seleccionada con todas las columnas
             query = f"""
-            SELECT *
+            SELECT "Sucursal", "Comprobante", "FechaMovimiento", "TipoMovimiento", 
+                   "Codigo", "Articulo", "Diferencia"
             FROM ajustes_sucursales
             WHERE "Sucursal" = '{sucursal_reporte}'
+            ORDER BY "FechaMovimiento" DESC, "Comprobante" DESC
             """
             df_sucursal = get_data_from_db(query)
 
@@ -111,28 +113,99 @@ elif menu_option == "Reporte x Sucursal":
                     help="Diferencia promedio por comprobante"
                 )
 
+            # Mostrar tabla completa de ajustes
+            st.subheader("📋 Detalle de Ajustes")
+            
+            # Formato de columnas para mejor visualización
+            column_config = {
+                "Sucursal": st.column_config.TextColumn("Sucursal", width="medium"),
+                "Comprobante": st.column_config.TextColumn("Comprobante", width="medium"), 
+                "FechaMovimiento": st.column_config.TextColumn("Fecha", width="small"),
+                "TipoMovimiento": st.column_config.TextColumn("Tipo", width="small"),
+                "Codigo": st.column_config.TextColumn("Código Art.", width="medium"),
+                "Articulo": st.column_config.TextColumn("Artículo", width="large"),
+                "Diferencia": st.column_config.NumberColumn("Cantidad", format="%.2f", width="small")
+            }
+            
+            st.dataframe(
+                df_sucursal,
+                column_config=column_config,
+                use_container_width=True,
+                height=400
+            )
+            
             # Gráfico de códigos con mayor diferencia
-            st.subheader("Top 5 Códigos con Mayor Diferencia")
-            fig, ax = plt.subplots(figsize=(10, 5))
-            top_codigos = df_sucursal.groupby('Codigo')['Diferencia'].sum().sort_values(ascending=False).head(5)
-            sns.barplot(x=top_codigos.values, y=top_codigos.index, ax=ax)
-            plt.title(f'Mayores Diferencias por Código - {sucursal_reporte}')
-            ax.set_xlabel('Diferencia ($)')
-            ax.set_ylabel('Código')
+            st.subheader("📊 Top 10 Códigos con Mayor Movimiento")
+            fig, ax = plt.subplots(figsize=(12, 6))
+            top_codigos = df_sucursal.groupby('Codigo')['Diferencia'].sum().abs().sort_values(ascending=False).head(10)
+            
+            # Color bars based on positive/negative values
+            colors = ['#e74c3c' if val < 0 else '#2ecc71' for val in df_sucursal.groupby('Codigo')['Diferencia'].sum()[top_codigos.index]]
+            
+            bars = ax.barh(range(len(top_codigos)), top_codigos.values, color=colors)
+            ax.set_yticks(range(len(top_codigos)))
+            ax.set_yticklabels(top_codigos.index)
+            ax.set_xlabel('Cantidad Total (Valor Absoluto)')
+            ax.set_ylabel('Código de Artículo')
+            ax.set_title(f'Top 10 Códigos con Mayor Movimiento - {sucursal_reporte}')
+            
+            # Add value labels on bars
+            for i, bar in enumerate(bars):
+                width = bar.get_width()
+                ax.text(width + max(top_codigos.values) * 0.01, bar.get_y() + bar.get_height()/2, 
+                       f'{width:.1f}', ha='left', va='center', fontsize=9)
+            
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close()
 
-            # Tabla de comprobantes con inconsistencias
-            st.subheader("Comprobantes con Inconsistencias")
-            umbral = df_sucursal['Diferencia'].std() * 2
-            inconsistencias = df_sucursal[abs(df_sucursal['Diferencia']) > umbral]
-            if not inconsistencias.empty:
+            # Análisis de movimientos por tipo
+            if 'TipoMovimiento' in df_sucursal.columns and df_sucursal['TipoMovimiento'].notna().any():
+                st.subheader("📈 Análisis por Tipo de Movimiento")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Gráfico de tipos de movimiento
+                    tipo_counts = df_sucursal['TipoMovimiento'].value_counts()
+                    fig, ax = plt.subplots(figsize=(8, 6))
+                    ax.pie(tipo_counts.values, labels=tipo_counts.index, autopct='%1.1f%%', startangle=90)
+                    ax.set_title('Distribución por Tipo de Movimiento')
+                    st.pyplot(fig)
+                    plt.close()
+                
+                with col2:
+                    # Métricas por tipo
+                    st.write("**Resumen por Tipo:**")
+                    for tipo in tipo_counts.index:
+                        tipo_data = df_sucursal[df_sucursal['TipoMovimiento'] == tipo]
+                        total_cantidad = tipo_data['Diferencia'].sum()
+                        cantidad_registros = len(tipo_data)
+                        st.metric(
+                            f"{tipo}",
+                            f"{cantidad_registros} registros",
+                            f"Total: {total_cantidad:.2f}"
+                        )
+            
+            # Tabla de movimientos significativos
+            st.subheader("⚠️ Movimientos Significativos")
+            umbral = df_sucursal['Diferencia'].std() * 1.5 if len(df_sucursal) > 1 else 0
+            movimientos_grandes = df_sucursal[abs(df_sucursal['Diferencia']) > max(umbral, 10)]
+            
+            if not movimientos_grandes.empty:
                 st.dataframe(
-                    inconsistencias[['Comprobante', 'Codigo', 'Diferencia']]
-                    .style.format({'Diferencia': '${:,.2f}'})
+                    movimientos_grandes[['Comprobante', 'FechaMovimiento', 'Codigo', 'Articulo', 'Diferencia']]
+                    .sort_values('Diferencia', key=abs, ascending=False),
+                    column_config={
+                        "Comprobante": "Comprobante",
+                        "FechaMovimiento": "Fecha", 
+                        "Codigo": "Código",
+                        "Articulo": "Artículo",
+                        "Diferencia": st.column_config.NumberColumn("Cantidad", format="%.2f")
+                    },
+                    use_container_width=True
                 )
             else:
-                st.info("No se detectaron inconsistencias significativas")
+                st.info("No se detectaron movimientos significativos fuera del rango normal")
 
             # Exportar reporte
             st.download_button(

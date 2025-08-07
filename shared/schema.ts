@@ -52,3 +52,21 @@ export const userSchema = z.object({
 });
 
 export type User = z.infer<typeof userSchema>;
+
+// Schema for adjustments/ajustes
+export const ajusteSchema = z.object({
+  id: z.number().optional(), // Auto-generated
+  Sucursal: z.string(),
+  Comprobante: z.string(),
+  FechaMovimiento: z.string().optional(), // Date as string in DD/MM/YYYY format
+  TipoMovimiento: z.string().optional(),
+  Codigo: z.string(), // Cód. Artículo
+  Articulo: z.string().optional(), // Description of the article
+  Diferencia: z.number() // Cantidad
+});
+
+export type Ajuste = z.infer<typeof ajusteSchema>;
+
+// Insert schema for creating new adjustments
+export const insertAjusteSchema = ajusteSchema.omit({ id: true });
+export type InsertAjuste = z.infer<typeof insertAjusteSchema>;
