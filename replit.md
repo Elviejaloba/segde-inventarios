@@ -153,6 +153,24 @@ To enable production deployment, the following changes are needed in .replit fil
 
 ### Recent Changes
 
+**January 7, 2025**
+- **Major Database Enhancement**: Expanded ajustes_sucursales table with new columns:
+  - Added `Articulo` (TEXT) for product descriptions
+  - Added `FechaMovimiento` (DATE) for movement dates  
+  - Added `TipoMovimiento` (TEXT) for movement types (E/S)
+- **Excel Import System**: Created comprehensive import functionality
+  - Built `import_ajustes_completo.py` with full Excel processing
+  - Created optimized `import_rapido.py` for bulk imports using PostgreSQL COPY
+  - Added automatic sucursal name mapping (LA TIJERA SAN LUIS → T.Luis)
+  - Implemented Excel date conversion and duplicate detection
+- **Data Import Success**: Successfully imported 8951 records from user's Excel file
+  - Processed all columns: Comprobante, Sucursal, Fecha movimiento, Tipo de Movimiento, Cód. Artículo, Artículo, Cantidad
+  - Distribution: Crisa2 (2921), T.S.Martin (1724), T.Lujan (1410), T.Sjuan (958), etc.
+  - Movement analysis: 6792 type "E" (Entry), 2158 type "S" (Exit)
+- **Updated Backend API**: Enhanced with new routes for ajustes data analysis
+- **Streamlit Reports Enhancement**: Updated all reporting tools to display new columns with improved formatting
+- **Documentation**: Created FORMATO_IMPORTACION_EXCEL.md with complete import guide
+
 **July 28, 2025**
 - Updated to use actual product codes for summer season (86 specific codes)
 - Replaced generic sequential codes with real codes: TA02B, TA139S00, TA139V00, etc.
