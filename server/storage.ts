@@ -1,4 +1,12 @@
 import { users, type User, type InsertUser, type Ajuste, type InsertAjuste } from "@shared/schema";
+import { neon } from "@neondatabase/serverless";
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
+
+const sql = neon(databaseUrl);
 
 // modify the interface with any CRUD methods
 // you might need
@@ -20,17 +28,13 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
+export class PostgreSQLStorage implements IStorage {
   private users: Map<number, User>;
-  private ajustes: Map<number, Ajuste>;
   private currentUserId: number;
-  private currentAjusteId: number;
 
   constructor() {
     this.users = new Map();
-    this.ajustes = new Map();
     this.currentUserId = 1;
-    this.currentAjusteId = 1;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -39,7 +43,7 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+      (user) => (user as any).username === username,
     );
   }
 
@@ -51,24 +55,61 @@ export class MemStorage implements IStorage {
   }
 
   async getAjustes(sucursal?: string): Promise<Ajuste[]> {
-    const allAjustes = Array.from(this.ajustes.values());
-    if (sucursal) {
-      return allAjustes.filter(ajuste => ajuste.Sucursal === sucursal);
+    try {
+      let query = 'SELECT * FROM ajustes_sucursales';
+      const params: any[] = [];
+      
+      if (sucursal) {
+        query += ' WHERE "Sucursal" = $1';
+        params.push(sucursal);
+      }
+      
+      query += ' ORDER BY "FechaMovimiento" DESC NULLS LAST LIMIT 1000';
+      
+      const result = await sql(query, params);
+      return result.map((row: any) => ({
+        id: row.id,
+        Sucursal: row.Sucursal,
+        Comprobante: row.Comprobante,
+        FechaMovimiento: row.FechaMovimiento,
+        TipoMovimiento: row.TipoMovimiento,
+        Codigo: row.Codigo,
+        Articulo: row.Articulo,
+        Diferencia: parseFloat(row.Diferencia)
+      }));
+    } catch (error) {
+      console.error('Error getting ajustes:', error);
+      return [];
     }
-    return allAjustes;
   }
 
   async getAjustesBySucursal(sucursal: string): Promise<Ajuste[]> {
-    return Array.from(this.ajustes.values()).filter(
-      ajuste => ajuste.Sucursal === sucursal
-    );
+    return this.getAjustes(sucursal);
   }
 
   async createAjuste(insertAjuste: InsertAjuste): Promise<Ajuste> {
-    const id = this.currentAjusteId++;
-    const ajuste: Ajuste = { ...insertAjuste, id };
-    this.ajustes.set(id, ajuste);
-    return ajuste;
+    try {
+      const result = await sql`
+        INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "FechaMovimiento", "TipoMovimiento", "Codigo", "Articulo", "Diferencia")
+        VALUES (${insertAjuste.Sucursal}, ${insertAjuste.Comprobante}, ${insertAjuste.FechaMovimiento}, ${insertAjuste.TipoMovimiento}, ${insertAjuste.Codigo}, ${insertAjuste.Articulo}, ${insertAjuste.Diferencia})
+        RETURNING *
+      `;
+      
+      const row = result[0];
+      return {
+        id: row.id,
+        Sucursal: row.Sucursal,
+        Comprobante: row.Comprobante,
+        FechaMovimiento: row.FechaMovimiento,
+        TipoMovimiento: row.TipoMovimiento,
+        Codigo: row.Codigo,
+        Articulo: row.Articulo,
+        Diferencia: parseFloat(row.Diferencia)
+      };
+    } catch (error) {
+      console.error('Error creating ajuste:', error);
+      throw error;
+    }
   }
 
   async getAjustesStats(): Promise<{
@@ -77,29 +118,53 @@ export class MemStorage implements IStorage {
     sucursales: string[];
     porSucursal: Array<{ sucursal: string; count: number; total: number; }>;
   }> {
-    const allAjustes = Array.from(this.ajustes.values());
-    const totalAjustes = allAjustes.length;
-    const totalUnidades = allAjustes.reduce((sum, ajuste) => sum + ajuste.Diferencia, 0);
-    
-    const sucursalesSet = new Set(allAjustes.map(ajuste => ajuste.Sucursal));
-    const sucursales = Array.from(sucursalesSet);
-    
-    const porSucursal = sucursales.map(sucursal => {
-      const ajustesSucursal = allAjustes.filter(ajuste => ajuste.Sucursal === sucursal);
-      return {
-        sucursal,
-        count: ajustesSucursal.length,
-        total: ajustesSucursal.reduce((sum, ajuste) => sum + ajuste.Diferencia, 0)
-      };
-    });
+    try {
+      // Total de ajustes
+      const totalResult = await sql`SELECT COUNT(*) as total FROM ajustes_sucursales`;
+      const totalAjustes = parseInt(totalResult[0].total);
 
-    return {
-      totalAjustes,
-      totalUnidades,
-      sucursales,
-      porSucursal
-    };
+      // Total unidades
+      const unidadesResult = await sql`SELECT SUM(ABS("Diferencia")) as total FROM ajustes_sucursales`;
+      const totalUnidades = parseFloat(unidadesResult[0].total) || 0;
+
+      // Sucursales únicas
+      const sucursalesResult = await sql`SELECT DISTINCT "Sucursal" FROM ajustes_sucursales WHERE "Sucursal" IS NOT NULL`;
+      const sucursales = sucursalesResult.map((row: any) => row.Sucursal);
+
+      // Stats por sucursal
+      const porSucursalResult = await sql`
+        SELECT "Sucursal" as sucursal, 
+               COUNT(*) as count, 
+               SUM(ABS("Diferencia")) as total
+        FROM ajustes_sucursales 
+        WHERE "Sucursal" IS NOT NULL
+        GROUP BY "Sucursal"
+        ORDER BY count DESC
+      `;
+      
+      const porSucursal = porSucursalResult.map((row: any) => ({
+        sucursal: row.sucursal,
+        count: parseInt(row.count),
+        total: parseFloat(row.total) || 0
+      }));
+
+      return {
+        totalAjustes,
+        totalUnidades,
+        sucursales,
+        porSucursal
+      };
+    } catch (error) {
+      console.error('Error getting ajustes stats:', error);
+      return {
+        totalAjustes: 0,
+        totalUnidades: 0,
+        sucursales: [],
+        porSucursal: []
+      };
+    }
   }
 }
 
-export const storage = new MemStorage();
+// Create storage instance
+export const storage = new PostgreSQLStorage();

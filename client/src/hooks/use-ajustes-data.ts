@@ -85,37 +85,55 @@ export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas'
       try {
         setLoading(true);
 
-        const unsubscribe = storage.subscribeToAjustes((data) => {
-          if (!mounted || !data) {
-            return;
-          }
+        // Cargar datos desde la API
+        const response = await fetch('/api/ajustes/stats');
+        if (!response.ok) {
+          throw new Error('Error al cargar estadísticas');
+        }
+        
+        const statsData = await response.json();
+        
+        // Cargar datos detallados
+        const ajustesResponse = await fetch(`/api/ajustes${sucursal && sucursal !== 'Todas las Sucursales' ? `?sucursal=${encodeURIComponent(sucursal)}` : ''}`);
+        if (!ajustesResponse.ok) {
+          throw new Error('Error al cargar ajustes');
+        }
+        
+        const data = await ajustesResponse.json();
+        
+        if (!mounted || !data) {
+          return;
+        }
 
-          // Filtrar por sucursal y temporada
-          let filteredData = data;
-          if (sucursal && sucursal !== 'Todas las Sucursales') {
-            filteredData = filteredData.filter(d => d.sucursal === sucursal);
-          }
+        // Los datos ya vienen filtrados por sucursal desde la API
+        // Convertir formato de datos de la API al formato esperado
+        let filteredData = data.map(ajuste => ({
+          sucursal: ajuste.Sucursal,
+          fechaMovimiento: ajuste.FechaMovimiento,
+          cantidad: ajuste.Diferencia,
+          codArticulo: ajuste.Codigo,
+          articulo: ajuste.Articulo,
+          nroComprobante: ajuste.Comprobante,
+          tipoMovimiento: ajuste.TipoMovimiento
+        }));
 
-          // Aplicar filtro de temporada
-          filteredData = filteredData.filter(d => estaEnTemporada(d.fechaMovimiento, temporada));
+        // Aplicar filtro de temporada
+        filteredData = filteredData.filter(d => estaEnTemporada(d.fechaMovimiento, temporada));
 
-          // Calcular métricas
-          const topSucursales = calcularTopSucursales(filteredData);
-          const topArticulos = calcularTopArticulos(filteredData);
-          const ajustesPorComprobante = calcularAjustesPorComprobante(filteredData);
-          const resumen = calcularResumen(filteredData);
+        // Calcular métricas
+        const topSucursales = calcularTopSucursales(filteredData);
+        const topArticulos = calcularTopArticulos(filteredData);
+        const ajustesPorComprobante = calcularAjustesPorComprobante(filteredData);
+        const resumen = calcularResumen(filteredData);
 
-          setMetrics({
-            topSucursales,
-            topArticulos,
-            ajustesPorComprobante,
-            resumen
-          });
-          setError(null);
-          setLoading(false);
+        setMetrics({
+          topSucursales,
+          topArticulos,
+          ajustesPorComprobante,
+          resumen
         });
-
-        return unsubscribe;
+        setError(null);
+        setLoading(false);
       } catch (error) {
         console.error('Error cargando datos:', error);
         if (mounted) {
@@ -125,7 +143,13 @@ export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas'
       }
     };
 
-    loadData();
+    loadData().catch(error => {
+      console.error('Error en loadData:', error);
+      if (mounted) {
+        setError('Error al cargar los datos');
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;

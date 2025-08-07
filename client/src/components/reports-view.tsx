@@ -14,6 +14,7 @@ import {
   Filter
 } from "lucide-react";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
+import { AjustesDashboard } from "@/components/ajustes-dashboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { BranchSelectorNew } from "@/components/branch-selector-new";
 import { SeasonSelector } from "@/components/season-selector";
@@ -205,6 +206,9 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
+      {/* Dashboard de Ajustes */}
+      <AjustesDashboard />
+      
       <motion.div 
         className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 bg-muted/30 p-4 rounded-lg border border-border/50"
         initial={{ opacity: 0, y: -20 }}
