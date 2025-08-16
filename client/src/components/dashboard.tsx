@@ -64,10 +64,18 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   const branches = AVAILABLE_BRANCHES.map(branchId => {
     const branchData = data?.find(d => d.id === branchId);
+    const items = branchData?.items || {};
+    const totalItems = Object.keys(items).length;
+    const noStockItems = Object.values(items).filter(item => !item.hasStock).length;
+    const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
+    
     return {
       id: branchId,
       totalCompleted: branchData?.totalCompleted || 0,
       noStock: branchData?.noStock || 0,
+      noStockPercentage,
+      noStockItems,
+      totalItems,
       items: branchData?.items || {},
       lastUpdated: branchData?.lastUpdated || 0
     };
@@ -143,8 +151,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Pos.</TableHead>
                   <TableHead className="min-w-[120px] text-xs sm:text-sm">Sucursal</TableHead>
-                  <TableHead className="text-right min-w-[100px] text-xs sm:text-sm">Progreso</TableHead>
-                  <TableHead className="text-right min-w-[80px] text-xs sm:text-sm hidden sm:table-cell">Sin Stock</TableHead>
+                  <TableHead className="text-right min-w-[120px] text-xs sm:text-sm">Progreso</TableHead>
+                  <TableHead className="text-right min-w-[130px] text-xs sm:text-sm">Art. Sin Stock</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -174,12 +182,28 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <TableCell className="text-xs sm:text-sm font-medium">{branch.id}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Progress value={branch.totalCompleted} className="w-24 h-2" />
-                      <span className="text-sm">{Math.round(branch.totalCompleted)}%</span>
+                      <Progress value={branch.totalCompleted} className="w-20 sm:w-24 h-2" />
+                      <span className="text-xs sm:text-sm min-w-[35px]">{Math.round(branch.totalCompleted)}%</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right hidden sm:table-cell">
-                    <span className="text-xs sm:text-sm">{branch.noStock} items</span>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="relative w-20 sm:w-24 h-2 bg-red-100 dark:bg-red-900/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-red-500 dark:bg-red-600 rounded-full transition-all duration-300 ease-in-out"
+                          style={{ 
+                            width: `${branch.noStockPercentage}%`,
+                            background: branch.noStockPercentage > 0 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : 'transparent'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs sm:text-sm min-w-[35px] text-red-600 font-medium">
+                        {Math.round(branch.noStockPercentage)}%
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {branch.noStockItems}/{branch.totalItems} arts
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

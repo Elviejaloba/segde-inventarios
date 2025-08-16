@@ -35,4 +35,18 @@
   .grid-responsive {
     @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
+  
+  /* Estilos para barra de progreso sin stock */
+  .progress-no-stock {
+    --progress-background: #fecaca;
+    --progress-foreground: #dc2626;
+  }
+  
+  .progress-no-stock[data-state="complete"] > div {
+    background-color: #dc2626;
+  }
+  
+  .progress-no-stock > div {
+    background-color: #fecaca;
+  }
 }
