@@ -4,7 +4,9 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
+import ImportacionInventario from "@/pages/importacion-inventario";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { Route, Switch } from "wouter";
 
 export default function App() {
   return React.createElement(
@@ -19,7 +21,17 @@ export default function App() {
         React.createElement(
           React.Fragment,
           null,
-          React.createElement(Layout, null, React.createElement(Home)),
+          React.createElement(
+            Layout,
+            null,
+            React.createElement(
+              Switch,
+              null,
+              React.createElement(Route, { path: "/", component: Home }),
+              React.createElement(Route, { path: "/importacion-inventario", component: ImportacionInventario }),
+              React.createElement(Route, { component: Home })
+            )
+          ),
           React.createElement(Toaster)
         )
       )

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Home, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImportExcel } from "@/components/import-excel";
+import { Link, useLocation } from "wouter";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ interface LayoutProps {
 
 export function Layout({ children, hideImport = false, hideBranchSelector = false }: LayoutProps) {
   const { theme, setTheme } = useTheme();
+  const [location] = useLocation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,8 +30,44 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               Seguimiento de Muestreos
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/">
+                    <Button
+                      variant={location === "/" ? "default" : "ghost"}
+                      size="sm"
+                      data-testid="nav-home"
+                    >
+                      <Home className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Dashboard principal</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/importacion-inventario">
+                    <Button
+                      variant={location === "/importacion-inventario" ? "default" : "ghost"}
+                      size="sm"
+                      data-testid="nav-importacion"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Suba de Inventario
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Importación de Toma de Inventario</p>
+                </TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

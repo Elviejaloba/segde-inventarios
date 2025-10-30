@@ -1,15 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { connectDatabaseEmulator } from "firebase/database";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
-// First, log environment variables (hiding sensitive data)
 console.log('Environment check:', {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   hasApiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
   hasAppId: !!import.meta.env.VITE_FIREBASE_APP_ID
 });
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "check-d1753.firebaseapp.com",
@@ -31,8 +31,9 @@ console.log('Firebase configuration:', {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
+const firestore = getFirestore(app);
 
-// Only use emulator in development if explicitly enabled
 if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR) {
   connectDatabaseEmulator(db, 'localhost', 9000);
   console.log('Connected to Firebase emulator');
@@ -41,4 +42,4 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR) {
 }
 
 console.log('Firebase initialization complete');
-export { app, db };
+export { app, db, storage, firestore };
