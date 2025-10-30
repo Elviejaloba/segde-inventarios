@@ -535,13 +535,13 @@ export default function ImportacionInventario() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="border rounded-lg overflow-auto max-h-96">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background z-10">
+                  <div className="relative border rounded-lg overflow-auto max-h-96">
+                    <table className="w-full caption-bottom text-sm">
+                      <TableHeader className="sticky top-0 bg-background z-10 border-b">
                         <TableRow>
                           {analysisResult.preview.length > 0 && 
                             Object.keys(analysisResult.preview[0]).map((header, idx) => (
-                              <TableHead key={idx} className="whitespace-nowrap bg-background">
+                              <TableHead key={idx} className="whitespace-nowrap bg-background border-b">
                                 {header}
                               </TableHead>
                             ))
@@ -559,7 +559,7 @@ export default function ImportacionInventario() {
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
