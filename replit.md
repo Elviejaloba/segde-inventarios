@@ -154,22 +154,42 @@ To enable production deployment, the following changes are needed in .replit fil
 ### Recent Changes
 
 **October 30, 2025**
-- **Nueva Funcionalidad: Importación de Toma de Inventario**
-  - Agregada nueva página React para subir archivos Excel (.xlsx)
-  - Procesamiento completo de archivos Excel en el frontend usando biblioteca xlsx
-  - Detección automática de columnas: Sucursal, Comprobante, Stock Físico (col I), Stock Teórico (col J), Diferencia (col L)
-  - Opción manual para especificar índices de columnas si la detección automática falla
-  - Cálculos agregados por sucursal y número de comprobante
-  - Integración con Firebase Storage para almacenar archivos originales
-  - Integración con Firestore para guardar metadata, datos procesados y muestras
-  - Visualización de datos: preview de primeras 200 filas, resumen agregado, información de detección
-  - Navegación agregada con wouter: botón "Suba de Inventario" en header
-  - Rutas: "/" (Dashboard), "/importacion-inventario" (Nueva página de importación)
-  - Actualizado firebase.ts para incluir Storage y Firestore además de Realtime Database
-- **Mejoras de Navegación**
-  - Agregado menú de navegación en Layout.tsx
-  - Botones de navegación con estado activo/inactivo
-  - Tooltips informativos para cada sección
+- **Sistema de Análisis de Inventario Profesional**
+  - Agregada nueva página React para subir archivos Excel (.xlsx) con análisis completo
+  - Procesamiento avanzado de archivos Excel en el frontend usando biblioteca xlsx
+  - **Detección Automática de Comprobante**: Busca columnas como "comprobante", "nº comprobante", "número de comprobante" en headers
+  - **Análisis Estadístico por Comprobante**:
+    - Totales: Stock Físico (col I), Stock Teórico (col J), Diferencia (col L)
+    - Porcentaje de diferencia calculado automáticamente
+    - Promedio de diferencias y varianza estadística
+    - Detección de outliers (items con >10% de diferencia respecto al teórico)
+    - Conteo de filas procesadas por comprobante
+  - **Visualizaciones con Recharts**:
+    - KPIs principales: Stock Físico Total, Teórico Total, Diferencia, % Diferencia
+    - Gráfico de barras comparativo (Físico vs Teórico vs Diferencia) por comprobante
+    - Tabla detallada con todas las métricas por comprobante
+    - Resaltado de outliers en color ámbar
+    - Muestreo de primeras 20 filas del Excel procesado
+  - **Consolidado Multi-Sucursal** (Nueva página /consolidado):
+    - KPIs globales de todas las sucursales combinadas
+    - Gráfico de barras comparativo entre sucursales
+    - Gráfico de torta de distribución de diferencias
+    - Tabla consolidada con métricas por sucursal
+    - Contadores de tomas procesadas y comprobantes totales
+  - **Persistencia en Firestore**:
+    - Colección `inventory_analysis`: Análisis completo de cada carga
+    - Colección `branch_summaries`: Consolidado acumulativo por sucursal
+    - Actualización atómica con transacciones de Firestore (fix de concurrencia)
+  - **Integración con Firebase Storage**: Archivos originales almacenados en ruta estructurada
+  - **Navegación mejorada**: 3 secciones principales (Dashboard, Suba de Inventario, Consolidado)
+  - **Rutas del sistema**:
+    - "/" - Dashboard principal con tracking de sucursales
+    - "/importacion-inventario" - Página de análisis de inventario
+    - "/consolidado" - Dashboard consolidado multi-sucursal
+  - **Esquemas TypeScript actualizados** en shared/schema.ts:
+    - ComprobanteAnalysis: Análisis por comprobante
+    - InventoryCapture: Metadata de cada carga
+    - BranchSummary: Consolidado por sucursal
 
 **January 7, 2025**
 - **Major Database Enhancement**: Expanded ajustes_sucursales table with new columns:
