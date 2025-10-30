@@ -1,0 +1,473 @@
+<identity>
+You are Replit Assistant embedded in this Repl.
+</identity>
+
+<objective>
+Add a new subpage called “Importación de Toma de Inventario” that lets users upload an Excel file (.xlsx), preview it exactly as-is, and compute, por sucursal y por número de comprobante, la diferencia entre:
+- stock físico (columna I),
+- stock teórico de sistema (columna J),
+- diferencia (columna L).
+
+We must:
+1) Accept Excel uploads (multiple per día/sucursal), preview in a table identical to the sheet (same column order and formatting best-effort).
+2) Parse with pandas (server side) and compute per-row and aggregated metrics por sucursal y por número de comprobante.
+3) Persist metadata + parsed rows in Firebase **Firestore** and store the original file in **Firebase Storage**.
+4) Show dashboards: 
+   - Resumen por sucursal (sumas y conteos).
+   - Resumen por número de comprobante (sumas y conteos).
+   - Tabla de diferencias con filtros (sucursal, comprobante, fecha).
+5) Keep all code idiomatic to the existing stack (Flask or FastAPI), minimal invasive changes.
+</objective>
+
+<constraints_and_assumptions>
+- Detect stack:
+  - If Flask app entry is `app.py` or `main.py` exposing `app = Flask(__name__)`, add a Blueprint `importacion` in `routes/importacion.py` and register it.
+  - If FastAPI app entry is `main.py` exposing `app = FastAPI()`, add a router `routers/importacion.py` and include it.
+- Create a template page and static JS/CSS with a simple, clean UI (Tailwind via CDN).
+- Excel engine: `openpyxl`.
+- Pandas for parsing and aggregation.
+- Firebase: use `firebase_admin` (service account) in backend. Store service account JSON in a Secret named `FIREBASE_CREDENTIALS_JSON`. Also add `FIREBASE_STORAGE_BUCKET` and `FIREBASE_PROJECT_ID` as Secrets.
+- Columns:
+  - Columna I = índice 9 (1-based) = 8 (0-based) → “fisico”.
+  - Columna J = índice 10 (1-based) = 9 (0-based) → “teorico”.
+  - Columna L = índice 12 (1-based) = 11 (0-based) → “diferencia”.
+  - “Sucursal” y “Número de comprobante”: intentar detectar por encabezado (“Sucursal”, “Sucursal/Depósito”, “Comprobante”, “Nº Comprobante”, “Numero de Comprobante”). Si no hay encabezados claros, permitir selección manual de columnas en UI.
+- Preserve user’s original column order when previewing. Do not rename columns in the preview.
+- Files up to ~15MB.
+- Security: only accept `.xlsx`. Validate MIME. Do not execute formulas.
+</constraints_and_assumptions>
+
+<proposed_package_install language="python" package_list="pandas, openpyxl, firebase-admin, python-dotenv, fastapi, uvicorn, flask, python-multipart"/>
+
+<proposed_workspace_tool_nudge tool="secrets">
+Please add these Secrets:
+- FIREBASE_CREDENTIALS_JSON  (full JSON of a Firebase service account)
+- FIREBASE_PROJECT_ID
+- FIREBASE_STORAGE_BUCKET     (e.g. myproject.appspot.com)
+</proposed_workspace_tool_nudge>
+
+<behavioral_rules>
+- Adhere to existing patterns; if both Flask and FastAPI are present, prefer the one used to serve `/`.
+- Keep changes minimal; new files in `routes/` or `routers/`, `templates/importacion.html`, `static/importacion.js`, `services/firebase.py`.
+</behavioral_rules>
+
+<proposed_file_insert file_path="services/firebase.py" change_summary="Firebase admin init with Firestore and Storage helpers" line_number="1">
+from __future__ import annotations
+import json, os
+from typing import Tuple
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
+
+_app = None
+_db = None
+_bucket = None
+
+def init_firebase():
+    global _app, _db, _bucket
+    if _app: 
+        return _db, _bucket
+    creds_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    project_id = os.environ.get("FIREBASE_PROJECT_ID")
+    bucket_name = os.environ.get("FIREBASE_STORAGE_BUCKET")
+    if not creds_json or not project_id or not bucket_name:
+        raise RuntimeError("Missing Firebase secrets: FIREBASE_CREDENTIALS_JSON / PROJECT_ID / STORAGE_BUCKET")
+    cred = credentials.Certificate(json.loads(creds_json))
+    _app = firebase_admin.initialize_app(cred, {"storageBucket": bucket_name, "projectId": project_id})
+    _db = firestore.client()
+    _bucket = storage.bucket()
+    return _db, _bucket
+
+def upload_to_storage(local_path: str, dest_path: str) -> str:
+    _, bucket = init_firebase()
+    blob = bucket.blob(dest_path)
+    blob.upload_from_filename(local_path, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    blob.make_public()
+    return blob.public_url
+
+def save_inventory_metadata(meta: dict, rows_sample: list[dict] | None = None) -> str:
+    db, _ = init_firebase()
+    doc_ref = db.collection("tomas_inventario").add({**meta, "created_at": firestore.SERVER_TIMESTAMP, "rows_sample": rows_sample or []})
+    return str(doc_ref[1].id)
+</proposed_file_insert>
+
+<proposed_file_insert file_path="utils/excel_parse.py" change_summary="Excel parsing utilities for inventory" line_number="1">
+from __future__ import annotations
+import pandas as pd
+from typing import Dict, Any, Tuple
+
+DEF_FISICO_COL_IDX = 8   # 0-based => column I
+DEF_TEORICO_COL_IDX = 9  # 0-based => column J
+DEF_DIF_COL_IDX = 11     # 0-based => column L
+
+POSSIBLE_SUC_HEADERS = ["sucursal","sucursal/deposito","sucursal/depósito","deposito","depósito"]
+POSSIBLE_COMP_HEADERS = ["comprobante","nº comprobante","numero de comprobante","número de comprobante","nro comprobante","nro. comprobante"]
+
+def read_excel_preserve(path: str) -> pd.DataFrame:
+    # Read without forcing dtype; preserve headers if present
+    return pd.read_excel(path, engine="openpyxl", header=0)
+
+def detect_col_by_headers(df: pd.DataFrame, candidates: list[str]) -> int | None:
+    if df is None or df.empty: return None
+    cols = [str(c).strip().lower() for c in df.columns]
+    for idx, name in enumerate(cols):
+        for c in candidates:
+            if c == name:
+                return idx
+    return None
+
+def compute_metrics(df: pd.DataFrame, fisico_idx=DEF_FISICO_COL_IDX, teorico_idx=DEF_TEORICO_COL_IDX, dif_idx=DEF_DIF_COL_IDX,
+                    suc_idx: int | None = None, comp_idx: int | None = None) -> Dict[str, Any]:
+    # Safe access by position (fallback if headers missing)
+    df_calc = df.copy()
+    ncols = df_calc.shape[1]
+    def colsafe(i): return df_calc.iloc[:, i] if 0 <= i < ncols else None
+
+    # Try to detect sucursal/comprobante by header if not provided
+    if suc_idx is None:
+        sdet = detect_col_by_headers(df_calc, POSSIBLE_SUC_HEADERS)
+        if sdet is not None: suc_idx = sdet
+    if comp_idx is None:
+        cdet = detect_col_by_headers(df_calc, POSSIBLE_COMP_HEADERS)
+        if cdet is not None: comp_idx = cdet
+
+    fis = colsafe(fisico_idx)
+    teo = colsafe(teorico_idx)
+    dif = colsafe(dif_idx)
+
+    # Create a normalized table for aggregation (best-effort numeric)
+    out = df_calc.copy()
+    if fis is not None: out["__fisico"] = pd.to_numeric(fis, errors="coerce")
+    if teo is not None: out["__teorico"] = pd.to_numeric(teo, errors="coerce")
+    if dif is not None: out["__diferencia"] = pd.to_numeric(dif, errors="coerce")
+    if suc_idx is not None: out["__sucursal"] = df_calc.iloc[:, suc_idx].astype(str)
+    if comp_idx is not None: out["__comprobante"] = df_calc.iloc[:, comp_idx].astype(str)
+
+    # Aggregations
+    group_keys = []
+    if "__sucursal" in out.columns: group_keys.append("__sucursal")
+    if "__comprobante" in out.columns: group_keys.append("__comprobante")
+
+    agg = {}
+    for k in ["__fisico","__teorico","__diferencia"]:
+        if k in out.columns: agg[k] = "sum"
+    summary = out.groupby(group_keys).agg(agg).reset_index() if group_keys else out[["__fisico","__teorico","__diferencia"]].sum().to_frame().T
+
+    # Convert previews (limit rows for sample storage)
+    preview = df_calc.head(200).fillna("").astype(str).to_dict(orient="records")
+    return {
+        "detected": {"sucursal_idx": suc_idx, "comprobante_idx": comp_idx},
+        "preview_records": preview,
+        "summary_records": summary.fillna(0).to_dict(orient="records")
+    }
+</proposed_file_insert>
+
+<proposed_file_insert file_path="templates/importacion.html" change_summary="UI for Importación de Toma de Inventario" line_number="1">
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Importación de Toma de Inventario</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-2xl font-semibold mb-4">Importación de Toma de Inventario</h1>
+    <form id="uploadForm" class="bg-white p-4 rounded-xl shadow mb-6" enctype="multipart/form-data">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium">Sucursal</label>
+          <input name="sucursal" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Ej: San Juan" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Fecha de Toma</label>
+          <input type="date" name="fecha" class="mt-1 w-full border rounded-lg px-3 py-2" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Archivo Excel (.xlsx)</label>
+          <input type="file" name="file" accept=".xlsx" class="mt-1 w-full" required />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div>
+          <label class="block text-xs text-gray-600">Índice columna Sucursal (opcional)</label>
+          <input name="suc_idx" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="auto" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-600">Índice columna Nº Comprobante (opcional)</label>
+          <input name="comp_idx" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="auto" />
+        </div>
+        <div class="">
+          <button class="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-black text-white" type="submit">Subir y Analizar</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="results" class="space-y-8"></div>
+  </div>
+
+  <script src="/static/importacion.js"></script>
+</body>
+</html>
+</proposed_file_insert>
+
+<proposed_file_insert file_path="static/importacion.js" change_summary="Client-side logic to upload and render previews/summaries" line_number="1">
+async function postForm(url, formData) {
+  const res = await fetch(url, { method: "POST", body: formData });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+function renderTable(container, rows, title) {
+  if (!rows || !rows.length) return;
+  const cols = Object.keys(rows[0]);
+  const table = document.createElement("table");
+  table.className = "min-w-full border bg-white rounded-xl overflow-hidden";
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  cols.forEach(c => {
+    const th = document.createElement("th");
+    th.className = "text-left text-xs font-semibold px-3 py-2 border-b";
+    th.textContent = c;
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    cols.forEach(c => {
+      const td = document.createElement("td");
+      td.className = "text-xs px-3 py-1 border-b";
+      td.textContent = r[c] === null || r[c] === undefined ? "" : String(r[c]);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  const wrap = document.createElement("div");
+  if (title) {
+    const h = document.createElement("h2");
+    h.className = "text-lg font-semibold mb-2";
+    h.textContent = title;
+    wrap.appendChild(h);
+  }
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+  try {
+    const data = await postForm("/importacion/upload", fd);
+    // Preview original (as-is)
+    renderTable(results, data.preview.preview_records, "Vista previa (primeras 200 filas)");
+    // Summary
+    renderTable(results, data.summary.summary_records, "Resumen por Sucursal / Comprobante");
+    // Meta
+    const meta = document.createElement("pre");
+    meta.className = "text-xs text-gray-600";
+    meta.textContent = JSON.stringify({ detected: data.preview.detected, document_id: data.document_id, file_url: data.file_url }, null, 2);
+    results.appendChild(meta);
+  } catch (err) {
+    const p = document.createElement("p");
+    p.className = "text-red-600";
+    p.textContent = "Error: " + err.message;
+    results.appendChild(p);
+  }
+});
+</proposed_file_insert>
+
+<proposed_file_insert file_path="routes/importacion.py" change_summary="Flask blueprint for importación upload/parse/store" line_number="1">
+import os, tempfile, time
+from flask import Blueprint, request, render_template, jsonify
+from werkzeug.utils import secure_filename
+import pandas as pd
+
+from services.firebase import init_firebase, upload_to_storage, save_inventory_metadata
+from utils.excel_parse import read_excel_preserve, compute_metrics
+
+bp = Blueprint("importacion", __name__, url_prefix="/importacion")
+
+@bp.route("/", methods=["GET"])
+def page():
+    return render_template("importacion.html")
+
+@bp.route("/upload", methods=["POST"])
+def upload():
+    sucursal = request.form.get("sucursal", "").strip()
+    fecha = request.form.get("fecha", "").strip()
+    suc_idx = request.form.get("suc_idx", "").strip()
+    comp_idx = request.form.get("comp_idx", "").strip()
+
+    file = request.files.get("file")
+    if not file or not file.filename.lower().endswith(".xlsx"):
+        return ("Solo se aceptan archivos .xlsx", 400)
+
+    filename = secure_filename(file.filename)
+    with tempfile.TemporaryDirectory() as td:
+        local_path = os.path.join(td, filename)
+        file.save(local_path)
+        df = read_excel_preserve(local_path)
+
+        # Compute metrics
+        s_idx = int(suc_idx) if suc_idx.isdigit() else None
+        c_idx = int(comp_idx) if comp_idx.isdigit() else None
+        metrics = compute_metrics(df, suc_idx=s_idx, comp_idx=c_idx)
+
+        # Upload file to Firebase Storage
+        ts = int(time.time())
+        dest = f"tomas_inventario/{sucursal}/{fecha}/{ts}_{filename}"
+        file_url = upload_to_storage(local_path, dest)
+
+    # Persist metadata + sample
+    meta = {
+        "sucursal": sucursal,
+        "fecha": fecha,
+        "file_name": filename,
+        "file_path": dest,
+        "file_url": file_url,
+        "detected": metrics["detected"]
+    }
+    doc_id = save_inventory_metadata(meta, rows_sample=metrics["preview_records"][:20])
+
+    return jsonify({
+        "ok": True,
+        "document_id": doc_id,
+        "file_url": file_url,
+        "preview": {
+            "detected": metrics["detected"],
+            "preview_records": metrics["preview_records"]
+        },
+        "summary": {
+            "summary_records": metrics["summary_records"]
+        }
+    })
+</proposed_file_insert>
+
+<proposed_file_insert file_path="routers/importacion.py" change_summary="FastAPI router for importación upload/parse/store" line_number="1">
+import os, tempfile, time
+from fastapi import APIRouter, UploadFile, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Request
+from starlette.templating import Jinja2Templates
+
+from services.firebase import init_firebase, upload_to_storage, save_inventory_metadata
+from utils.excel_parse import read_excel_preserve, compute_metrics
+
+router = APIRouter(prefix="/importacion", tags=["importacion"])
+templates = Jinja2Templates(directory="templates")
+
+@router.get("/", response_class=HTMLResponse)
+async def page(request: Request):
+    return templates.TemplateResponse("importacion.html", {"request": request})
+
+@router.post("/upload")
+async def upload(
+    file: UploadFile,
+    sucursal: str = Form(...),
+    fecha: str = Form(...),
+    suc_idx: str = Form(""),
+    comp_idx: str = Form("")
+):
+    if not file.filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="Solo .xlsx")
+
+    filename = file.filename
+    contents = await file.read()
+    with tempfile.TemporaryDirectory() as td:
+        local_path = os.path.join(td, filename)
+        with open(local_path, "wb") as f:
+            f.write(contents)
+
+        df = read_excel_preserve(local_path)
+        s_idx = int(suc_idx) if suc_idx.isdigit() else None
+        c_idx = int(comp_idx) if comp_idx.isdigit() else None
+        metrics = compute_metrics(df, suc_idx=s_idx, comp_idx=c_idx)
+
+        ts = int(time.time())
+        dest = f"tomas_inventario/{sucursal}/{fecha}/{ts}_{filename}"
+        file_url = upload_to_storage(local_path, dest)
+
+    meta = {
+        "sucursal": sucursal,
+        "fecha": fecha,
+        "file_name": filename,
+        "file_path": dest,
+        "file_url": file_url,
+        "detected": metrics["detected"]
+    }
+    doc_id = save_inventory_metadata(meta, rows_sample=metrics["preview_records"][:20])
+
+    return JSONResponse({
+        "ok": True,
+        "document_id": doc_id,
+        "file_url": file_url,
+        "preview": {
+            "detected": metrics["detected"],
+            "preview_records": metrics["preview_records"]
+        },
+        "summary": {
+            "summary_records": metrics["summary_records"]
+        }
+    })
+</proposed_file_insert>
+
+<proposed_file_replace_substring file_path="main.py" change_summary="Auto-wire importación for Flask or FastAPI by detection">
+<old_str>
+# === REPLIT_IMPORTACION_MARKER_DO_NOT_REMOVE ===
+</old_str>
+<new_str>
+# === REPLIT_IMPORTACION_MARKER_DO_NOT_REMOVE ===
+try:
+    # Try Flask first
+    from flask import Flask
+    from routes.importacion import bp as importacion_bp
+    # If this file defines app as Flask, register blueprint
+    if "app" in globals() and isinstance(globals()["app"], Flask):
+        app.register_blueprint(importacion_bp)
+except Exception:
+    pass
+
+try:
+    # Try FastAPI
+    from fastapi import FastAPI
+    from routers.importacion import router as importacion_router
+    if "app" in globals() and isinstance(globals()["app"], FastAPI):
+        app.include_router(importacion_router)
+except Exception:
+    pass
+</new_str>
+</proposed_file_replace_substring>
+
+<proposed_file_insert file_path=".replit" change_summary="Ensure Run uses app if not set" line_number="1">
+# If a workflow already exists, ignore. Otherwise, simple defaults.
+</proposed_file_insert>
+
+<proposed_workflow_configuration workflow_name="Run App" set_run_button="true" mode="sequential">
+pip install -q -r requirements.txt || true
+python main.py
+</proposed_workflow_configuration>
+
+<proposed_deployment_configuration run_command="python main.py" />
+
+<tests>
+- After installing packages and adding Secrets, open /importacion to see the subpage.
+- Upload a sample .xlsx. The page must show:
+  1) Vista previa (primeras 200 filas) idéntica en columnas y orden al archivo.
+  2) Resumen por Sucursal / Comprobante con sumas de __fisico, __teorico, __diferencia.
+  3) JSON meta con document_id y file_url públicos de Firebase Storage.
+- Firestore must have a new doc in `tomas_inventario` with metadata and a small `rows_sample`.
+</tests>
+
+<notes_for_maintainers>
+- If your entrypoint is not main.py, replicate the REPLIT_IMPORTACION_MARKER_DO_NOT_REMOVE block in your entry file and apply the same include/blueprint logic.
+- To change default column indices for I/J/L, edit utils/excel_parse.py constants.
+</notes_for_maintainers>
+
+<proposed_actions summary="Add import page + Excel parse + Firebase"/>
