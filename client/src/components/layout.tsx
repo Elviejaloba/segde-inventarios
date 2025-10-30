@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Home, Upload } from "lucide-react";
+import { Moon, Sun, Home, Upload, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -65,6 +65,24 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Importación de Toma de Inventario</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/consolidado">
+                    <Button
+                      variant={location === "/consolidado" ? "default" : "ghost"}
+                      size="sm"
+                      data-testid="nav-consolidado"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Consolidado
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Consolidado Multi-Sucursal</p>
                 </TooltipContent>
               </Tooltip>
 

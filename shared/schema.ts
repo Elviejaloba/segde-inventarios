@@ -70,3 +70,50 @@ export type Ajuste = z.infer<typeof ajusteSchema>;
 // Insert schema for creating new adjustments
 export const insertAjusteSchema = ajusteSchema.omit({ id: true });
 export type InsertAjuste = z.infer<typeof insertAjusteSchema>;
+
+// Schema for inventory analysis per comprobante
+export const comprobanteAnalysisSchema = z.object({
+  comprobante: z.string(),
+  totalPhysical: z.number(),
+  totalTheoretical: z.number(),
+  totalDifference: z.number(),
+  differencePct: z.number(),
+  rowCount: z.number(),
+  avgDifference: z.number(),
+  variance: z.number(),
+  outliers: z.number() // count of rows with >10% diff
+});
+
+export type ComprobanteAnalysis = z.infer<typeof comprobanteAnalysisSchema>;
+
+// Schema for inventory capture metadata
+export const inventoryCaptureSchema = z.object({
+  id: z.string().optional(), // Firestore doc ID
+  sucursal: z.string(),
+  fecha: z.string(),
+  fileName: z.string(),
+  fileUrl: z.string(),
+  totalRows: z.number(),
+  totalPhysical: z.number(),
+  totalTheoretical: z.number(),
+  totalDifference: z.number(),
+  differencePct: z.number(),
+  comprobantes: z.array(comprobanteAnalysisSchema),
+  createdAt: z.any() // serverTimestamp
+});
+
+export type InventoryCapture = z.infer<typeof inventoryCaptureSchema>;
+
+// Schema for branch-level summary (consolidated across all captures)
+export const branchSummarySchema = z.object({
+  sucursal: z.string(),
+  totalPhysical: z.number(),
+  totalTheoretical: z.number(),
+  totalDifference: z.number(),
+  differencePct: z.number(),
+  capturesCount: z.number(),
+  lastUpdated: z.any(), // serverTimestamp
+  comprobantesProcessed: z.number()
+});
+
+export type BranchSummary = z.infer<typeof branchSummarySchema>;
