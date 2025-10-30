@@ -76,8 +76,8 @@ export default function ImportacionInventario() {
             return;
           }
 
-          const headers = jsonData[0] as any[];
-          const dataRows = jsonData.slice(1);
+          const headers = jsonData[0] as unknown as any[];
+          const dataRows = jsonData.slice(1) as unknown as any[];
 
           let detectedSucursalIdx = sucursalIdx ? parseInt(sucursalIdx) : detectColByHeaders(headers, POSSIBLE_SUC_HEADERS);
           let detectedComprobanteIdx = comprobanteIdx ? parseInt(comprobanteIdx) : detectColByHeaders(headers, POSSIBLE_COMP_HEADERS);

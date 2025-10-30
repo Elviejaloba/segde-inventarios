@@ -153,6 +153,24 @@ To enable production deployment, the following changes are needed in .replit fil
 
 ### Recent Changes
 
+**October 30, 2025**
+- **Nueva Funcionalidad: Importación de Toma de Inventario**
+  - Agregada nueva página React para subir archivos Excel (.xlsx)
+  - Procesamiento completo de archivos Excel en el frontend usando biblioteca xlsx
+  - Detección automática de columnas: Sucursal, Comprobante, Stock Físico (col I), Stock Teórico (col J), Diferencia (col L)
+  - Opción manual para especificar índices de columnas si la detección automática falla
+  - Cálculos agregados por sucursal y número de comprobante
+  - Integración con Firebase Storage para almacenar archivos originales
+  - Integración con Firestore para guardar metadata, datos procesados y muestras
+  - Visualización de datos: preview de primeras 200 filas, resumen agregado, información de detección
+  - Navegación agregada con wouter: botón "Suba de Inventario" en header
+  - Rutas: "/" (Dashboard), "/importacion-inventario" (Nueva página de importación)
+  - Actualizado firebase.ts para incluir Storage y Firestore además de Realtime Database
+- **Mejoras de Navegación**
+  - Agregado menú de navegación en Layout.tsx
+  - Botones de navegación con estado activo/inactivo
+  - Tooltips informativos para cada sección
+
 **January 7, 2025**
 - **Major Database Enhancement**: Expanded ajustes_sucursales table with new columns:
   - Added `Articulo` (TEXT) for product descriptions

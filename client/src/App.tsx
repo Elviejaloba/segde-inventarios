@@ -9,32 +9,18 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { Route, Switch } from "wouter";
 
 export default function App() {
-  return React.createElement(
-    React.Fragment,
-    null,
-    React.createElement(
-      ThemeProvider,
-      { defaultTheme: "light", storageKey: "vite-ui-theme" },
-      React.createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        React.createElement(
-          React.Fragment,
-          null,
-          React.createElement(
-            Layout,
-            null,
-            React.createElement(
-              Switch,
-              null,
-              React.createElement(Route, { path: "/", component: Home }),
-              React.createElement(Route, { path: "/importacion-inventario", component: ImportacionInventario }),
-              React.createElement(Route, { component: Home })
-            )
-          ),
-          React.createElement(Toaster)
-        )
-      )
-    )
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/importacion-inventario" component={ImportacionInventario} />
+            <Route component={Home} />
+          </Switch>
+        </Layout>
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
