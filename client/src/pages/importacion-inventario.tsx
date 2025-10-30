@@ -537,11 +537,11 @@ export default function ImportacionInventario() {
                 <CardContent>
                   <div className="border rounded-lg overflow-auto max-h-96">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
                           {analysisResult.preview.length > 0 && 
                             Object.keys(analysisResult.preview[0]).map((header, idx) => (
-                              <TableHead key={idx} className="whitespace-nowrap">
+                              <TableHead key={idx} className="whitespace-nowrap bg-background">
                                 {header}
                               </TableHead>
                             ))
