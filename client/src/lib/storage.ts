@@ -357,15 +357,15 @@ class FirebaseStorage {
 
   async resetAllData() {
     try {
-      // Inicializar con códigos de temporada de verano
+      // Inicializar con códigos de temporada de verano - todos sin stock
       const initialData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
         
-        // Inicializar todos los códigos de temporada de verano
+        // Inicializar todos los códigos de temporada de verano SIN STOCK
         SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
           items[code] = {
             completed: false,
-            hasStock: true,
+            hasStock: false,
             lastUpdated: Date.now()
           };
         });
@@ -373,7 +373,7 @@ class FirebaseStorage {
         return {
           id: branch,
           totalCompleted: 0,
-          noStock: 0,
+          noStock: SEASON_CODES_TEMPORADA_VERANO.length,
           items,
           lastUpdated: Date.now()
         };
@@ -381,7 +381,7 @@ class FirebaseStorage {
       
       await set(this.dbRef, initialData);
       await set(this.ajustesRef, []);
-      console.log('Base de datos reinicializada exitosamente con códigos de temporada de verano');
+      console.log('Base de datos reinicializada exitosamente con códigos de temporada de verano (sin stock)');
       return initialData;
     } catch (error: any) {
       console.error('Error al reiniciar datos:', error);
@@ -392,17 +392,17 @@ class FirebaseStorage {
   // Función especial para migrar datos existentes a códigos de temporada de verano
   async migrateToSeasonCodes() {
     try {
-      console.log('Migrando datos existentes a códigos de temporada de verano...');
+      console.log('Migrando datos existentes a códigos de temporada de verano (sin stock)...');
       
-      // Reinicializar completamente con códigos de verano
+      // Reinicializar completamente con códigos de verano - SIN STOCK
       const initialData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
         
-        // Usar solo los códigos de temporada de verano
+        // Usar solo los códigos de temporada de verano SIN STOCK
         SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
           items[code] = {
             completed: false,
-            hasStock: true,
+            hasStock: false,
             lastUpdated: Date.now()
           };
         });
@@ -410,7 +410,7 @@ class FirebaseStorage {
         return {
           id: branch,
           totalCompleted: 0,
-          noStock: 0,
+          noStock: SEASON_CODES_TEMPORADA_VERANO.length,
           items,
           lastUpdated: Date.now()
         };
@@ -418,7 +418,7 @@ class FirebaseStorage {
       
       // Forzar la actualización en Firebase
       await set(this.dbRef, initialData);
-      console.log('Migración completada exitosamente');
+      console.log('Migración completada exitosamente (sin stock)');
       return initialData;
     } catch (error: any) {
       console.error('Error durante la migración:', error);
