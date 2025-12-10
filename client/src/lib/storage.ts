@@ -361,11 +361,11 @@ class FirebaseStorage {
       const initialData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
         
-        // Inicializar todos los códigos de temporada de verano SIN STOCK
+        // Inicializar todos los códigos de temporada de verano CON STOCK (Art. Sin Stock = 0)
         SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
           items[code] = {
             completed: false,
-            hasStock: false,
+            hasStock: true,
             lastUpdated: Date.now()
           };
         });
@@ -381,7 +381,7 @@ class FirebaseStorage {
       
       await set(this.dbRef, initialData);
       await set(this.ajustesRef, []);
-      console.log('Base de datos reinicializada exitosamente (noStock=0)');
+      console.log('Reset completo: Progreso=0%, Art. Sin Stock=0');
       return initialData;
     } catch (error: any) {
       console.error('Error al reiniciar datos:', error);
@@ -398,11 +398,11 @@ class FirebaseStorage {
       const initialData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
         
-        // Usar solo los códigos de temporada de verano SIN STOCK
+        // Usar solo los códigos de temporada de verano - CON STOCK para que Art. Sin Stock sea 0
         SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
           items[code] = {
             completed: false,
-            hasStock: false,
+            hasStock: true,
             lastUpdated: Date.now()
           };
         });
@@ -418,7 +418,7 @@ class FirebaseStorage {
       
       // Forzar la actualización en Firebase
       await set(this.dbRef, initialData);
-      console.log('Migración completada exitosamente (noStock=0)');
+      console.log('Reset completo: Progreso=0%, Art. Sin Stock=0');
       return initialData;
     } catch (error: any) {
       console.error('Error durante la migración:', error);
