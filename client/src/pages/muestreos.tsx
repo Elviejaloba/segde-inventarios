@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DropboxFile {
   id: string;
@@ -183,6 +184,7 @@ export default function MuestreosPage() {
   };
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Subir Archivo de Muestreo</h1>
@@ -302,15 +304,22 @@ export default function MuestreosPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => refetchFiles()}
-                disabled={filesLoading}
-                data-testid="button-refresh-files"
-              >
-                <RefreshCw className={`h-4 w-4 ${filesLoading ? 'animate-spin' : ''}`} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => refetchFiles()}
+                    disabled={filesLoading}
+                    data-testid="button-refresh-files"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${filesLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Actualizar lista de archivos</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {filesLoading ? (
@@ -350,36 +359,57 @@ export default function MuestreosPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => cycleStatus(file.id)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${statusConfig.bgColor} ${statusConfig.color}`}
-                          data-testid={`button-status-${file.id}`}
-                        >
-                          <StatusIcon className="h-3 w-3 animate-pulse" />
-                          {statusConfig.label}
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => cycleStatus(file.id)}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${statusConfig.bgColor} ${statusConfig.color}`}
+                              data-testid={`button-status-${file.id}`}
+                            >
+                              <StatusIcon className="h-3 w-3 animate-pulse" />
+                              {statusConfig.label}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Clic para cambiar estado del archivo</p>
+                          </TooltipContent>
+                        </Tooltip>
                         {file.sharedLink && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                              data-testid={`button-view-${file.id}`}
-                            >
-                              <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                              data-testid={`button-download-${file.id}`}
-                            >
-                              <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
-                                <Download className="h-3 w-3" />
-                              </a>
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  asChild
+                                  data-testid={`button-view-${file.id}`}
+                                >
+                                  <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver archivo en Dropbox</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  asChild
+                                  data-testid={`button-download-${file.id}`}
+                                >
+                                  <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
+                                    <Download className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Descargar archivo</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </>
                         )}
                       </div>
@@ -392,5 +422,6 @@ export default function MuestreosPage() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
