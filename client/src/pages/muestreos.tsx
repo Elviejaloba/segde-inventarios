@@ -261,12 +261,12 @@ export default function MuestreosPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 mb-4">
-              <Select value={filterBranch} onValueChange={setFilterBranch}>
+              <Select value={filterBranch || "all"} onValueChange={(v) => setFilterBranch(v === "all" ? "" : v)}>
                 <SelectTrigger className="flex-1" data-testid="select-filter-branch">
                   <SelectValue placeholder="Filtrar por sucursal..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   {BRANCHES.map((branch) => (
                     <SelectItem key={branch} value={branch}>
                       {branch}
