@@ -1,7 +1,9 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertAjusteSchema } from "@shared/schema";
+import * as dropbox from "./dropbox";
+import multer from "multer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Rutas API básicas
@@ -50,6 +52,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating ajuste:', error);
       res.status(400).json({ error: 'Invalid ajuste data' });
+    }
+  });
+
+  // Dropbox muestreos routes
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  });
+
+  app.get('/api/dropbox/auth-url', (_req: Request, res: Response) => {
+    try {
+      const url = dropbox.generateAuthUrl();
+      res.json({ url });
+    } catch (error) {
+      console.error('Error generating auth URL:', error);
+      res.status(500).json({ error: 'Failed to generate auth URL' });
+    }
+  });
+
+  app.get('/api/dropbox/callback', async (req: Request, res: Response) => {
+    try {
+      const { code } = req.query;
+      if (!code || typeof code !== 'string') {
+        res.status(400).send('Missing authorization code');
+        return;
+      }
+      const refreshToken = await dropbox.exchangeCodeForToken(code);
+      res.send(`
+        <html>
+          <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+            <h1>Dropbox conectado exitosamente</h1>
+            <p>Guarda este refresh token en tus secretos como DROPBOX_REFRESH_TOKEN:</p>
+            <code style="background: #f0f0f0; padding: 10px; display: block; word-break: break-all;">${refreshToken}</code>
+            <p style="margin-top: 20px;">Puedes cerrar esta ventana.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error in Dropbox callback:', error);
+      res.status(500).send('Error connecting to Dropbox');
+    }
+  });
+
+  app.get('/api/muestreos', async (req: Request, res: Response) => {
+    try {
+      const { sucursal } = req.query;
+      const files = await dropbox.listFiles(sucursal as string | undefined);
+      res.json(files);
+    } catch (error) {
+      console.error('Error listing muestreos:', error);
+      res.status(500).json({ error: 'Failed to list files' });
+    }
+  });
+
+  app.post('/api/muestreos/upload', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No file provided' });
+        return;
+      }
+      const { sucursal } = req.body;
+      const result = await dropbox.uploadFile(
+        req.file.originalname,
+        req.file.buffer,
+        sucursal
+      );
+      res.json(result);
+    } catch (error) {
+      console.error('Error uploading muestreo:', error);
+      res.status(500).json({ error: 'Failed to upload file' });
+    }
+  });
+
+  app.get('/api/muestreos/:id/link', async (req: Request, res: Response) => {
+    try {
+      const { path } = req.query;
+      if (!path || typeof path !== 'string') {
+        res.status(400).json({ error: 'Missing file path' });
+        return;
+      }
+      const link = await dropbox.getFileLink(path);
+      res.json({ link });
+    } catch (error) {
+      console.error('Error getting file link:', error);
+      res.status(500).json({ error: 'Failed to get file link' });
     }
   });
 
