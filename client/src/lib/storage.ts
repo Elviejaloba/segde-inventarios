@@ -373,7 +373,7 @@ class FirebaseStorage {
         return {
           id: branch,
           totalCompleted: 0,
-          noStock: SEASON_CODES_TEMPORADA_VERANO.length,
+          noStock: 0,
           items,
           lastUpdated: Date.now()
         };
@@ -381,7 +381,7 @@ class FirebaseStorage {
       
       await set(this.dbRef, initialData);
       await set(this.ajustesRef, []);
-      console.log('Base de datos reinicializada exitosamente con códigos de temporada de verano (sin stock)');
+      console.log('Base de datos reinicializada exitosamente (noStock=0)');
       return initialData;
     } catch (error: any) {
       console.error('Error al reiniciar datos:', error);
@@ -410,7 +410,7 @@ class FirebaseStorage {
         return {
           id: branch,
           totalCompleted: 0,
-          noStock: SEASON_CODES_TEMPORADA_VERANO.length,
+          noStock: 0,
           items,
           lastUpdated: Date.now()
         };
@@ -418,7 +418,7 @@ class FirebaseStorage {
       
       // Forzar la actualización en Firebase
       await set(this.dbRef, initialData);
-      console.log('Migración completada exitosamente (sin stock)');
+      console.log('Migración completada exitosamente (noStock=0)');
       return initialData;
     } catch (error: any) {
       console.error('Error durante la migración:', error);

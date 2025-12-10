@@ -21,7 +21,7 @@ export function useFirebaseData() {
     const initAndSubscribe = async () => {
       try {
         setLoading(true);
-        // Inicialización normal (migración ya completada)
+        // Inicialización normal
         await storage.initializeData();
 
         // Establecer la suscripción en tiempo real
