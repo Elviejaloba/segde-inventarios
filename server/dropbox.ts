@@ -1,4 +1,4 @@
-const DROPBOX_FOLDER_PATH = '/INMOVILIZADOS/Muestreos';
+const DROPBOX_FOLDER_PATH = '/Muestreos';
 
 export interface DropboxFile {
   id: string;
