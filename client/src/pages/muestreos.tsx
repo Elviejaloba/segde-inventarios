@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Building2 } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface DropboxFile {
@@ -17,6 +17,29 @@ interface DropboxFile {
   modified: string;
   sharedLink?: string;
   sucursal?: string;
+}
+
+type FileStatus = "no_visto" | "visto" | "analizado";
+
+const STATUS_CONFIG: Record<FileStatus, { label: string; color: string; bgColor: string; icon: typeof Eye }> = {
+  no_visto: { label: "No visto", color: "text-gray-500", bgColor: "bg-gray-100 dark:bg-gray-800", icon: EyeOff },
+  visto: { label: "Visto", color: "text-blue-500", bgColor: "bg-blue-100 dark:bg-blue-900/30", icon: Eye },
+  analizado: { label: "Analizado", color: "text-green-500", bgColor: "bg-green-100 dark:bg-green-900/30", icon: CheckCircle2 },
+};
+
+function getFileStatuses(): Record<string, FileStatus> {
+  try {
+    const stored = localStorage.getItem('muestreos_status');
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setFileStatus(fileId: string, status: FileStatus) {
+  const statuses = getFileStatuses();
+  statuses[fileId] = status;
+  localStorage.setItem('muestreos_status', JSON.stringify(statuses));
 }
 
 const BRANCHES = [
@@ -47,6 +70,14 @@ export default function MuestreosPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterBranch, setFilterBranch] = useState<string>("");
+  const [fileStatuses, setFileStatuses] = useState<Record<string, FileStatus>>(getFileStatuses);
+
+  const cycleStatus = (fileId: string) => {
+    const currentStatus = fileStatuses[fileId] || "no_visto";
+    const nextStatus: FileStatus = currentStatus === "no_visto" ? "visto" : currentStatus === "visto" ? "analizado" : "no_visto";
+    setFileStatus(fileId, nextStatus);
+    setFileStatuses(prev => ({ ...prev, [fileId]: nextStatus }));
+  };
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
@@ -296,55 +327,68 @@ export default function MuestreosPage() {
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                    data-testid={`file-item-${file.id}`}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          {file.sucursal && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                              {file.sucursal}
+                {filteredFiles.map((file) => {
+                  const status = fileStatuses[file.id] || "no_visto";
+                  const statusConfig = STATUS_CONFIG[status];
+                  const StatusIcon = statusConfig.icon;
+                  return (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      data-testid={`file-item-${file.id}`}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            {file.sucursal && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
+                                {file.sucursal}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(file.modified).toLocaleDateString('es-AR')}
                             </span>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(file.modified).toLocaleDateString('es-AR')}
-                          </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => cycleStatus(file.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${statusConfig.bgColor} ${statusConfig.color}`}
+                          data-testid={`button-status-${file.id}`}
+                        >
+                          <StatusIcon className="h-3 w-3 animate-pulse" />
+                          {statusConfig.label}
+                        </button>
+                        {file.sharedLink && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              data-testid={`button-view-${file.id}`}
+                            >
+                              <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              data-testid={`button-download-${file.id}`}
+                            >
+                              <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
+                                <Download className="h-3 w-3" />
+                              </a>
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {file.sharedLink && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            data-testid={`button-view-${file.id}`}
-                          >
-                            <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            data-testid={`button-download-${file.id}`}
-                          >
-                            <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
-                              <Download className="h-3 w-3" />
-                            </a>
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
