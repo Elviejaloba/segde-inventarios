@@ -187,10 +187,7 @@ export default function MuestreosPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Subir Archivo de Muestreo</h1>
         <p className="text-muted-foreground">
-          Sube los archivos de muestreo de paletas a Dropbox para que todos puedan visualizarlos
-        </p>
-        <p className="text-sm text-primary">
-          Carpeta: Apps/TaskTrackerPro/Muestreos/
+          Sube tus archivos de muestreos
         </p>
       </div>
 
