@@ -3,9 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface DropboxFile {
@@ -15,16 +16,45 @@ interface DropboxFile {
   size: number;
   modified: string;
   sharedLink?: string;
+  sucursal?: string;
+}
+
+const BRANCHES = [
+  "T.Mendoza",
+  "T.Sjuan", 
+  "T.Luis",
+  "Crisa2",
+  "T.S.Martin",
+  "T.Tunuyan",
+  "T.Lujan",
+  "T.Maipu",
+  "T.Srafael",
+  "Ctro. de Distribucion"
+];
+
+function extractSucursalFromName(fileName: string): string | null {
+  for (const branch of BRANCHES) {
+    if (fileName.includes(`[${branch}]`)) {
+      return branch;
+    }
+  }
+  return null;
 }
 
 export default function MuestreosPage() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
   });
+
+  const filesWithSucursal = files.map(file => ({
+    ...file,
+    sucursal: extractSucursalFromName(file.name)
+  }));
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -48,6 +78,7 @@ export default function MuestreosPage() {
         variant: "success",
       });
       setSelectedFile(null);
+      setSelectedBranch("");
       setUploadProgress(0);
       queryClient.invalidateQueries({ queryKey: ['/api/muestreos'] });
     },
@@ -69,6 +100,15 @@ export default function MuestreosPage() {
   };
 
   const handleUpload = async () => {
+    if (!selectedBranch) {
+      toast({
+        title: "Selecciona una sucursal",
+        description: "Debes seleccionar la sucursal antes de subir el archivo",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedFile) {
       toast({
         title: "Selecciona un archivo",
@@ -80,6 +120,7 @@ export default function MuestreosPage() {
 
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('sucursal', selectedBranch);
 
     uploadMutation.mutate(formData);
   };
@@ -108,7 +149,7 @@ export default function MuestreosPage() {
           Sube los archivos de muestreo de paletas a Dropbox para que todos puedan visualizarlos
         </p>
         <p className="text-sm text-primary">
-          Carpeta: /INMOVILIZADOS/Muestreos/
+          Carpeta: Apps/TaskTrackerPro/Muestreos/
         </p>
       </div>
 
@@ -120,12 +161,28 @@ export default function MuestreosPage() {
               Subir Archivo
             </CardTitle>
             <CardDescription>
-              Selecciona un archivo de muestreo para subir a Dropbox
+              Selecciona la sucursal y el archivo de muestreo para subir
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="file-input">Archivo</Label>
+              <Label htmlFor="branch-select">Sucursal *</Label>
+              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                <SelectTrigger id="branch-select" data-testid="select-branch-muestreo">
+                  <SelectValue placeholder="Seleccionar sucursal..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {BRANCHES.map((branch) => (
+                    <SelectItem key={branch} value={branch}>
+                      {branch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file-input">Archivo *</Label>
               <div className="flex items-center gap-2">
                 <input
                   id="file-input"
@@ -163,7 +220,7 @@ export default function MuestreosPage() {
 
             <Button
               onClick={handleUpload}
-              disabled={!selectedFile || uploadMutation.isPending}
+              disabled={!selectedFile || !selectedBranch || uploadMutation.isPending}
               className="w-full"
               data-testid="button-upload-muestreo"
             >
@@ -209,14 +266,14 @@ export default function MuestreosPage() {
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : files.length === 0 ? (
+            ) : filesWithSucursal.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No hay archivos subidos</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {files.map((file) => (
+                {filesWithSucursal.map((file) => (
                   <div
                     key={file.id}
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
@@ -226,9 +283,17 @@ export default function MuestreosPage() {
                       <FileText className="h-5 w-5 text-primary flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="font-medium truncate">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatFileSize(file.size)} • {formatDate(file.modified)}
-                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {file.sucursal && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                              <Building2 className="h-3 w-3" />
+                              {file.sucursal}
+                            </span>
+                          )}
+                          <span>{formatFileSize(file.size)}</span>
+                          <span>•</span>
+                          <span>{formatDate(file.modified)}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">

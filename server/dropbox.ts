@@ -26,7 +26,8 @@ export async function uploadFile(
   
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const dropboxPath = `${DROPBOX_FOLDER_PATH}/${timestamp}_${sanitizedFileName}`;
+  const sucursalPrefix = sucursal ? `[${sucursal}]_` : '';
+  const dropboxPath = `${DROPBOX_FOLDER_PATH}/${sucursalPrefix}${timestamp}_${sanitizedFileName}`;
 
   const uploadResponse = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
