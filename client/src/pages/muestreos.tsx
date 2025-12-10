@@ -49,6 +49,11 @@ export default function MuestreosPage() {
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
+    queryFn: async () => {
+      const response = await fetch('/api/muestreos');
+      if (!response.ok) throw new Error('Failed to fetch files');
+      return response.json();
+    },
   });
 
   const filesWithSucursal = files.map(file => ({
