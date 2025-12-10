@@ -119,8 +119,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       startTour(page);
                     }}
                     data-testid="button-tour"
+                    className="relative"
                   >
-                    <HelpCircle className="h-4 w-4" />
+                    <HelpCircle className="h-4 w-4 animate-pulse" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
