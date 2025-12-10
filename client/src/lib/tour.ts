@@ -1,12 +1,20 @@
-declare const driver: any;
+declare global {
+  interface Window {
+    driver: {
+      js: {
+        driver: (options: any) => any;
+      };
+    };
+  }
+}
 
 export function startTour(page: 'home' | 'muestreos') {
-  if (typeof driver === 'undefined') {
+  if (typeof window.driver === 'undefined' || !window.driver.js) {
     console.error('Driver.js not loaded');
     return;
   }
 
-  const driverObj = driver({
+  const driverObj = window.driver.js.driver({
     showProgress: true,
     animate: true,
     allowClose: true,
