@@ -284,7 +284,7 @@ export default function MuestreosPage() {
               Archivos Subidos
             </CardTitle>
             <CardDescription>
-              Lista de archivos de muestreo en Dropbox
+              Puedes visualizar y descargar cada muestreo enviado
             </CardDescription>
           </CardHeader>
           <CardContent>
