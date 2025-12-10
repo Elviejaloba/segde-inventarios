@@ -85,6 +85,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   return (
     <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold text-primary mb-1">Articulos sin rotacion 1A</h1>
+        <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
+      </div>
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         {selectedView === 'ranking' && (
           <div>
