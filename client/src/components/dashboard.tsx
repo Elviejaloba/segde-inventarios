@@ -112,6 +112,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               variant={selectedView === 'ranking' ? "default" : "outline"}
               onClick={() => setSelectedView('ranking')}
               className="gap-2 w-full sm:w-auto"
+              data-testid="button-ranking"
             >
               <Trophy className="h-4 w-4" />
               Ranking
@@ -128,6 +129,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
               className={`gap-2 relative bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg w-full sm:w-auto ${
                 selectedView === 'reporte' ? 'ring-2 ring-purple-300 ring-offset-2' : ''
               }`}
+              data-testid="button-reportes"
             >
               <FileText className="h-4 w-4" />
               Reportes

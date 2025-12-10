@@ -34,6 +34,24 @@ export function startTour(page: 'home' | 'muestreos') {
       }
     },
     {
+      element: '[data-testid="button-ranking"]',
+      popover: {
+        title: 'Ranking de Sucursales',
+        description: 'Muestra la tabla de posiciones con el progreso de cada sucursal ordenado por avance.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: '[data-testid="button-reportes"]',
+      popover: {
+        title: 'Reportes',
+        description: 'Accede a los reportes detallados y análisis de las sucursales.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
       element: '[data-testid="select-branch"]',
       popover: {
         title: 'Selector de Sucursal',
