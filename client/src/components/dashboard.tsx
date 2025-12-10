@@ -182,24 +182,50 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <TableCell className="text-xs sm:text-sm font-medium">{branch.id}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Progress value={branch.totalCompleted} className="w-20 sm:w-24 h-2" />
-                      <span className="text-xs sm:text-sm min-w-[35px]">{Math.round(branch.totalCompleted)}%</span>
+                      <div className="relative w-20 sm:w-24 h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${branch.totalCompleted}%` }}
+                          transition={{ 
+                            duration: 1,
+                            ease: "easeOut",
+                            delay: index * 0.1
+                          }}
+                        />
+                      </div>
+                      <motion.span 
+                        className="text-xs sm:text-sm min-w-[35px] font-medium text-green-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.1 + 0.5 }}
+                      >
+                        {Math.round(branch.totalCompleted)}%
+                      </motion.span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <div className="relative w-20 sm:w-24 h-2 bg-red-100 dark:bg-red-900/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-red-500 dark:bg-red-600 rounded-full transition-all duration-300 ease-in-out"
-                          style={{ 
-                            width: `${branch.noStockPercentage}%`,
-                            background: branch.noStockPercentage > 0 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : 'transparent'
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${branch.noStockPercentage}%` }}
+                          transition={{ 
+                            duration: 1,
+                            ease: "easeOut",
+                            delay: index * 0.1 + 0.2
                           }}
                         />
                       </div>
-                      <span className="text-xs sm:text-sm min-w-[35px] text-red-600 font-medium">
+                      <motion.span 
+                        className="text-xs sm:text-sm min-w-[35px] text-red-600 font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.1 + 0.7 }}
+                      >
                         {Math.round(branch.noStockPercentage)}%
-                      </span>
+                      </motion.span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {branch.noStockItems}/{branch.totalItems} arts
