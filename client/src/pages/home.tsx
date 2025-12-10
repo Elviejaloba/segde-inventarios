@@ -332,22 +332,28 @@ export default function Home() {
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
           console.log(`🎉 ACTIVANDO ANIMACIÓN para ${thresholdNum}%!`);
           
+          // Mostrar toast de celebración
           toast({
             title: message.title,
-            description: message.description,
-            variant: message.variant,
-            duration: 8000,
+            description: `${message.description} - ${completedPercentage}% completado`,
+            variant: "success",
+            duration: 10000,
           });
+          
+          // Actualizar el último progreso mostrado
           setLastToastProgress(thresholdNum);
           
-          // Llamar inmediatamente a la animación
+          // Ejecutar animación de confetti inmediatamente
+          console.log(`🎊 Ejecutando confetti para ${thresholdNum}%`);
           celebrateProgress(thresholdNum);
           
-          // También llamar después de un pequeño delay por si el estado no se ha actualizado
+          // Ejecutar confetti adicional después de un delay
           setTimeout(() => {
-            console.log(`🎊 Ejecutando confetti para ${thresholdNum}%`);
             celebrateProgress(thresholdNum);
-          }, 200);
+          }, 500);
+          
+          // Solo procesar un umbral a la vez
+          break;
         }
       }
 
