@@ -187,7 +187,7 @@ export default function MuestreosPage() {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Subir Archivo de Muestreo</h1>
         <p className="text-muted-foreground">
-          Sube tus archivos de muestreos
+          En esta sección se podrá subir los archivos de Word con sus muestreos realizados, así se da seguimiento y análisis
         </p>
       </div>
 
