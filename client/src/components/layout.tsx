@@ -50,6 +50,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                 </TooltipContent>
               </Tooltip>
 
+{/* Botón oculto temporalmente
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link href="/importacion-inventario">
@@ -67,6 +68,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                   <p>Importación de Toma de Inventario</p>
                 </TooltipContent>
               </Tooltip>
+*/}
 
               <Tooltip>
                 <TooltipTrigger asChild>
