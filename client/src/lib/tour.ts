@@ -14,19 +14,6 @@ export function startTour(page: 'home' | 'muestreos') {
     return;
   }
 
-  const driverObj = window.driver.js.driver({
-    showProgress: true,
-    animate: true,
-    allowClose: true,
-    overlayClickNext: false,
-    stagePadding: 4,
-    popoverClass: 'driverjs-theme',
-    nextBtnText: 'Siguiente',
-    prevBtnText: 'Anterior',
-    doneBtnText: 'Finalizar',
-    progressText: '{{current}} de {{total}}',
-  });
-
   const homeSteps = [
     {
       element: '[data-testid="nav-home"]',
@@ -97,7 +84,6 @@ export function startTour(page: 'home' | 'muestreos') {
   ];
 
   const steps = page === 'home' ? homeSteps : muestreosSteps;
-  
   const validSteps = steps.filter(step => document.querySelector(step.element));
   
   if (validSteps.length === 0) {
@@ -105,6 +91,19 @@ export function startTour(page: 'home' | 'muestreos') {
     return;
   }
 
-  driverObj.setSteps(validSteps);
+  const driverObj = window.driver.js.driver({
+    showProgress: true,
+    animate: true,
+    allowClose: true,
+    overlayClickNext: false,
+    stagePadding: 4,
+    popoverClass: 'driverjs-theme',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    progressText: '{{current}} de {{total}}',
+    steps: validSteps
+  });
+
   driverObj.drive();
 }
