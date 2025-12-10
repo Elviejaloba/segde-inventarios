@@ -187,7 +187,7 @@ export default function MuestreosPage() {
     <TooltipProvider>
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">Subir Archivo de Muestreo</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Subir Archivo de Muestreo</h1>
         <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
           <div className="flex-shrink-0 animate-bounce">
             <svg className="h-5 w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
