@@ -86,7 +86,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-primary mb-1">Articulos sin rotacion 1A</h1>
+        <h1 className="text-3xl font-bold text-primary mb-1">Articulos sin rotacion 1 año</h1>
         <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
