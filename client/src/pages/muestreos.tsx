@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface DropboxFile {
@@ -18,29 +17,13 @@ interface DropboxFile {
   sharedLink?: string;
 }
 
-const BRANCHES = [
-  "T.Mendoza",
-  "T.Sjuan",
-  "T.Luis",
-  "Crisa2",
-  "T.S.Martin",
-  "T.Tunuyan",
-  "T.Lujan",
-  "T.Maipu",
-  "T.Srafael",
-  "Ctro. de Distribucion"
-];
-
 export default function MuestreosPage() {
   const { toast } = useToast();
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isDropboxConnected, setIsDropboxConnected] = useState<boolean | null>(null);
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
-    queryKey: ['/api/muestreos', selectedBranch],
-    enabled: true,
+    queryKey: ['/api/muestreos'],
   });
 
   const uploadMutation = useMutation({
@@ -70,20 +53,11 @@ export default function MuestreosPage() {
     },
     onError: (error: Error) => {
       setUploadProgress(0);
-      if (error.message.includes('DROPBOX_REFRESH_TOKEN')) {
-        setIsDropboxConnected(false);
-        toast({
-          title: "Dropbox no conectado",
-          description: "Necesitas conectar tu cuenta de Dropbox primero",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error al subir archivo",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error al subir archivo",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -106,25 +80,8 @@ export default function MuestreosPage() {
 
     const formData = new FormData();
     formData.append('file', selectedFile);
-    if (selectedBranch) {
-      formData.append('sucursal', selectedBranch);
-    }
 
     uploadMutation.mutate(formData);
-  };
-
-  const connectDropbox = async () => {
-    try {
-      const response = await fetch('/api/dropbox/auth-url');
-      const { url } = await response.json();
-      window.open(url, '_blank', 'width=600,height=700');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo iniciar la conexión con Dropbox",
-        variant: "destructive",
-      });
-    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -150,26 +107,10 @@ export default function MuestreosPage() {
         <p className="text-muted-foreground">
           Sube los archivos de muestreo de paletas a Dropbox para que todos puedan visualizarlos
         </p>
+        <p className="text-sm text-primary">
+          Carpeta: /INMOVILIZADOS/Muestreos/
+        </p>
       </div>
-
-      {isDropboxConnected === false && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <AlertCircle className="h-8 w-8 text-amber-500" />
-              <div className="flex-1">
-                <h3 className="font-semibold">Dropbox no conectado</h3>
-                <p className="text-sm text-muted-foreground">
-                  Necesitas conectar tu cuenta de Dropbox para poder subir archivos
-                </p>
-              </div>
-              <Button onClick={connectDropbox} data-testid="button-connect-dropbox">
-                Conectar Dropbox
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
@@ -179,27 +120,10 @@ export default function MuestreosPage() {
               Subir Archivo
             </CardTitle>
             <CardDescription>
-              Selecciona la sucursal y sube el archivo de muestreo
+              Selecciona un archivo de muestreo para subir a Dropbox
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="branch-select">Sucursal (opcional)</Label>
-              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                <SelectTrigger id="branch-select" data-testid="select-branch-muestreo">
-                  <SelectValue placeholder="Todas las sucursales" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Carpeta general</SelectItem>
-                  {BRANCHES.map((branch) => (
-                    <SelectItem key={branch} value={branch}>
-                      {branch}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="file-input">Archivo</Label>
               <div className="flex items-center gap-2">
@@ -269,20 +193,7 @@ export default function MuestreosPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                <SelectTrigger className="w-48" data-testid="select-filter-branch">
-                  <SelectValue placeholder="Filtrar por sucursal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
-                  {BRANCHES.map((branch) => (
-                    <SelectItem key={branch} value={branch}>
-                      {branch}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-end mb-4">
               <Button
                 variant="ghost"
                 size="icon"

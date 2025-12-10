@@ -1,9 +1,4 @@
-const DROPBOX_APP_KEY = process.env.DROPBOX_APP_KEY;
-const DROPBOX_APP_SECRET = process.env.DROPBOX_APP_SECRET;
 const DROPBOX_FOLDER_PATH = '/INMOVILIZADOS/Muestreos';
-
-let cachedAccessToken: string | null = null;
-let tokenExpiry: number = 0;
 
 export interface DropboxFile {
   id: string;
@@ -14,39 +9,12 @@ export interface DropboxFile {
   sharedLink?: string;
 }
 
-async function getAccessToken(): Promise<string> {
-  if (cachedAccessToken && Date.now() < tokenExpiry) {
-    return cachedAccessToken;
+function getAccessToken(): string {
+  const accessToken = process.env.DROPBOX_ACCESS_TOKEN;
+  if (!accessToken) {
+    throw new Error('DROPBOX_ACCESS_TOKEN not configured');
   }
-
-  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
-  if (!refreshToken) {
-    throw new Error('DROPBOX_REFRESH_TOKEN not configured');
-  }
-
-  const response = await fetch('https://api.dropbox.com/oauth2/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: DROPBOX_APP_KEY!,
-      client_secret: DROPBOX_APP_SECRET!,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to refresh Dropbox token: ${error}`);
-  }
-
-  const data = await response.json();
-  cachedAccessToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
-
-  return cachedAccessToken!;
+  return accessToken;
 }
 
 export async function uploadFile(
@@ -54,14 +22,11 @@ export async function uploadFile(
   fileBuffer: Buffer,
   sucursal?: string
 ): Promise<DropboxFile> {
-  const accessToken = await getAccessToken();
+  const accessToken = getAccessToken();
   
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const folderPath = sucursal 
-    ? `${DROPBOX_FOLDER_PATH}/${sucursal}`
-    : DROPBOX_FOLDER_PATH;
-  const dropboxPath = `${folderPath}/${timestamp}_${sanitizedFileName}`;
+  const dropboxPath = `${DROPBOX_FOLDER_PATH}/${timestamp}_${sanitizedFileName}`;
 
   const uploadResponse = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
@@ -98,7 +63,7 @@ export async function uploadFile(
 }
 
 async function createSharedLink(path: string): Promise<string> {
-  const accessToken = await getAccessToken();
+  const accessToken = getAccessToken();
 
   const existingResponse = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
     method: 'POST',
@@ -142,12 +107,8 @@ async function createSharedLink(path: string): Promise<string> {
   return linkData.url.replace('?dl=0', '?raw=1');
 }
 
-export async function listFiles(sucursal?: string): Promise<DropboxFile[]> {
-  const accessToken = await getAccessToken();
-  
-  const folderPath = sucursal 
-    ? `${DROPBOX_FOLDER_PATH}/${sucursal}`
-    : DROPBOX_FOLDER_PATH;
+export async function listFiles(): Promise<DropboxFile[]> {
+  const accessToken = getAccessToken();
 
   const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
     method: 'POST',
@@ -156,8 +117,8 @@ export async function listFiles(sucursal?: string): Promise<DropboxFile[]> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      path: folderPath,
-      recursive: !sucursal,
+      path: DROPBOX_FOLDER_PATH,
+      recursive: false,
       include_media_info: false,
       include_deleted: false,
     }),
@@ -176,12 +137,14 @@ export async function listFiles(sucursal?: string): Promise<DropboxFile[]> {
 
   for (const entry of data.entries) {
     if (entry['.tag'] === 'file') {
+      const sharedLink = await createSharedLink(entry.path_display);
       files.push({
         id: entry.id,
         name: entry.name,
         path: entry.path_display,
         size: entry.size,
         modified: entry.server_modified,
+        sharedLink,
       });
     }
   }
@@ -193,46 +156,4 @@ export async function listFiles(sucursal?: string): Promise<DropboxFile[]> {
 
 export async function getFileLink(path: string): Promise<string> {
   return createSharedLink(path);
-}
-
-export function generateAuthUrl(): string {
-  const state = Math.random().toString(36).substring(7);
-  const redirectUri = process.env.REPL_SLUG 
-    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/dropbox/callback`
-    : 'http://localhost:5000/api/dropbox/callback';
-    
-  return `https://www.dropbox.com/oauth2/authorize?` +
-    `client_id=${DROPBOX_APP_KEY}&` +
-    `response_type=code&` +
-    `token_access_type=offline&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `state=${state}`;
-}
-
-export async function exchangeCodeForToken(code: string): Promise<string> {
-  const redirectUri = process.env.REPL_SLUG 
-    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/dropbox/callback`
-    : 'http://localhost:5000/api/dropbox/callback';
-
-  const response = await fetch('https://api.dropbox.com/oauth2/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      code,
-      grant_type: 'authorization_code',
-      client_id: DROPBOX_APP_KEY!,
-      client_secret: DROPBOX_APP_SECRET!,
-      redirect_uri: redirectUri,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Token exchange failed: ${error}`);
-  }
-
-  const data = await response.json();
-  return data.refresh_token;
 }

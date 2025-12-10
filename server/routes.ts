@@ -61,44 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
   });
 
-  app.get('/api/dropbox/auth-url', (_req: Request, res: Response) => {
+  app.get('/api/muestreos', async (_req: Request, res: Response) => {
     try {
-      const url = dropbox.generateAuthUrl();
-      res.json({ url });
-    } catch (error) {
-      console.error('Error generating auth URL:', error);
-      res.status(500).json({ error: 'Failed to generate auth URL' });
-    }
-  });
-
-  app.get('/api/dropbox/callback', async (req: Request, res: Response) => {
-    try {
-      const { code } = req.query;
-      if (!code || typeof code !== 'string') {
-        res.status(400).send('Missing authorization code');
-        return;
-      }
-      const refreshToken = await dropbox.exchangeCodeForToken(code);
-      res.send(`
-        <html>
-          <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-            <h1>Dropbox conectado exitosamente</h1>
-            <p>Guarda este refresh token en tus secretos como DROPBOX_REFRESH_TOKEN:</p>
-            <code style="background: #f0f0f0; padding: 10px; display: block; word-break: break-all;">${refreshToken}</code>
-            <p style="margin-top: 20px;">Puedes cerrar esta ventana.</p>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      console.error('Error in Dropbox callback:', error);
-      res.status(500).send('Error connecting to Dropbox');
-    }
-  });
-
-  app.get('/api/muestreos', async (req: Request, res: Response) => {
-    try {
-      const { sucursal } = req.query;
-      const files = await dropbox.listFiles(sucursal as string | undefined);
+      const files = await dropbox.listFiles();
       res.json(files);
     } catch (error) {
       console.error('Error listing muestreos:', error);
