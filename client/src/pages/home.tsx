@@ -445,7 +445,7 @@ export default function Home() {
             </svg>
           </div>
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            Esta herramienta funciona como un recordatorio y permite hacer un seguimiento del progreso por sucursal
+            Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
           </p>
         </div>
       </div>
