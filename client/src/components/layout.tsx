@@ -70,6 +70,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               </Tooltip>
 */}
 
+{/* Botón oculto temporalmente
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link href="/consolidado">
@@ -87,6 +88,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                   <p>Consolidado Multi-Sucursal</p>
                 </TooltipContent>
               </Tooltip>
+*/}
 
               <Tooltip>
                 <TooltipTrigger asChild>
