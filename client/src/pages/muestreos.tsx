@@ -46,6 +46,7 @@ export default function MuestreosPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [filterBranch, setFilterBranch] = useState<string>("");
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
@@ -60,6 +61,10 @@ export default function MuestreosPage() {
     ...file,
     sucursal: extractSucursalFromName(file.name)
   }));
+
+  const filteredFiles = filterBranch 
+    ? filesWithSucursal.filter(f => f.sucursal === filterBranch)
+    : filesWithSucursal;
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -255,7 +260,20 @@ export default function MuestreosPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-end mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Select value={filterBranch} onValueChange={setFilterBranch}>
+                <SelectTrigger className="flex-1" data-testid="select-filter-branch">
+                  <SelectValue placeholder="Filtrar por sucursal..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas</SelectItem>
+                  {BRANCHES.map((branch) => (
+                    <SelectItem key={branch} value={branch}>
+                      {branch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="ghost"
                 size="icon"
@@ -271,33 +289,31 @@ export default function MuestreosPage() {
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : filesWithSucursal.length === 0 ? (
+            ) : filteredFiles.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No hay archivos subidos</p>
+                <p>{filterBranch ? 'No hay archivos de esta sucursal' : 'No hay archivos subidos'}</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filesWithSucursal.map((file) => (
+                {filteredFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     data-testid={`file-item-${file.id}`}
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{file.name}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
                           {file.sucursal && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                              <Building2 className="h-3 w-3" />
+                            <span className="inline-flex items-center px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
                               {file.sucursal}
                             </span>
                           )}
-                          <span>{formatFileSize(file.size)}</span>
-                          <span>•</span>
-                          <span>{formatDate(file.modified)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(file.modified).toLocaleDateString('es-AR')}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -306,22 +322,22 @@ export default function MuestreosPage() {
                         <>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             asChild
                             data-testid={`button-view-${file.id}`}
                           >
                             <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
+                              <ExternalLink className="h-3 w-3" />
                             </a>
                           </Button>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             asChild
                             data-testid={`button-download-${file.id}`}
                           >
                             <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
-                              <Download className="h-4 w-4" />
+                              <Download className="h-3 w-3" />
                             </a>
                           </Button>
                         </>
