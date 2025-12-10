@@ -270,7 +270,7 @@ export default function MuestreosPage() {
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Subir a Dropbox
+                  Adjunta Muestreo
                 </>
               )}
             </Button>
