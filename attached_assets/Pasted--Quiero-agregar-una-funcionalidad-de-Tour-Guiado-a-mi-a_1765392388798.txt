@@ -1,0 +1,25 @@
+> "Quiero agregar una funcionalidad de 'Tour Guiado' a mi aplicación, pero tengo un requisito estricto: **NO cambies, borres ni refactorices la lógica ni el diseño actual de la página.**
+>
+> Quiero que el tour funcione como una capa adicional (overlay) que no interfiera con el funcionamiento de la app.
+>
+> **Instrucciones precisas:**
+>
+> 1.  **Librería Externa:** Usa **Driver.js** cargándola preferiblemente vía CDN en el HTML o importándola sin alterar mis dependencias críticas.
+> 2.  **Integración No Intrusiva:**
+>     *   No modifiques el HTML existente salvo para añadir un atributo `id` a los elementos que vamos a resaltar (si es que no tienen uno ya).
+>     *   No cambies el CSS actual. Los estilos del tour deben venir de la librería.
+> 3.  **Activación Manual:**
+>     *   Agrega un botón discreto (puede ser un icono de '?' o un texto pequeño que diga 'Ayuda/Tour') en la barra de navegación o en una esquina.
+>     *   El tour **solo** debe iniciarse cuando el usuario haga clic en ese botón. No lo inicies automáticamente para no molestar.
+> 4.  **Los Pasos:**
+>     *   Configura el script para que resalte 3 o 4 elementos clave de la pantalla actual (ej. la tabla de inversiones y el botón de crear) explicando brevemente qué son.
+>
+> **Resumen:** Tu objetivo es 'inyectar' esta funcionalidad sin tocar la estructura 'core' de mi aplicación. Si tienes dudas sobre modificar un archivo existente, crea un archivo nuevo llamado `tour.js` y enlázalo."
+
+***
+
+### ¿Por qué este prompt protege tu código?
+
+1.  **La regla del "Overlay":** Al decirle que es una capa extra, la IA entiende que debe "flotar" sobre tu web, no meterse dentro de ella.
+2.  **Archivo separado:** La instrucción final de crear un archivo `tour.js` es la mejor garantía. Si el tour falla o no te gusta, simplemente borras ese archivo y esa línea en el HTML, y tu app vuelve a estar exactamente como antes.
+3.  **Activación manual:** Al pedir que solo funcione con un botón, aseguras que el flujo normal de tus usuarios (login, ver datos) no se vea interrumpido por pop-ups.

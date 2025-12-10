@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Home, Upload, BarChart3, FileUp } from "lucide-react";
+import { Moon, Sun, Home, Upload, BarChart3, FileUp, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ImportExcel } from "@/components/import-excel";
 import { Link, useLocation } from "wouter";
+import { startTour } from "@/lib/tour";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -105,6 +106,25 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Subir archivos de muestreo a Dropbox</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const page = location === "/muestreos" ? "muestreos" : "home";
+                      startTour(page);
+                    }}
+                    data-testid="button-tour"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tour guiado de ayuda</p>
                 </TooltipContent>
               </Tooltip>
 
