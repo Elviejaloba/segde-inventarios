@@ -9,10 +9,57 @@ export interface DropboxFile {
   sharedLink?: string;
 }
 
-function getAccessToken(): string {
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
+  const appKey = process.env.DROPBOX_APP_KEY;
+  const appSecret = process.env.DROPBOX_APP_SECRET;
+
+  if (!refreshToken || !appKey || !appSecret) {
+    throw new Error('DROPBOX_REFRESH_TOKEN, DROPBOX_APP_KEY, and DROPBOX_APP_SECRET are required for token refresh');
+  }
+
+  console.log('Refreshing Dropbox access token...');
+  
+  const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: appKey,
+      client_secret: appSecret,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to refresh token: ${error}`);
+  }
+
+  const data = await response.json();
+  cachedAccessToken = data.access_token;
+  tokenExpiresAt = Date.now() + (data.expires_in - 300) * 1000;
+  
+  console.log('Dropbox access token refreshed successfully');
+  return cachedAccessToken as string;
+}
+
+async function getAccessToken(): Promise<string> {
+  if (process.env.DROPBOX_REFRESH_TOKEN) {
+    if (!cachedAccessToken || Date.now() >= tokenExpiresAt) {
+      return refreshAccessToken();
+    }
+    return cachedAccessToken;
+  }
+  
   const accessToken = process.env.DROPBOX_ACCESS_TOKEN;
   if (!accessToken) {
-    throw new Error('DROPBOX_ACCESS_TOKEN not configured');
+    throw new Error('DROPBOX_ACCESS_TOKEN or DROPBOX_REFRESH_TOKEN not configured');
   }
   return accessToken;
 }
@@ -22,7 +69,7 @@ export async function uploadFile(
   fileBuffer: Buffer,
   sucursal?: string
 ): Promise<DropboxFile> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
   
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -64,7 +111,7 @@ export async function uploadFile(
 }
 
 async function createSharedLink(path: string): Promise<string> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
 
   const existingResponse = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
     method: 'POST',
@@ -109,7 +156,7 @@ async function createSharedLink(path: string): Promise<string> {
 }
 
 export async function listFiles(): Promise<DropboxFile[]> {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
 
   const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
     method: 'POST',
