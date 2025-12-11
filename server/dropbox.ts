@@ -13,7 +13,7 @@ let cachedAccessToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
 async function refreshAccessToken(): Promise<string> {
-  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
+  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN_CORRECT || process.env.DROPBOX_REFRESH_TOKEN;
   const appKey = process.env.DROPBOX_APP_KEY;
   const appSecret = process.env.DROPBOX_APP_SECRET;
 
