@@ -61,8 +61,10 @@ class FirebaseStorage {
       } else {
         console.log('Data structure already exists');
         
+        let currentData = snapshot.val();
+        let needsUpdate = false;
+        
         // Verificar si falta la nueva sucursal y agregarla
-        const currentData = snapshot.val();
         const existingBranches = currentData.map((branch: any) => branch.id);
         const missingBranches = AVAILABLE_BRANCHES.filter(branch => !existingBranches.includes(branch));
         
@@ -89,35 +91,51 @@ class FirebaseStorage {
             };
           });
           
-          const updatedData = [...currentData, ...newBranches];
-          await set(this.dbRef, updatedData);
-          console.log('✅ Nuevas sucursales agregadas exitosamente');
+          currentData = [...currentData, ...newBranches];
+          needsUpdate = true;
+          console.log('✅ Nuevas sucursales preparadas');
         }
         
-        // Forzar agregado de "Ctro. de Distribucion" si no existe
-        if (!existingBranches.includes('Ctro. de Distribucion')) {
-          console.log('🚛 Forzando agregado de Centro de Distribución...');
-          const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
+        // AGREGAR CÓDIGOS FALTANTES A SUCURSALES EXISTENTES (sin perder progreso)
+        console.log('🔍 Verificando códigos faltantes en sucursales existentes...');
+        let totalCodesAdded = 0;
+        
+        currentData = currentData.map((branch: any) => {
+          const existingCodes = Object.keys(branch.items || {});
+          const missingCodes = SEASON_CODES_TEMPORADA_VERANO.filter(code => !existingCodes.includes(code));
           
-          SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
-            items[code] = {
-              completed: false,
-              hasStock: true,
+          if (missingCodes.length > 0) {
+            console.log(`📝 ${branch.id}: Agregando ${missingCodes.length} códigos faltantes`);
+            totalCodesAdded += missingCodes.length;
+            
+            const updatedItems = { ...branch.items };
+            missingCodes.forEach(code => {
+              updatedItems[code] = {
+                completed: false,
+                hasStock: true,
+                lastUpdated: Date.now()
+              };
+            });
+            
+            needsUpdate = true;
+            return {
+              ...branch,
+              items: updatedItems,
               lastUpdated: Date.now()
             };
-          });
-
-          const newBranch = {
-            id: 'Ctro. de Distribucion',
-            totalCompleted: 0,
-            noStock: 0,
-            items,
-            lastUpdated: Date.now()
-          };
-          
-          const updatedData = [...currentData, newBranch];
-          await set(this.dbRef, updatedData);
-          console.log('✅ Centro de Distribución agregado exitosamente');
+          }
+          return branch;
+        });
+        
+        if (totalCodesAdded > 0) {
+          console.log(`✅ Total de códigos agregados: ${totalCodesAdded}`);
+        }
+        
+        if (needsUpdate) {
+          await set(this.dbRef, currentData);
+          console.log('✅ Datos actualizados en Firebase');
+        } else {
+          console.log('✅ Todos los códigos ya están presentes');
         }
       }
 
