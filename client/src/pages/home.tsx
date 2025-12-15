@@ -198,6 +198,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
+  const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
@@ -240,6 +241,49 @@ export default function Home() {
       return next;
     });
   };
+
+  // Calcular progreso por mes para detectar objetivos cumplidos
+  const progresoMensual = useMemo(() => {
+    if (!calendarioSemanal) return [];
+    
+    const todosLosCodigos = calendarioSemanal.semanas.flatMap(s => s.items);
+    const totalCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed).length;
+    
+    const objetivosMensuales = [
+      { mes: 'DICIEMBRE', objetivo: 36, acumulado: 36 },
+      { mes: 'ENERO', objetivo: 72, acumulado: 108 },
+      { mes: 'FEBRERO', objetivo: 72, acumulado: 180 },
+      { mes: 'MARZO', objetivo: 80, acumulado: 260 },
+    ];
+    
+    return objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
+      const acumuladoAnterior = acumulado - objetivo;
+      const completadosParaEsteMes = Math.min(Math.max(totalCompletados - acumuladoAnterior, 0), objetivo);
+      return { mes, objetivo, completados: completadosParaEsteMes, cumplido: completadosParaEsteMes >= objetivo };
+    });
+  }, [calendarioSemanal, items]);
+
+  // Detectar cuando se cumple un objetivo mensual y celebrar
+  useEffect(() => {
+    if (!progresoMensual.length) return;
+    
+    progresoMensual.forEach(({ mes, cumplido }) => {
+      if (cumplido && !celebratedMonths.has(mes)) {
+        // Marcar como celebrado
+        setCelebratedMonths(prev => new Set([...prev, mes]));
+        
+        // Mostrar confetti
+        celebrateProgress(100);
+        
+        // Mostrar toast de felicitación
+        toast({
+          title: `🎉 ¡Objetivo ${mes} Cumplido!`,
+          description: `¡Excelente trabajo! Has completado todos los items del mes de ${mes}.`,
+          duration: 5000,
+        });
+      }
+    });
+  }, [progresoMensual, celebratedMonths, toast]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -607,21 +651,36 @@ export default function Home() {
                                     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                   }
                                 }}
-                                className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${
-                                  mesCompleto ? 'bg-green-100 border-green-400' :
+                                className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all relative overflow-hidden ${
+                                  mesCompleto ? 'bg-green-100 border-green-500 shadow-lg shadow-green-200' :
                                   completadosParaEsteMes > 0 ? 'bg-blue-50 border-blue-200' :
                                   'bg-gray-50 border-gray-200'
                                 }`}
                               >
+                                {/* Badge de objetivo cumplido */}
+                                {mesCompleto && (
+                                  <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg shadow">
+                                    ✓ CUMPLIDO
+                                  </div>
+                                )}
                                 <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
-                                <div className="font-bold">{mes}</div>
+                                <div className={`font-bold text-lg ${mesCompleto ? 'text-green-700' : ''}`}>{mes}</div>
                                 <div className="text-sm flex items-center gap-1">
-                                  <span className={mesCompleto ? 'text-green-600 font-bold' : ''}>
-                                    {completadosParaEsteMes}/{objetivo}
+                                  <span className={`text-xl font-bold ${mesCompleto ? 'text-green-600' : 'text-gray-700'}`}>
+                                    {completadosParaEsteMes}
                                   </span>
-                                  {mesCompleto && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                                  <span className="text-gray-400">/ {objetivo}</span>
+                                  {mesCompleto && <Trophy className="h-5 w-5 text-yellow-500 ml-1" />}
                                 </div>
-                                <Progress value={porcentajeMes} className="h-1.5 mt-1" />
+                                <Progress 
+                                  value={porcentajeMes} 
+                                  className={`h-2 mt-2 ${mesCompleto ? '[&>div]:bg-green-500' : ''}`} 
+                                />
+                                {mesCompleto && (
+                                  <div className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+                                    <PartyPopper className="h-3 w-3" /> ¡Meta alcanzada!
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
