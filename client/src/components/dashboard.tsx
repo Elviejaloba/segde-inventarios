@@ -181,7 +181,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm text-center">Pos.</TableHead>
                   <TableHead className="min-w-[120px] text-xs sm:text-sm">Sucursal</TableHead>
                   <TableHead className="text-center min-w-[120px] text-xs sm:text-sm">Progreso</TableHead>
-                  <TableHead className="text-center min-w-[130px] text-xs sm:text-sm">Art. Sin Stock</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -231,33 +230,6 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       >
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="relative w-20 sm:w-24 h-2 bg-red-100 dark:bg-red-900/20 rounded-full overflow-hidden">
-                        <motion.div 
-                          className="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${branch.noStockPercentage}%` }}
-                          transition={{ 
-                            duration: 1,
-                            ease: "easeOut",
-                            delay: index * 0.1 + 0.2
-                          }}
-                        />
-                      </div>
-                      <motion.span 
-                        className="text-xs sm:text-sm min-w-[35px] text-red-600 font-medium"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.7 }}
-                      >
-                        {Math.round(branch.noStockPercentage)}%
-                      </motion.span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {branch.noStockItems}/{branch.totalItems} arts
                     </div>
                   </TableCell>
                 </TableRow>
