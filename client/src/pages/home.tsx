@@ -562,54 +562,9 @@ export default function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Progreso Consolidado */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Progreso Consolidado</h3>
-                  <Progress
-                    value={progress.completed}
-                    className="h-3"
-                    style={{
-                      background: progress.completed === 100 ? 'var(--success)' :
-                        progress.completed >= 75 ? 'var(--primary)' :
-                          progress.completed >= 50 ? 'var(--warning)' :
-                            'var(--muted)'
-                    }}
-                  />
-                  <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                    <span className="font-bold text-foreground">{progress.completedCount}/{progress.totalItems}</span>
-                    <span>({Math.round(progress.completed)}% completado)</span>
-                    {progress.completed >= 20 && progress.completed < 100 && (
-                      <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
-                    )}
-                    {progress.completed === 100 && (
-                      <PartyPopper className="h-4 w-4 text-yellow-500 animate-bounce" />
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Sin Stock</h3>
-                  {progress.noStock > 0 ? (
-                    <>
-                      <Progress
-                        value={progress.noStock}
-                        className="h-2 bg-destructive/20"
-                      />
-                      <div className="text-sm text-muted-foreground mt-2">
-                        {Math.round(Object.values(items).filter(i => !i.hasStock).length)} items sin stock
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-muted-foreground mt-2">
-                      0 items sin stock
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Calendario con objetivos mensuales para T.Mendoza */}
               {calendarioSemanal && (
-                <div className="space-y-4 border-t pt-4">
+                <div className="space-y-4">
                   {/* Encabezado con título */}
                   <div className="bg-yellow-300 p-3 rounded-lg" data-testid="header-calendario">
                     <h3 className="text-lg font-bold text-gray-800">260 Items sobrestock y sin rotación</h3>
