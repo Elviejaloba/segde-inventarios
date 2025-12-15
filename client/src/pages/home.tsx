@@ -562,121 +562,120 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Calendario Semanal para T.Mendoza - Lista completa con scroll */}
-              {calendarioSemanal && progresoSemanal.length > 0 && (
+              {/* Calendario con objetivos mensuales para T.Mendoza */}
+              {calendarioSemanal && (
                 <div className="space-y-4 border-t pt-4">
-                  {/* Encabezado con título y resumen */}
+                  {/* Encabezado con título */}
                   <div className="bg-yellow-300 p-3 rounded-lg">
                     <h3 className="text-lg font-bold text-gray-800">260 Items sobrestock y sin rotación</h3>
-                    <p className="text-sm text-gray-600">Calendario de muestreo semanal - T.Mendoza</p>
+                    <p className="text-sm text-gray-600">Selecciona los items que vayas completando - T.Mendoza</p>
                   </div>
 
-                  {/* Resumen de meses */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {['DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO'].map(mes => {
-                      const semanasDelMes = progresoSemanal.filter(s => s.mes === mes);
-                      const totalMes = semanasDelMes.reduce((acc, s) => acc + s.total, 0);
-                      const completadosMes = semanasDelMes.reduce((acc, s) => acc + s.completados, 0);
-                      const porcentajeMes = totalMes > 0 ? (completadosMes / totalMes) * 100 : 0;
-                      
-                      return (
-                        <div 
-                          key={mes} 
-                          onClick={() => {
-                            const element = document.getElementById(`semana-${mes}`);
-                            if (element) {
-                              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                          }}
-                          className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${
-                          porcentajeMes === 100 ? 'bg-green-100 border-green-400' :
-                          porcentajeMes > 0 ? 'bg-blue-50 border-blue-200' :
-                          'bg-gray-50 border-gray-200'
-                        }`}>
-                          <div className="text-xs text-gray-500">{totalMes} items</div>
-                          <div className="font-bold">{mes}</div>
-                          <div className="text-sm">{completadosMes}/{totalMes}</div>
-                          <Progress value={porcentajeMes} className="h-1.5 mt-1" />
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Lista de semanas con items - scroll vertical */}
-                  <div className="space-y-4">
-                    {progresoSemanal.map((semana, semanaIdx) => {
-                      // Detectar si es la primera semana de cada mes para agregar el id
-                      const esPrimeraSemanaDelMes = semanaIdx === 0 || progresoSemanal[semanaIdx - 1]?.mes !== semana.mes;
-                      
-                      return (
-                      <div 
-                        key={semanaIdx}
-                        id={esPrimeraSemanaDelMes ? `semana-${semana.mes}` : undefined}
-                        className={`border rounded-lg overflow-hidden ${
-                          semana.porcentaje === 100 ? 'border-green-400 bg-green-50' :
-                          semana.esActual ? 'border-yellow-400 bg-yellow-50' :
-                          'border-gray-200 bg-white'
-                        }`}
-                      >
-                        {/* Header de la semana */}
-                        <div className={`p-3 flex items-center justify-between ${
-                          semana.porcentaje === 100 ? 'bg-green-200' :
-                          semana.esActual ? 'bg-yellow-200' :
-                          'bg-gray-100'
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span className="font-semibold">{semana.mes}</span>
-                            <span className="text-gray-600">-</span>
-                            <span className="font-medium">{semana.semana}</span>
-                            {semana.esActual && (
-                              <span className="text-xs bg-yellow-400 px-2 py-0.5 rounded-full font-bold">ACTUAL</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${
-                              semana.porcentaje === 100 ? 'text-green-700' : 'text-gray-700'
-                            }`}>
-                              {semana.completados}/{semana.total}
-                            </span>
-                            {semana.porcentaje === 100 && (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Barra de progreso */}
-                        <Progress value={semana.porcentaje} className="h-2 rounded-none" />
-                        
-                        {/* Items de la semana */}
-                        <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
-                          {semana.items.map(code => {
-                            const isCompleted = items[sanitizeCode(code)]?.completed;
+                  {/* Objetivos mensuales - el usuario elige cuáles items completar */}
+                  {(() => {
+                    // Obtener todos los códigos del calendario
+                    const todosLosCodigos = calendarioSemanal.semanas.flatMap(s => s.items);
+                    const itemsCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed);
+                    const totalCompletados = itemsCompletados.length;
+                    
+                    // Objetivos por mes
+                    const objetivosMensuales = [
+                      { mes: 'DICIEMBRE', objetivo: 36, acumulado: 36 },
+                      { mes: 'ENERO', objetivo: 72, acumulado: 108 },
+                      { mes: 'FEBRERO', objetivo: 72, acumulado: 180 },
+                      { mes: 'MARZO', objetivo: 80, acumulado: 260 },
+                    ];
+                    
+                    return (
+                      <>
+                        {/* Resumen de objetivos por mes */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
+                            // Calcular cuántos items corresponden a este mes
+                            const acumuladoAnterior = acumulado - objetivo;
+                            const completadosParaEsteMes = Math.min(Math.max(totalCompletados - acumuladoAnterior, 0), objetivo);
+                            const porcentajeMes = (completadosParaEsteMes / objetivo) * 100;
+                            const mesCompleto = completadosParaEsteMes >= objetivo;
+                            
                             return (
-                              <div
-                                key={code}
-                                onClick={() => handleToggle(code, 'completed')}
-                                className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
-                                  isCompleted 
-                                    ? 'bg-green-100 border border-green-300' 
-                                    : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
+                              <div 
+                                key={mes}
+                                onClick={() => {
+                                  const element = document.getElementById(`items-lista`);
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }}
+                                className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${
+                                  mesCompleto ? 'bg-green-100 border-green-400' :
+                                  completadosParaEsteMes > 0 ? 'bg-blue-50 border-blue-200' :
+                                  'bg-gray-50 border-gray-200'
                                 }`}
                               >
-                                <span className="font-mono text-sm">{code}</span>
-                                <Checkbox
-                                  checked={isCompleted || false}
-                                  onCheckedChange={() => handleToggle(code, 'completed')}
-                                  disabled={loading}
-                                  className="h-4 w-4"
-                                />
+                                <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
+                                <div className="font-bold">{mes}</div>
+                                <div className="text-sm flex items-center gap-1">
+                                  <span className={mesCompleto ? 'text-green-600 font-bold' : ''}>
+                                    {completadosParaEsteMes}/{objetivo}
+                                  </span>
+                                  {mesCompleto && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                                </div>
+                                <Progress value={porcentajeMes} className="h-1.5 mt-1" />
                               </div>
                             );
                           })}
                         </div>
-                      </div>
+
+                        {/* Indicador de progreso general */}
+                        <div className="bg-gray-100 p-3 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">Progreso Total</span>
+                            <span className="font-bold text-lg">{totalCompletados}/260</span>
+                          </div>
+                          <Progress value={(totalCompletados / 260) * 100} className="h-2" />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Selecciona cualquier item de la lista para sumarlo a tu objetivo mensual
+                          </p>
+                        </div>
+
+                        {/* Lista de todos los items para seleccionar */}
+                        <div id="items-lista" className="border rounded-lg overflow-hidden">
+                          <div className="bg-yellow-200 p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span className="font-semibold">Todos los Items</span>
+                            </div>
+                            <span className="text-sm font-bold">{totalCompletados}/260 completados</span>
+                          </div>
+                          
+                          <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-h-[60vh] overflow-y-auto">
+                            {todosLosCodigos.map(code => {
+                              const isCompleted = items[sanitizeCode(code)]?.completed;
+                              return (
+                                <div
+                                  key={code}
+                                  onClick={() => handleToggle(code, 'completed')}
+                                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
+                                    isCompleted 
+                                      ? 'bg-green-100 border border-green-300' 
+                                      : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
+                                  }`}
+                                >
+                                  <span className="font-mono text-sm">{code}</span>
+                                  <Checkbox
+                                    checked={isCompleted || false}
+                                    onCheckedChange={() => handleToggle(code, 'completed')}
+                                    disabled={loading}
+                                    className="h-4 w-4"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
                     );
-                    })}
-                  </div>
+                  })()}
                 </div>
               )}
 
