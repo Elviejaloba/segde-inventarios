@@ -580,7 +580,15 @@ export default function Home() {
                       const porcentajeMes = totalMes > 0 ? (completadosMes / totalMes) * 100 : 0;
                       
                       return (
-                        <div key={mes} className={`p-3 rounded-lg border-2 ${
+                        <div 
+                          key={mes} 
+                          onClick={() => {
+                            const element = document.getElementById(`semana-${mes}`);
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }}
+                          className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${
                           porcentajeMes === 100 ? 'bg-green-100 border-green-400' :
                           porcentajeMes > 0 ? 'bg-blue-50 border-blue-200' :
                           'bg-gray-50 border-gray-200'
@@ -596,9 +604,14 @@ export default function Home() {
 
                   {/* Lista de semanas con items - scroll vertical */}
                   <div className="space-y-4">
-                    {progresoSemanal.map((semana, semanaIdx) => (
+                    {progresoSemanal.map((semana, semanaIdx) => {
+                      // Detectar si es la primera semana de cada mes para agregar el id
+                      const esPrimeraSemanaDelMes = semanaIdx === 0 || progresoSemanal[semanaIdx - 1]?.mes !== semana.mes;
+                      
+                      return (
                       <div 
-                        key={semanaIdx} 
+                        key={semanaIdx}
+                        id={esPrimeraSemanaDelMes ? `semana-${semana.mes}` : undefined}
                         className={`border rounded-lg overflow-hidden ${
                           semana.porcentaje === 100 ? 'border-green-400 bg-green-50' :
                           semana.esActual ? 'border-yellow-400 bg-yellow-50' :
@@ -661,7 +674,8 @@ export default function Home() {
                           })}
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}
