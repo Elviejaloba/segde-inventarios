@@ -428,25 +428,39 @@ export default function Home() {
 
   const progress = useMemo(() => {
     if (!selectedBranch || Object.keys(items).length === 0) {
-      return { completed: 0, noStock: 0 };
+      return { completed: 0, noStock: 0, completedCount: 0, totalItems: 0 };
     }
     
-    const totalItems = CODES.length;
-    const completedCount = Object.values(items).filter(i => i.completed).length;
-    const noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
+    // Si hay calendario semanal, usar los items del calendario (260 para T.Mendoza)
+    // Si no, usar los CODES generales
+    let totalItems: number;
+    let completedCount: number;
+    let noStockCount: number;
     
-    const completedPercentage = (completedCount / totalItems) * 100;
-    const noStockPercentage = (noStockCount / totalItems) * 100;
+    if (calendarioSemanal) {
+      // Obtener todos los códigos del calendario semanal
+      const codigosCalendario = calendarioSemanal.semanas.flatMap(s => s.items);
+      totalItems = codigosCalendario.length;
+      completedCount = codigosCalendario.filter(code => items[sanitizeCode(code)]?.completed).length;
+      noStockCount = codigosCalendario.filter(code => items[sanitizeCode(code)]?.hasStock === false).length;
+    } else {
+      totalItems = CODES.length;
+      completedCount = Object.values(items).filter(i => i.completed).length;
+      noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
+    }
+    
+    const completedPercentage = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
+    const noStockPercentage = totalItems > 0 ? (noStockCount / totalItems) * 100 : 0;
     
     console.log(`Progreso calculado: ${completedCount}/${totalItems} = ${completedPercentage.toFixed(1)}%`);
-    console.log('Items disponibles:', Object.keys(items).length);
-    console.log('Items completados:', Object.values(items).filter(i => i?.completed).length);
     
     return {
       completed: completedPercentage,
-      noStock: noStockPercentage
+      noStock: noStockPercentage,
+      completedCount,
+      totalItems
     };
-  }, [selectedBranch, items]);
+  }, [selectedBranch, items, calendarioSemanal]);
 
   return (
     <div className="space-y-8">
@@ -509,7 +523,7 @@ export default function Home() {
                   <h3 className="text-sm font-medium mb-2">Progreso Consolidado</h3>
                   <Progress
                     value={progress.completed}
-                    className="h-2"
+                    className="h-3"
                     style={{
                       background: progress.completed === 100 ? 'var(--success)' :
                         progress.completed >= 75 ? 'var(--primary)' :
@@ -518,7 +532,8 @@ export default function Home() {
                     }}
                   />
                   <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                    {Math.round(progress.completed)}% completado
+                    <span className="font-bold text-foreground">{progress.completedCount}/{progress.totalItems}</span>
+                    <span>({Math.round(progress.completed)}% completado)</span>
                     {progress.completed >= 20 && progress.completed < 100 && (
                       <Star className="h-4 w-4 text-yellow-500 animate-pulse" />
                     )}
