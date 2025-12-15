@@ -547,175 +547,107 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Calendario Semanal tipo Excel para T.Mendoza */}
+              {/* Calendario Semanal para T.Mendoza - Lista completa con scroll */}
               {calendarioSemanal && progresoSemanal.length > 0 && (
                 <div className="space-y-4 border-t pt-4">
-                  {/* Encabezado tipo Excel */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                      {/* Fila 1: Título principal */}
-                      <thead>
-                        <tr>
-                          <th colSpan={2} rowSpan={3} className="bg-yellow-300 border border-gray-400 p-2 text-left font-bold">
-                            <div className="text-lg">260 Items sobrestock y sin rotación</div>
-                          </th>
-                          {['DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO'].map(mes => {
-                            const semanasDelMes = progresoSemanal.filter(s => s.mes === mes);
-                            const totalMes = semanasDelMes.reduce((acc, s) => acc + s.total, 0);
-                            return (
-                              <th 
-                                key={mes} 
-                                colSpan={semanasDelMes.length} 
-                                className="bg-gray-200 border border-gray-400 p-2 text-center font-bold"
-                              >
-                                <div className="text-xs text-gray-600">{totalMes}</div>
-                                <div>{mes}</div>
-                              </th>
-                            );
-                          })}
-                        </tr>
-                        {/* Fila 2: Cantidad por semana */}
-                        <tr>
-                          {progresoSemanal.map((semana, idx) => (
-                            <th 
-                              key={idx} 
-                              className={`border border-gray-400 p-1 text-center text-xs font-bold ${
-                                semana.porcentaje === 100 ? 'bg-green-400' : 'bg-green-300'
-                              }`}
-                            >
-                              {semana.total}
-                            </th>
-                          ))}
-                        </tr>
-                        {/* Fila 3: Nombre de semana */}
-                        <tr>
-                          {progresoSemanal.map((semana, idx) => (
-                            <th 
-                              key={idx} 
-                              className={`border border-gray-400 p-1 text-center text-xs ${
-                                semana.porcentaje === 100 ? 'bg-green-400' : 
-                                semana.esActual ? 'bg-yellow-200' : 'bg-yellow-100'
-                              }`}
-                            >
-                              <div>{semana.semana}</div>
-                              <div className="text-[10px] mt-0.5 font-normal">
-                                {semana.completados}/{semana.total}
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Fila de encabezado de datos */}
-                        <tr className="bg-yellow-200">
-                          <td className="border border-gray-400 p-1 font-semibold text-xs">Cód. base / artículo</td>
-                          <td className="border border-gray-400 p-1 font-semibold text-xs">Estado</td>
-                          {progresoSemanal.map((_, idx) => (
-                            <td key={idx} className="border border-gray-400 p-1 text-center text-[10px]">
-                              Completado
-                            </td>
-                          ))}
-                        </tr>
-                        {/* Filas de datos - mostrar primeros 20 items */}
-                        {calendarioSemanal.semanas[0]?.items.slice(0, 20).map((code, rowIdx) => (
-                          <tr key={code} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="border border-gray-300 p-1 font-mono text-xs">{code}</td>
-                            <td className="border border-gray-300 p-1 text-xs">
-                              {items[sanitizeCode(code)]?.completed ? (
-                                <span className="text-green-600 font-medium">✓</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            {progresoSemanal.map((semana, colIdx) => {
-                              const itemEnSemana = semana.items.includes(code);
-                              const isCompleted = items[sanitizeCode(code)]?.completed;
-                              return (
-                                <td 
-                                  key={colIdx} 
-                                  className={`border border-gray-300 p-0.5 text-center ${
-                                    itemEnSemana ? (isCompleted ? 'bg-green-100' : 'bg-yellow-50') : 'bg-gray-100'
-                                  }`}
-                                >
-                                  {itemEnSemana && (
-                                    <Checkbox
-                                      checked={isCompleted || false}
-                                      onCheckedChange={() => handleToggle(code, 'completed')}
-                                      disabled={loading}
-                                      className="h-3 w-3"
-                                    />
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {/* Resumen visual por semana */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mt-4">
-                    {progresoSemanal.map((semana, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => toggleSemana(`${semana.mes}_${semana.semana}`)}
-                        className={`p-2 rounded-lg border text-center transition-all hover:shadow-md ${
-                          semana.porcentaje === 100 ? 'bg-green-100 border-green-400' :
-                          semana.esActual ? 'bg-yellow-100 border-yellow-400' :
-                          'bg-white border-gray-200 hover:border-primary'
-                        }`}
-                      >
-                        <div className="text-[10px] text-gray-500">{semana.mes}</div>
-                        <div className="text-xs font-medium">{semana.semana}</div>
-                        <div className={`text-sm font-bold ${
-                          semana.porcentaje === 100 ? 'text-green-600' : 'text-gray-700'
-                        }`}>
-                          {semana.completados}/{semana.total}
-                        </div>
-                        <Progress value={semana.porcentaje} className="h-1 mt-1" />
-                      </button>
-                    ))}
+                  {/* Encabezado con título y resumen */}
+                  <div className="bg-yellow-300 p-3 rounded-lg">
+                    <h3 className="text-lg font-bold text-gray-800">260 Items sobrestock y sin rotación</h3>
+                    <p className="text-sm text-gray-600">Calendario de muestreo semanal - T.Mendoza</p>
                   </div>
 
-                  {/* Items expandidos de semana seleccionada */}
-                  {Array.from(expandedSemanas).map(semanaKey => {
-                    const [mes, semanaNum] = semanaKey.split('_');
-                    const semana = progresoSemanal.find(s => s.mes === mes && s.semana === semanaNum);
-                    if (!semana) return null;
-                    
-                    return (
-                      <div key={semanaKey} className="border rounded-lg p-3 bg-yellow-50">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-sm flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            {semana.mes} - {semana.semana}
-                          </h4>
-                          <span className="text-xs bg-white px-2 py-1 rounded">
-                            {semana.completados}/{semana.total} completados
-                          </span>
+                  {/* Resumen de meses */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {['DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO'].map(mes => {
+                      const semanasDelMes = progresoSemanal.filter(s => s.mes === mes);
+                      const totalMes = semanasDelMes.reduce((acc, s) => acc + s.total, 0);
+                      const completadosMes = semanasDelMes.reduce((acc, s) => acc + s.completados, 0);
+                      const porcentajeMes = totalMes > 0 ? (completadosMes / totalMes) * 100 : 0;
+                      
+                      return (
+                        <div key={mes} className={`p-3 rounded-lg border-2 ${
+                          porcentajeMes === 100 ? 'bg-green-100 border-green-400' :
+                          porcentajeMes > 0 ? 'bg-blue-50 border-blue-200' :
+                          'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className="text-xs text-gray-500">{totalMes} items</div>
+                          <div className="font-bold">{mes}</div>
+                          <div className="text-sm">{completadosMes}/{totalMes}</div>
+                          <Progress value={porcentajeMes} className="h-1.5 mt-1" />
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
-                          {semana.items.map(code => (
-                            <div
-                              key={code}
-                              className={`flex items-center justify-between p-1.5 rounded text-xs ${
-                                items[sanitizeCode(code)]?.completed ? 'bg-green-100' : 'bg-white'
-                              }`}
-                            >
-                              <span className="font-mono">{code}</span>
-                              <Checkbox
-                                checked={items[sanitizeCode(code)]?.completed || false}
-                                onCheckedChange={() => handleToggle(code, 'completed')}
-                                disabled={loading}
-                                className="h-3 w-3"
-                              />
-                            </div>
-                          ))}
+                      );
+                    })}
+                  </div>
+
+                  {/* Lista de semanas con items - scroll vertical */}
+                  <div className="space-y-4">
+                    {progresoSemanal.map((semana, semanaIdx) => (
+                      <div 
+                        key={semanaIdx} 
+                        className={`border rounded-lg overflow-hidden ${
+                          semana.porcentaje === 100 ? 'border-green-400 bg-green-50' :
+                          semana.esActual ? 'border-yellow-400 bg-yellow-50' :
+                          'border-gray-200 bg-white'
+                        }`}
+                      >
+                        {/* Header de la semana */}
+                        <div className={`p-3 flex items-center justify-between ${
+                          semana.porcentaje === 100 ? 'bg-green-200' :
+                          semana.esActual ? 'bg-yellow-200' :
+                          'bg-gray-100'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span className="font-semibold">{semana.mes}</span>
+                            <span className="text-gray-600">-</span>
+                            <span className="font-medium">{semana.semana}</span>
+                            {semana.esActual && (
+                              <span className="text-xs bg-yellow-400 px-2 py-0.5 rounded-full font-bold">ACTUAL</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${
+                              semana.porcentaje === 100 ? 'text-green-700' : 'text-gray-700'
+                            }`}>
+                              {semana.completados}/{semana.total}
+                            </span>
+                            {semana.porcentaje === 100 && (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Barra de progreso */}
+                        <Progress value={semana.porcentaje} className="h-2 rounded-none" />
+                        
+                        {/* Items de la semana */}
+                        <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                          {semana.items.map(code => {
+                            const isCompleted = items[sanitizeCode(code)]?.completed;
+                            return (
+                              <div
+                                key={code}
+                                onClick={() => handleToggle(code, 'completed')}
+                                className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
+                                  isCompleted 
+                                    ? 'bg-green-100 border border-green-300' 
+                                    : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
+                                }`}
+                              >
+                                <span className="font-mono text-sm">{code}</span>
+                                <Checkbox
+                                  checked={isCompleted || false}
+                                  onCheckedChange={() => handleToggle(code, 'completed')}
+                                  disabled={loading}
+                                  className="h-4 w-4"
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
 
