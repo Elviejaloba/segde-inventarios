@@ -59,6 +59,51 @@ export function startTour(page: 'home' | 'muestreos') {
         side: 'bottom',
         align: 'start'
       }
+    },
+    {
+      element: '[data-testid="header-calendario"]',
+      popover: {
+        title: '📋 Artículos Sin Rotación',
+        description: 'Esta sección muestra los 260 artículos con sobrestock o sin rotación que debes revisar durante la temporada.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-testid="objetivos-mensuales"]',
+      popover: {
+        title: '🎯 Objetivos Mensuales',
+        description: 'Cada tarjeta representa un mes con su objetivo de items a completar. Cuando llegas al objetivo, la tarjeta se pone verde con trofeo y aparece confetti de celebración.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-testid="progreso-total"]',
+      popover: {
+        title: '📊 Progreso Total',
+        description: 'Aquí ves cuántos items has completado en total de los 260. La barra muestra tu avance general.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-testid="buscador-items"]',
+      popover: {
+        title: '🔍 Buscador Rápido',
+        description: 'Escribe el código del artículo para encontrarlo rápidamente. Filtra la lista mientras escribes.',
+        side: 'top',
+        align: 'start'
+      }
+    },
+    {
+      element: '[data-testid="items-lista"]',
+      popover: {
+        title: '✅ Lista de Items',
+        description: 'Haz clic en cualquier item para marcarlo como completado. El progreso se suma automáticamente al objetivo del mes actual.',
+        side: 'top',
+        align: 'center'
+      }
     }
   ];
 

@@ -611,7 +611,7 @@ export default function Home() {
               {calendarioSemanal && (
                 <div className="space-y-4 border-t pt-4">
                   {/* Encabezado con título */}
-                  <div className="bg-yellow-300 p-3 rounded-lg">
+                  <div className="bg-yellow-300 p-3 rounded-lg" data-testid="header-calendario">
                     <h3 className="text-lg font-bold text-gray-800">260 Items sobrestock y sin rotación</h3>
                     <p className="text-sm text-gray-600">Selecciona los items que vayas completando - T.Mendoza</p>
                   </div>
@@ -634,7 +634,7 @@ export default function Home() {
                     return (
                       <>
                         {/* Resumen de objetivos por mes */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="objetivos-mensuales">
                           {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
                             // Calcular cuántos items corresponden a este mes
                             const acumuladoAnterior = acumulado - objetivo;
@@ -687,7 +687,7 @@ export default function Home() {
                         </div>
 
                         {/* Indicador de progreso general */}
-                        <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="bg-gray-100 p-3 rounded-lg" data-testid="progreso-total">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium">Progreso Total</span>
                             <span className="font-bold text-lg">{totalCompletados}/260</span>
@@ -699,7 +699,7 @@ export default function Home() {
                         </div>
 
                         {/* Lista de todos los items para seleccionar */}
-                        <div id="items-lista" className="border rounded-lg overflow-hidden">
+                        <div id="items-lista" className="border rounded-lg overflow-hidden" data-testid="items-lista">
                           <div className="bg-yellow-200 p-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
@@ -709,7 +709,7 @@ export default function Home() {
                           </div>
                           
                           {/* Buscador rápido */}
-                          <div className="p-2 bg-gray-50 border-b">
+                          <div className="p-2 bg-gray-50 border-b" data-testid="buscador-items">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                               <input
