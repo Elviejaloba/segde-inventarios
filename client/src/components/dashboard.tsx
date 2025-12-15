@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
-import { AVAILABLE_BRANCHES } from "@/lib/store";
+import { AVAILABLE_BRANCHES, Branch } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { ReportsView } from "@/components/reports-view";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { getCalendarioSucursal } from "@/lib/calendario-semanal";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -62,16 +63,37 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
+  // Helper para sanitizar códigos (mismo que en home.tsx)
+  const sanitizeCode = (code: string) => code.replace(/[.#$[\]]/g, '_');
+  
   const branches = AVAILABLE_BRANCHES.map(branchId => {
     const branchData = data?.find(d => d.id === branchId);
     const items = branchData?.items || {};
-    const totalItems = Object.keys(items).length;
+    
+    // Para sucursales con calendario, calcular progreso sobre los items del calendario
+    const calendario = getCalendarioSucursal(branchId as Branch);
+    
+    let totalCompleted = 0;
+    let totalItems = 0;
+    
+    if (calendario) {
+      // Usar los items del calendario (260 para T.Mendoza)
+      const codigosCalendario = calendario.semanas.flatMap(s => s.items);
+      totalItems = codigosCalendario.length;
+      const completados = codigosCalendario.filter(code => items[sanitizeCode(code)]?.completed).length;
+      totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
+    } else {
+      // Para otras sucursales, usar el cálculo original
+      totalItems = Object.keys(items).length;
+      totalCompleted = branchData?.totalCompleted || 0;
+    }
+    
     const noStockItems = Object.values(items).filter(item => !item.hasStock).length;
     const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
     
     return {
       id: branchId,
-      totalCompleted: branchData?.totalCompleted || 0,
+      totalCompleted,
       noStock: branchData?.noStock || 0,
       noStockPercentage,
       noStockItems,
