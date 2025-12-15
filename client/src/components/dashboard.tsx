@@ -180,7 +180,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm text-center">Pos.</TableHead>
                   <TableHead className="min-w-[120px] text-xs sm:text-sm">Sucursal</TableHead>
-                  <TableHead className="text-center min-w-[120px] text-xs sm:text-sm">Progreso</TableHead>
+                  <TableHead className="text-right min-w-[120px] text-xs sm:text-sm">Progreso</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
