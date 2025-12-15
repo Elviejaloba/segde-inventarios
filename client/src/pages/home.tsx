@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp } from "lucide-react";
+import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
+import { getCalendarioSucursal, getSemanaActual, type SemanaCalendario } from "@/lib/calendario-semanal";
 
 import {
   Card,
@@ -195,11 +196,49 @@ export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
+  const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
+
+  // Obtener calendario semanal si existe para la sucursal
+  const calendarioSemanal = selectedBranch ? getCalendarioSucursal(selectedBranch) : null;
+  const semanaActual = getSemanaActual();
+
+  // Calcular progreso por semana
+  const progresoSemanal = useMemo(() => {
+    if (!calendarioSemanal || Object.keys(items).length === 0) return [];
+    
+    return calendarioSemanal.semanas.map(semana => {
+      const completados = semana.items.filter(code => items[sanitizeCode(code)]?.completed).length;
+      const total = semana.items.length;
+      const porcentaje = total > 0 ? (completados / total) * 100 : 0;
+      const esActual = semanaActual?.mes === semana.mes && semanaActual?.semana === semana.semana;
+      
+      return {
+        ...semana,
+        completados,
+        total,
+        porcentaje,
+        esActual
+      };
+    });
+  }, [calendarioSemanal, items, semanaActual]);
+
+  // Toggle expandir/colapsar semana
+  const toggleSemana = (key: string) => {
+    setExpandedSemanas(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -464,9 +503,10 @@ export default function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Progreso Consolidado */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Progreso</h3>
+                  <h3 className="text-sm font-medium mb-2">Progreso Consolidado</h3>
                   <Progress
                     value={progress.completed}
                     className="h-2"
@@ -507,36 +547,135 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {CODES.map((code) => (
-                  <div
-                    key={code}
-                    className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
-                      items[sanitizeCode(code)]?.completed ? 'bg-primary/10' : ''
-                    }`}
-                  >
-                    <span className="flex-1 font-mono">{code}</span>
-                    <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Completado</span>
-                        <Checkbox
-                          checked={items[sanitizeCode(code)]?.completed || false}
-                          onCheckedChange={() => handleToggle(code, 'completed')}
-                          disabled={loading}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Sin Stock</span>
-                        <Checkbox
-                          checked={!items[sanitizeCode(code)]?.hasStock}
-                          onCheckedChange={() => handleToggle(code, 'hasStock')}
-                          disabled={loading}
-                        />
+              {/* Calendario Semanal para T.Mendoza */}
+              {calendarioSemanal && progresoSemanal.length > 0 && (
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Progreso Semanal</h3>
+                    <span className="text-sm text-muted-foreground">
+                      ({calendarioSemanal.totalItems} items en {calendarioSemanal.semanas.length} semanas)
+                    </span>
+                  </div>
+                  
+                  {/* Grid de meses */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {['DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO'].map(mes => {
+                      const semanasDelMes = progresoSemanal.filter(s => s.mes === mes);
+                      const totalMes = semanasDelMes.reduce((acc, s) => acc + s.total, 0);
+                      const completadosMes = semanasDelMes.reduce((acc, s) => acc + s.completados, 0);
+                      const porcentajeMes = totalMes > 0 ? (completadosMes / totalMes) * 100 : 0;
+                      
+                      return (
+                        <div key={mes} className="border rounded-lg p-3 bg-card">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-sm">{mes}</h4>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              porcentajeMes === 100 ? 'bg-green-100 text-green-700' :
+                              porcentajeMes >= 50 ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {completadosMes}/{totalMes}
+                            </span>
+                          </div>
+                          <Progress value={porcentajeMes} className="h-1.5 mb-2" />
+                          
+                          {/* Semanas del mes */}
+                          <div className="space-y-1">
+                            {semanasDelMes.map((semana, idx) => {
+                              const semanaKey = `${semana.mes}_${semana.semana}`;
+                              const isExpanded = expandedSemanas.has(semanaKey);
+                              
+                              return (
+                                <div key={idx} className="text-xs">
+                                  <button
+                                    onClick={() => toggleSemana(semanaKey)}
+                                    className={`w-full flex items-center justify-between p-1.5 rounded transition-colors ${
+                                      semana.esActual ? 'bg-primary/10 border border-primary/30' :
+                                      semana.porcentaje === 100 ? 'bg-green-50' :
+                                      'hover:bg-muted'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                      <span>{semana.semana}</span>
+                                      {semana.esActual && <span className="text-primary font-bold">(Actual)</span>}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      {semana.porcentaje === 100 && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+                                      <span className={semana.porcentaje === 100 ? 'text-green-600 font-medium' : ''}>
+                                        {semana.completados}/{semana.total}
+                                      </span>
+                                    </div>
+                                  </button>
+                                  
+                                  {/* Items expandidos */}
+                                  {isExpanded && (
+                                    <div className="ml-4 mt-1 space-y-1 border-l-2 border-muted pl-2">
+                                      {semana.items.map(code => (
+                                        <div
+                                          key={code}
+                                          className={`flex items-center justify-between p-1 rounded ${
+                                            items[sanitizeCode(code)]?.completed ? 'bg-green-50' : 'bg-background'
+                                          }`}
+                                        >
+                                          <span className="font-mono text-xs">{code}</span>
+                                          <div className="flex items-center gap-2">
+                                            <Checkbox
+                                              checked={items[sanitizeCode(code)]?.completed || false}
+                                              onCheckedChange={() => handleToggle(code, 'completed')}
+                                              disabled={loading}
+                                              className="h-3 w-3"
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Lista completa de items (para sucursales sin calendario) */}
+              {!calendarioSemanal && (
+                <div className="space-y-2">
+                  {CODES.map((code) => (
+                    <div
+                      key={code}
+                      className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
+                        items[sanitizeCode(code)]?.completed ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      <span className="flex-1 font-mono">{code}</span>
+                      <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Completado</span>
+                          <Checkbox
+                            checked={items[sanitizeCode(code)]?.completed || false}
+                            onCheckedChange={() => handleToggle(code, 'completed')}
+                            disabled={loading}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Sin Stock</span>
+                          <Checkbox
+                            checked={!items[sanitizeCode(code)]?.hasStock}
+                            onCheckedChange={() => handleToggle(code, 'hasStock')}
+                            disabled={loading}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
           {showScrollButton && (
