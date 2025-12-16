@@ -264,7 +264,7 @@ export function ReportsView() {
                 SUCURSALES_CALENDARIO.forEach(sucId => {
                   const calendario = getCalendarioSucursal(sucId);
                   if (calendario) {
-                    const branchData = branchesData[sucId];
+                    const branchData = branchesData?.[sucId];
                     const codigos = calendario.semanas.flatMap(s => s.items);
                     totalItems += codigos.length;
                     const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
@@ -316,7 +316,7 @@ export function ReportsView() {
                 const calendario = getCalendarioSucursal(sucursalId);
                 if (!calendario) return null;
                 
-                const branchData = branchesData[sucursalId];
+                const branchData = branchesData?.[sucursalId];
                 const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
                 const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
                 const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
