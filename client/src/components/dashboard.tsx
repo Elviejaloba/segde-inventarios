@@ -231,9 +231,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
-                    {/* Indicadores de objetivos mensuales para T.Mendoza */}
-                    {branch.id === 'T.Mendoza' && (() => {
-                      const calendario = getCalendarioSucursal('T.Mendoza');
+                    {/* Indicadores de objetivos mensuales para sucursales con calendario */}
+                    {['T.Mendoza', 'T.Sjuan', 'T.Luis', 'Crisa2'].includes(branch.id) && (() => {
+                      const calendario = getCalendarioSucursal(branch.id);
                       if (!calendario) return null;
                       
                       const codigosCalendario = calendario.semanas.flatMap(s => s.items);
