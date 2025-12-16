@@ -66,6 +66,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   // Helper para sanitizar códigos (DEBE coincidir exactamente con home.tsx)
   const sanitizeCode = (code: string) => code.toLowerCase().replace(/[/.#$[\]]/g, '-');
   
+  // Helper para buscar item por código - busca tanto el código original como el sanitizado
+  // porque Firebase puede tener datos guardados con cualquiera de los dos formatos
+  const findItemByCode = (items: Record<string, any>, code: string) => {
+    // Primero intentar con el código sanitizado (formato actual)
+    const sanitized = sanitizeCode(code);
+    if (items[sanitized]) return items[sanitized];
+    // Luego intentar con el código original
+    if (items[code]) return items[code];
+    return null;
+  };
+  
   const branches = AVAILABLE_BRANCHES.map(branchId => {
     const branchData = data?.find(d => d.id === branchId);
     const items = branchData?.items || {};
@@ -80,7 +91,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       // Usar los items del calendario (260 para T.Mendoza)
       const codigosCalendario = calendario.semanas.flatMap(s => s.items);
       totalItems = codigosCalendario.length;
-      const completados = codigosCalendario.filter(code => items[sanitizeCode(code)]?.completed).length;
+      const completados = codigosCalendario.filter(code => findItemByCode(items, code)?.completed).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     } else {
       // Para otras sucursales, usar el cálculo original
@@ -237,7 +248,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       if (!calendario) return null;
                       
                       const codigosCalendario = calendario.semanas.flatMap(s => s.items);
-                      const completados = codigosCalendario.filter(code => branch.items[sanitizeCode(code)]?.completed).length;
+                      const completados = codigosCalendario.filter(code => findItemByCode(branch.items, code)?.completed).length;
                       
                       // Calcular objetivos dinámicamente desde el calendario
                       const mesesMap: { [key: string]: { corto: string, items: number } } = {
