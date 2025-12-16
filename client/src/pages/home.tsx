@@ -365,8 +365,9 @@ export default function Home() {
       
       const initializedItems = CODES.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
-        // Buscar el item en Firebase usando el código original primero, luego el sanitizado
-        const existingItem = branchData?.items?.[code] || branchData?.items?.[sanitizedCode];
+        // Buscar el item en Firebase: PRIMERO el código sanitizado, luego el original
+        // Esto debe coincidir con la lógica del Dashboard
+        const existingItem = branchData?.items?.[sanitizedCode] || branchData?.items?.[code];
         if (existingItem) {
           acc[sanitizedCode] = existingItem;
         } else {
@@ -426,11 +427,10 @@ export default function Home() {
       const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
       const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
 
-      // Crear objeto para Firebase usando códigos originales (no sanitizados)
+      // Crear objeto para Firebase usando códigos SANITIZADOS (lowercase)
+      // Esto asegura consistencia con la lógica del Dashboard
       const firebaseItems = Object.entries(newItems).reduce((acc, [sanitizedKey, value]) => {
-        // Buscar el código original correspondiente al sanitizado
-        const originalCode = CODES.find(c => sanitizeCode(c) === sanitizedKey) || sanitizedKey;
-        acc[originalCode] = {
+        acc[sanitizedKey] = {
           ...value,
           lastUpdated: Date.now()
         };
