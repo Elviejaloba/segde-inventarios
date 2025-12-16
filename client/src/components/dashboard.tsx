@@ -91,26 +91,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       // Usar los items del calendario (260 para T.Mendoza)
       const codigosCalendario = calendario.semanas.flatMap(s => s.items);
       totalItems = codigosCalendario.length;
-      
-      // DEBUG: Encontrar cuáles items se cuentan como completados
-      const itemsCompletados = codigosCalendario.filter(code => {
-        const item = findItemByCode(items, code);
-        return item?.completed;
-      });
-      
-      if (branchId === 'T.Mendoza' && itemsCompletados.length > 0) {
-        console.log(`🔍 DEBUG T.Mendoza - Items completados (${itemsCompletados.length}):`, itemsCompletados.slice(0, 10));
-        // Verificar detalle de estos items
-        itemsCompletados.slice(0, 5).forEach(code => {
-          const sanitized = sanitizeCode(code);
-          console.log(`  ${code} -> sanitizado: ${sanitized}, encontrado en:`, 
-            items[sanitized] ? 'sanitizado' : items[code] ? 'original' : 'ninguno',
-            'valor:', items[sanitized] || items[code]
-          );
-        });
-      }
-      
-      const completados = itemsCompletados.length;
+      const completados = codigosCalendario.filter(code => findItemByCode(items, code)?.completed).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     } else {
       // Para otras sucursales, usar el cálculo original

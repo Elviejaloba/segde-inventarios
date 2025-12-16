@@ -213,9 +213,11 @@ export default function Home() {
     if (!branchData?.items) return;
     
     // Solo actualizar si hay diferencias para evitar loops innecesarios
+    // IMPORTANTE: Buscar PRIMERO el código sanitizado, luego el original
+    // Esto debe coincidir con loadBranchData y Dashboard
     const newItems = CODES.reduce((acc, code) => {
       const sanitizedCode = sanitizeCode(code);
-      const existingItem = branchData.items[code] || branchData.items[sanitizedCode];
+      const existingItem = branchData.items[sanitizedCode] || branchData.items[code];
       if (existingItem) {
         acc[sanitizedCode] = existingItem;
       } else {
