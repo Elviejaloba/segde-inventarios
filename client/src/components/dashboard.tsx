@@ -261,7 +261,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         });
                       
                       return (
-                        <div className="flex gap-1 mt-1 justify-end">
+                        <div className="flex gap-1 mt-1 justify-end" data-testid="indicadores-meses-ranking">
                           {objetivos.map(({ mes, obj, acum }) => {
                             const acumAnterior = acum - obj;
                             const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);

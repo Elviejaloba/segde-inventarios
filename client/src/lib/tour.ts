@@ -43,6 +43,15 @@ export function startTour(page: 'home' | 'muestreos') {
       }
     },
     {
+      element: '[data-testid="indicadores-meses-ranking"]',
+      popover: {
+        title: '📅 Indicadores Mensuales',
+        description: 'Estos badges muestran el progreso por mes de cada sucursal: Dic 4/36 significa 4 completados de 36 del objetivo de Diciembre. Verde con ✓ = meta cumplida, azul = en progreso, gris = sin iniciar.',
+        side: 'top',
+        align: 'end'
+      }
+    },
+    {
       element: '[data-testid="button-reportes"]',
       popover: {
         title: 'Reportes',
