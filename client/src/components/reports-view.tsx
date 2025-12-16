@@ -234,36 +234,44 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
-      {/* Filtros fijos en la parte superior */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 -mx-1 px-1 border-b border-border/50">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 bg-muted/30 p-3 rounded-lg border border-border/50">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
+      {/* Filtros fijos en la parte superior - solo visible en reportes */}
+      <div className="sticky top-16 z-20 bg-background/98 backdrop-blur-md py-2 sm:py-3 -mx-2 px-2 sm:-mx-4 sm:px-4 border-b shadow-sm">
+        <div className="flex flex-col gap-2 sm:gap-3 bg-muted/40 p-2 sm:p-3 rounded-lg border">
+          {/* Fila de filtros */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium shrink-0">
               <Filter className="h-4 w-4" />
-              Filtros:
+              <span className="hidden sm:inline">Filtros:</span>
             </div>
-            <BranchSelectorNew 
-              value={selectedBranch}
-              onChange={(value) => setSelectedBranch(value)}
-              showPlaceholder={true}
-            />
-            <SeasonSelector
-              value={selectedSeason}
-              onChange={(value) => setSelectedSeason(value as Temporada)}
-            />
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="w-full sm:w-auto">
+                <BranchSelectorNew 
+                  value={selectedBranch}
+                  onChange={(value) => setSelectedBranch(value)}
+                  showPlaceholder={true}
+                />
+              </div>
+              <div className="w-full sm:w-auto">
+                <SeasonSelector
+                  value={selectedSeason}
+                  onChange={(value) => setSelectedSeason(value as Temporada)}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {selectedBranch === "Todas las Sucursales" 
-                ? `Vista consolidada`
-                : selectedBranch}
-              {selectedSeason !== 'todas' && ` - ${selectedSeason}`}
-            </span>
-            {fechaMin && fechaMax && (
-              <span className="text-xs ml-2">
-                ({formatDate(fechaMin)} - {formatDate(fechaMax)})
+          {/* Info del filtro actual - solo en desktop */}
+          <div className="hidden md:flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-3 w-3" />
+              <span>
+                {selectedBranch === "Todas las Sucursales" 
+                  ? "Vista consolidada de todas las sucursales"
+                  : `Filtrando: ${selectedBranch}`}
+                {selectedSeason !== 'todas' && ` | Temporada: ${selectedSeason}`}
               </span>
+            </div>
+            {fechaMin && fechaMax && (
+              <span>Datos: {formatDate(fechaMin)} - {formatDate(fechaMax)}</span>
             )}
           </div>
         </div>
