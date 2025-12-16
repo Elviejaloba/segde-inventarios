@@ -205,6 +205,38 @@ export default function Home() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
 
+  // Sincronizar estado local con datos de Firebase cuando cambian
+  useEffect(() => {
+    if (!selectedBranch || !branchesData || loading) return;
+    
+    const branchData = branchesData.find(b => b.id === selectedBranch);
+    if (!branchData?.items) return;
+    
+    // Solo actualizar si hay diferencias para evitar loops innecesarios
+    const newItems = CODES.reduce((acc, code) => {
+      const sanitizedCode = sanitizeCode(code);
+      const existingItem = branchData.items[code] || branchData.items[sanitizedCode];
+      if (existingItem) {
+        acc[sanitizedCode] = existingItem;
+      } else {
+        acc[sanitizedCode] = { completed: false, hasStock: true };
+      }
+      return acc;
+    }, {} as Record<string, ItemState>);
+    
+    // Comparar si hay cambios reales antes de actualizar
+    const hasChanges = Object.keys(newItems).some(key => {
+      const current = items[key];
+      const updated = newItems[key];
+      return !current || current.completed !== updated.completed || current.hasStock !== updated.hasStock;
+    });
+    
+    if (hasChanges && Object.keys(items).length > 0) {
+      console.log('🔄 Sincronizando estado local con Firebase...');
+      setItems(newItems);
+    }
+  }, [branchesData, selectedBranch]);
+
   // Obtener calendario semanal si existe para la sucursal
   const calendarioSemanal = selectedBranch ? getCalendarioSucursal(selectedBranch) : null;
   const semanaActual = getSemanaActual();
@@ -270,7 +302,7 @@ export default function Home() {
     progresoMensual.forEach(({ mes, cumplido }) => {
       if (cumplido && !celebratedMonths.has(mes)) {
         // Marcar como celebrado
-        setCelebratedMonths(prev => new Set([...prev, mes]));
+        setCelebratedMonths(prev => new Set(Array.from(prev).concat(mes)));
         
         // Mostrar confetti
         celebrateProgress(100);
