@@ -385,10 +385,82 @@ export function getSemanaActual(): { mes: string; semana: string } | null {
   return { mes: meses[mes], semana: semanaStr };
 }
 
-// Calendarios para las demás sucursales (mismos 260 items, mismos objetivos)
+// Calendario T.Sjuan - 244 items
 export const CALENDARIO_TSJUAN: CalendarioSucursal = {
-  ...CALENDARIO_TMENDOZA,
-  sucursal: "T.Sjuan"
+  sucursal: "T.Sjuan",
+  totalItems: 244,
+  semanas: [
+    {
+        "mes": "DICIEMBRE",
+        "semana": "3° Semana",
+        "items": ["ME18109", "TV06X", "ME221781", "TA11E", "ME1941", "TA11", "ME19406", "TD2135", "ME38346", "TD39C", "BL8000", "BL7505C00", "ME2838", "ME2132", "ME3992", "ME298", "OT7025M00"]
+    },
+    {
+        "mes": "DICIEMBRE",
+        "semana": "4° Semana",
+        "items": ["BL719500", "BL7198M00", "BL7045S00", "PVREM06P", "TC605LX16", "ME11690", "ARACQUACAR120", "BL8021-00", "TC6019", "TC400R17", "ARSUEÑITOS", "BL544C-3", "BL7118B01", "BL7198V00", "BL7219P00", "SI6817", "OT05M00"]
+    },
+    {
+        "mes": "ENERO",
+        "semana": "1° Semana",
+        "items": ["ME1165", "TD302SM", "TA1240", "ME24216", "TA89", "TA89C00", "OT05M16", "ME192019", "TD37S", "OT3702600", "BL7115L00", "ME11700", "ME27", "ME16103", "BL556-100", "BL7047I00", "BL7383BM00"]
+    },
+    {
+        "mes": "ENERO",
+        "semana": "2° Semana",
+        "items": ["ME19205", "ME19207", "ME19209", "TC506M08", "BL7017L00", "ME1111", "ME16105", "TC400R19", "TV605TV", "TD111M", "BL080100", "BL544M-200", "BL701200", "BL7114CX00", "BL7118B14", "SI6818", "TA454T"]
+    },
+    {
+        "mes": "ENERO",
+        "semana": "3° Semana",
+        "items": ["TA456M04", "BL558-200", "BL7009K00", "BL7055G00", "BL7222A00", "BL8D-300", "ME19411", "TA118S09", "TD09027", "TD37B", "ARACQUA500", "ARWAN120", "ARWANTED-60M120", "BL35022", "BL544C-00", "BL556-300", "BL61300"]
+    },
+    {
+        "mes": "ENERO",
+        "semana": "4° Semana",
+        "items": ["BL6546MC00", "BL7010G00", "BL7014H", "BL711100", "BL7198200", "ME1115", "ME2144", "ME221765", "ME33174", "TD36D", "TF169P", "TF61M", "TF112L", "ME16326", "TA01B00", "ME266", "TA11PM"]
+    },
+    {
+        "mes": "FEBRERO",
+        "semana": "1° Semana",
+        "items": ["TA56X", "OT003M26", "ME1972", "OT05M06", "ME2121", "OT05M01", "ME194717", "OT003M67", "TA73", "OT05M09", "ME3993", "OT05M07", "BL711000", "ME39911", "OT003M34", "OT003M10", "OT003M22"]
+    },
+    {
+        "mes": "FEBRERO",
+        "semana": "2° Semana",
+        "items": ["OT003M54", "BL7007I00", "BL544MF-200", "ME3998", "OT003M62", "ME542", "TA56LF02", "BL7045S03", "OT003M94", "ME161617", "OT003M69", "BL8-100", "OT003M33", "OT003M41", "OT003M50", "TA137R00", "TM40F"]
+    },
+    {
+        "mes": "FEBRERO",
+        "semana": "3° Semana",
+        "items": ["ME163132", "BL7047P-100", "TD36TM00", "TV80E", "ME163133", "BL544E-200", "BL003KE", "OT003B00", "ME3834", "OT05M05", "BL544E-100", "BL7111", "BL719700", "BL67099F", "BL7008A00", "BL080300", "BL544MF-300", "BL7383P00"]
+    },
+    {
+        "mes": "FEBRERO",
+        "semana": "4° Semana",
+        "items": ["BL8V-100", "BL8V-200", "OT05M03", "BL701000", "BL7019H00", "BL706900", "BL8000MF00", "PVPB919600", "ME1934", "TA77-1T00", "TA138G", "TA605S", "TD195OT", "BL556-200", "TA605LX", "TA82PT21", "OT003M60", "OT003M39"]
+    },
+    {
+        "mes": "MARZO",
+        "semana": "1° Semana",
+        "items": ["BL8E-200", "OT003M25", "OT003M83", "OT003M63", "OT003M37", "OT003M38", "OT003M19", "TC195M01", "OT003M79", "OT05M04", "OT003M28", "TA170C", "TC40003", "TD09012", "PVPB730900", "ME1611", "TV102L", "ME1888"]
+    },
+    {
+        "mes": "MARZO",
+        "semana": "2° Semana",
+        "items": ["ME18810", "ME19537", "TA56LF07", "TA77-3T11", "TC605LX01", "TC605LX04", "ME19102", "BL7018X00", "ME1119", "TC81M04", "ME18510", "ME1859", "PV750500", "TA82F", "TC605M21", "TC150C03", "TC40015", "TV84C"]
+    },
+    {
+        "mes": "MARZO",
+        "semana": "3° Semana",
+        "items": ["TA56L", "TV456M00", "TV51S01", "TC510L00", "TC400I00", "TC505X09", "TC400TX00", "BL7104-400", "TC30T15", "TC150C32", "BL7115M00", "TC40001", "BL7383C-00", "BL557-200", "TA89D00", "BL60400", "BL704000", "BL7313N00"]
+    },
+    {
+        "mes": "MARZO",
+        "semana": "4° Semana",
+        "items": ["TV80M", "TV84S", "TV139F", "TF61T", "TF166M", "TA56LF03", "TV103", "TF44KM", "TA77-3S00", "TA452T", "BL61700", "TA605V", "TA70KF07", "BL67100V15", "BL67100V10", "TA72RJ00", "TA70MF", "BL89AT00"]
+    }
+  ]
 };
 
 export const CALENDARIO_TLUIS: CalendarioSucursal = {

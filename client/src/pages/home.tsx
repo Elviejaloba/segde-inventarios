@@ -567,8 +567,8 @@ export default function Home() {
                 <div className="space-y-4">
                   {/* Encabezado con título */}
                   <div className="bg-yellow-300 p-3 rounded-lg" data-testid="header-calendario">
-                    <h3 className="text-lg font-bold text-gray-800">260 Items sobrestock y sin rotación</h3>
-                    <p className="text-sm text-gray-600">Selecciona los items que vayas completando - T.Mendoza</p>
+                    <h3 className="text-lg font-bold text-gray-800">{calendarioSemanal.totalItems} Items sobrestock y sin rotación</h3>
+                    <p className="text-sm text-gray-600">Selecciona los items que vayas completando - {selectedBranch}</p>
                   </div>
 
                   {/* Objetivos mensuales - el usuario elige cuáles items completar */}
@@ -578,13 +578,17 @@ export default function Home() {
                     const itemsCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed);
                     const totalCompletados = itemsCompletados.length;
                     
-                    // Objetivos por mes
-                    const objetivosMensuales = [
-                      { mes: 'DICIEMBRE', objetivo: 36, acumulado: 36 },
-                      { mes: 'ENERO', objetivo: 72, acumulado: 108 },
-                      { mes: 'FEBRERO', objetivo: 72, acumulado: 180 },
-                      { mes: 'MARZO', objetivo: 80, acumulado: 260 },
-                    ];
+                    // Calcular objetivos dinámicamente desde el calendario
+                    const mesesMap: { [key: string]: number } = {};
+                    calendarioSemanal.semanas.forEach(s => {
+                      mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
+                    });
+                    
+                    let acumuladoCalc = 0;
+                    const objetivosMensuales = Object.entries(mesesMap).map(([mes, objetivo]) => {
+                      acumuladoCalc += objetivo;
+                      return { mes, objetivo, acumulado: acumuladoCalc };
+                    });
                     
                     return (
                       <>
@@ -647,9 +651,9 @@ export default function Home() {
                         <div className="bg-gray-100 p-3 rounded-lg" data-testid="progreso-total">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium">Progreso Total</span>
-                            <span className="font-bold text-lg">{totalCompletados}/260</span>
+                            <span className="font-bold text-lg">{totalCompletados}/{todosLosCodigos.length}</span>
                           </div>
-                          <Progress value={(totalCompletados / 260) * 100} className="h-2" />
+                          <Progress value={(totalCompletados / todosLosCodigos.length) * 100} className="h-2" />
                         </div>
                         
                         {/* Buscador rápido - también fijo */}
@@ -687,7 +691,7 @@ export default function Home() {
                               <Calendar className="h-4 w-4" />
                               <span className="font-semibold">Todos los Items</span>
                             </div>
-                            <span className="text-sm font-bold">{totalCompletados}/260 completados</span>
+                            <span className="text-sm font-bold">{totalCompletados}/{todosLosCodigos.length} completados</span>
                           </div>
                           
                           <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-h-[60vh] overflow-y-auto">

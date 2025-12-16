@@ -239,13 +239,26 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       const codigosCalendario = calendario.semanas.flatMap(s => s.items);
                       const completados = codigosCalendario.filter(code => branch.items[sanitizeCode(code)]?.completed).length;
                       
-                      // Objetivos acumulados
-                      const objetivos = [
-                        { mes: 'Dic', obj: 36, acum: 36 },
-                        { mes: 'Ene', obj: 72, acum: 108 },
-                        { mes: 'Feb', obj: 72, acum: 180 },
-                        { mes: 'Mar', obj: 80, acum: 260 },
-                      ];
+                      // Calcular objetivos dinámicamente desde el calendario
+                      const mesesMap: { [key: string]: { corto: string, items: number } } = {
+                        'DICIEMBRE': { corto: 'Dic', items: 0 },
+                        'ENERO': { corto: 'Ene', items: 0 },
+                        'FEBRERO': { corto: 'Feb', items: 0 },
+                        'MARZO': { corto: 'Mar', items: 0 }
+                      };
+                      calendario.semanas.forEach(s => {
+                        if (mesesMap[s.mes]) {
+                          mesesMap[s.mes].items += s.items.length;
+                        }
+                      });
+                      
+                      let acumulado = 0;
+                      const objetivos = Object.entries(mesesMap)
+                        .filter(([_, v]) => v.items > 0)
+                        .map(([mes, v]) => {
+                          acumulado += v.items;
+                          return { mes: v.corto, obj: v.items, acum: acumulado };
+                        });
                       
                       return (
                         <div className="flex gap-1 mt-1 justify-end">
