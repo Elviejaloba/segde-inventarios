@@ -231,6 +231,47 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
+                    {/* Indicadores de objetivos mensuales para T.Mendoza */}
+                    {branch.id === 'T.Mendoza' && (() => {
+                      const calendario = getCalendarioSucursal('T.Mendoza');
+                      if (!calendario) return null;
+                      
+                      const codigosCalendario = calendario.semanas.flatMap(s => s.items);
+                      const completados = codigosCalendario.filter(code => branch.items[sanitizeCode(code)]?.completed).length;
+                      
+                      // Objetivos acumulados
+                      const objetivos = [
+                        { mes: 'Dic', obj: 36, acum: 36 },
+                        { mes: 'Ene', obj: 72, acum: 108 },
+                        { mes: 'Feb', obj: 72, acum: 180 },
+                        { mes: 'Mar', obj: 80, acum: 260 },
+                      ];
+                      
+                      return (
+                        <div className="flex gap-1 mt-1 justify-end">
+                          {objetivos.map(({ mes, obj, acum }) => {
+                            const acumAnterior = acum - obj;
+                            const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
+                            const cumplido = completadosMes >= obj;
+                            return (
+                              <span 
+                                key={mes}
+                                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  cumplido 
+                                    ? 'bg-green-500 text-white' 
+                                    : completadosMes > 0 
+                                      ? 'bg-blue-100 text-blue-700' 
+                                      : 'bg-gray-100 text-gray-500'
+                                }`}
+                                title={`${mes}: ${completadosMes}/${obj}`}
+                              >
+                                {mes} {cumplido ? '✓' : `${completadosMes}/${obj}`}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}
