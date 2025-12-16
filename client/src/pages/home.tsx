@@ -650,9 +650,33 @@ export default function Home() {
                             <span className="font-bold text-lg">{totalCompletados}/260</span>
                           </div>
                           <Progress value={(totalCompletados / 260) * 100} className="h-2" />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Selecciona cualquier item de la lista para sumarlo a tu objetivo mensual
-                          </p>
+                        </div>
+                        
+                        {/* Buscador rápido - también fijo */}
+                        <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Buscar código..."
+                              value={searchFilter}
+                              onChange={(e) => setSearchFilter(e.target.value)}
+                              className="w-full pl-9 pr-9 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                            {searchFilter && (
+                              <button
+                                onClick={() => setSearchFilter('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                          {searchFilter && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {todosLosCodigos.filter(c => c.toLowerCase().includes(searchFilter.toLowerCase())).length} resultados
+                            </p>
+                          )}
                         </div>
                         </div>
 
@@ -664,33 +688,6 @@ export default function Home() {
                               <span className="font-semibold">Todos los Items</span>
                             </div>
                             <span className="text-sm font-bold">{totalCompletados}/260 completados</span>
-                          </div>
-                          
-                          {/* Buscador rápido */}
-                          <div className="p-2 bg-gray-50 border-b" data-testid="buscador-items">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                              <input
-                                type="text"
-                                placeholder="Buscar código..."
-                                value={searchFilter}
-                                onChange={(e) => setSearchFilter(e.target.value)}
-                                className="w-full pl-9 pr-9 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                              />
-                              {searchFilter && (
-                                <button
-                                  onClick={() => setSearchFilter('')}
-                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                            {searchFilter && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {todosLosCodigos.filter(c => c.toLowerCase().includes(searchFilter.toLowerCase())).length} resultados
-                              </p>
-                            )}
                           </div>
                           
                           <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-h-[60vh] overflow-y-auto">
