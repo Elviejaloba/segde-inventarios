@@ -385,11 +385,35 @@ export function getSemanaActual(): { mes: string; semana: string } | null {
   return { mes: meses[mes], semana: semanaStr };
 }
 
-// Obtener el calendario por sucursal (por ahora solo T.Mendoza)
+// Calendarios para las demás sucursales (mismos 260 items, mismos objetivos)
+export const CALENDARIO_TSJUAN: CalendarioSucursal = {
+  ...CALENDARIO_TMENDOZA,
+  sucursal: "T.Sjuan"
+};
+
+export const CALENDARIO_TLUIS: CalendarioSucursal = {
+  ...CALENDARIO_TMENDOZA,
+  sucursal: "T.Luis"
+};
+
+export const CALENDARIO_CRISA2: CalendarioSucursal = {
+  ...CALENDARIO_TMENDOZA,
+  sucursal: "Crisa2"
+};
+
+// Obtener el calendario por sucursal
 export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | null {
-  if (sucursalId === "T.Mendoza") {
-    return CALENDARIO_TMENDOZA;
+  switch (sucursalId) {
+    case "T.Mendoza":
+      return CALENDARIO_TMENDOZA;
+    case "T.Sjuan":
+      return CALENDARIO_TSJUAN;
+    case "T.Luis":
+      return CALENDARIO_TLUIS;
+    case "Crisa2":
+      return CALENDARIO_CRISA2;
+    default:
+      return null;
   }
-  return null;
 }
 
