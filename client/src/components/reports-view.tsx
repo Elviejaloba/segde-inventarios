@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   Building2,
   Package,
@@ -11,8 +13,14 @@ import {
   Activity,
   AlertCircle,
   Calendar,
-  Filter
+  Filter,
+  Trophy,
+  CheckCircle2,
+  Clock,
+  XCircle
 } from "lucide-react";
+import { getCalendarioSucursal } from "@/lib/calendario-semanal";
+import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { AjustesDashboard } from "@/components/ajustes-dashboard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -150,6 +158,23 @@ function formatDate(serialDate: string | number, shortFormat: boolean = false): 
   }
 }
 
+// Helper para sanitizar códigos
+const sanitizeCode = (code: string): string => {
+  return code.replace(/[.#$[\]]/g, '_');
+};
+
+// Sucursales con calendario
+const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.Luis', 'Crisa2'];
+
+// Mapa de meses
+const MESES_MAP: { [key: string]: string } = {
+  'DICIEMBRE': 'Dic',
+  'ENERO': 'Ene',
+  'FEBRERO': 'Feb',
+  'MARZO': 'Mar',
+  'ABRIL': 'Abr'
+};
+
 export function ReportsView() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Todas las Sucursales");
   const [selectedSeason, setSelectedSeason] = useState<Temporada>("todas");
@@ -159,6 +184,9 @@ export function ReportsView() {
     selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch,
     selectedSeason
   );
+  
+  // Obtener datos de Firebase para los calendarios
+  const { branchesData } = useFirebaseData();
 
   if (loading) {
     return (
@@ -206,6 +234,169 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
+      {/* Resumen de Muestreos por Sucursal */}
+      <motion.div variants={fadeInUp}>
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Calendario de Muestreos - Progreso por Sucursal
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Estado actual de los items sin rotación y sobrestock
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {SUCURSALES_CALENDARIO.length} sucursales con calendario
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* KPIs Globales */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {(() => {
+                let totalItems = 0;
+                let totalCompletados = 0;
+                let sucursalesCompletas = 0;
+                
+                SUCURSALES_CALENDARIO.forEach(sucId => {
+                  const calendario = getCalendarioSucursal(sucId);
+                  if (calendario) {
+                    const branchData = branchesData[sucId];
+                    const codigos = calendario.semanas.flatMap(s => s.items);
+                    totalItems += codigos.length;
+                    const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
+                    totalCompletados += completados;
+                    if (completados >= codigos.length) sucursalesCompletas++;
+                  }
+                });
+                
+                const porcentajeGlobal = totalItems > 0 ? Math.round((totalCompletados / totalItems) * 100) : 0;
+                
+                return (
+                  <>
+                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Package className="h-4 w-4" />
+                        Items Totales
+                      </div>
+                      <div className="text-2xl font-bold">{totalItems}</div>
+                    </div>
+                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Completados
+                      </div>
+                      <div className="text-2xl font-bold text-green-600">{totalCompletados}</div>
+                    </div>
+                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Clock className="h-4 w-4 text-amber-500" />
+                        Pendientes
+                      </div>
+                      <div className="text-2xl font-bold text-amber-600">{totalItems - totalCompletados}</div>
+                    </div>
+                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Avance Global
+                      </div>
+                      <div className="text-2xl font-bold text-primary">{porcentajeGlobal}%</div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Tarjetas por Sucursal */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {SUCURSALES_CALENDARIO.map(sucursalId => {
+                const calendario = getCalendarioSucursal(sucursalId);
+                if (!calendario) return null;
+                
+                const branchData = branchesData[sucursalId];
+                const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
+                const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
+                const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
+                
+                // Calcular objetivos por mes
+                const mesesMap: { [key: string]: number } = {};
+                calendario.semanas.forEach(s => {
+                  mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
+                });
+                
+                let acumulado = 0;
+                const objetivosMes = Object.entries(mesesMap).map(([mes, obj]) => {
+                  acumulado += obj;
+                  const acumAnterior = acumulado - obj;
+                  const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
+                  const cumplido = completadosMes >= obj;
+                  return { mes: MESES_MAP[mes] || mes.slice(0,3), obj, completadosMes, cumplido };
+                });
+                
+                const mesActualIdx = objetivosMes.findIndex(m => !m.cumplido);
+                const mesActual = mesActualIdx >= 0 ? objetivosMes[mesActualIdx] : objetivosMes[objetivosMes.length - 1];
+                
+                return (
+                  <motion.div 
+                    key={sucursalId}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      porcentaje === 100 
+                        ? 'bg-green-50 border-green-400 dark:bg-green-900/20' 
+                        : 'bg-white dark:bg-background border-gray-200'
+                    }`}
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-lg">{sucursalId}</span>
+                        {porcentaje === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                      </div>
+                      <Badge 
+                        variant={porcentaje === 100 ? "default" : porcentaje > 0 ? "secondary" : "outline"}
+                        className={porcentaje === 100 ? "bg-green-500" : ""}
+                      >
+                        {porcentaje === 100 ? "Completo" : `${porcentaje}%`}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-muted-foreground">{completados} de {todosLosCodigos.length} items</span>
+                        <span className="font-medium">{porcentaje}%</span>
+                      </div>
+                      <Progress value={porcentaje} className={`h-2 ${porcentaje === 100 ? '[&>div]:bg-green-500' : ''}`} />
+                    </div>
+                    
+                    {/* Indicadores de meses */}
+                    <div className="flex flex-wrap gap-1">
+                      {objetivosMes.map(({ mes, obj, completadosMes, cumplido }) => (
+                        <span 
+                          key={mes}
+                          className={`text-[11px] px-2 py-1 rounded-full ${
+                            cumplido 
+                              ? 'bg-green-500 text-white' 
+                              : completadosMes > 0 
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' 
+                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
+                          }`}
+                          title={`${mes}: ${completadosMes}/${obj}`}
+                        >
+                          {mes} {cumplido ? '✓' : `${completadosMes}/${obj}`}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Dashboard de Ajustes */}
       <AjustesDashboard />
       
