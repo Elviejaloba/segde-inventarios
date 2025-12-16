@@ -588,6 +588,8 @@ export default function Home() {
                     
                     return (
                       <>
+                        {/* Sección fija: objetivos y progreso */}
+                        <div className="sticky top-0 z-10 bg-white dark:bg-background pb-3 space-y-3">
                         {/* Resumen de objetivos por mes */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="objetivos-mensuales">
                           {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
@@ -651,6 +653,7 @@ export default function Home() {
                           <p className="text-xs text-gray-500 mt-1">
                             Selecciona cualquier item de la lista para sumarlo a tu objetivo mensual
                           </p>
+                        </div>
                         </div>
 
                         {/* Lista de todos los items para seleccionar */}
