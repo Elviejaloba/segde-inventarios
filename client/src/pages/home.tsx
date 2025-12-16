@@ -509,7 +509,7 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between sticky top-20 bg-background pt-4 pb-4 z-40">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-background pt-4 pb-4">
         <div className="flex flex-wrap items-center gap-4">
           {selectedBranch && (
             <Button
