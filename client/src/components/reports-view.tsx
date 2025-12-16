@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -188,6 +188,98 @@ export function ReportsView() {
   // Obtener datos de Firebase para los calendarios
   const { branchesData } = useFirebaseData();
 
+  // Handlers memoizados para evitar re-renders
+  const handleBranchChange = useCallback((value: string) => {
+    setSelectedBranch(value);
+  }, []);
+
+  const handleSeasonChange = useCallback((value: string) => {
+    setSelectedSeason(value as Temporada);
+  }, []);
+
+  const handleShowMoreArticulos = useCallback(() => {
+    setVisibleArticulos(prev => prev + 5);
+  }, []);
+
+  const handleShowMoreComprobantes = useCallback(() => {
+    setVisibleComprobantes(prev => prev + 5);
+  }, []);
+
+  // Memoizar cálculo del rango de fechas
+  const { fechaMin, fechaMax } = useMemo(() => {
+    const min = metrics?.ajustesPorComprobante?.reduce((minVal, item) => {
+      try {
+        if (!minVal || new Date(formatDate(item.fecha)) < new Date(formatDate(minVal))) {
+          return item.fecha;
+        }
+      } catch (e) {}
+      return minVal;
+    }, '');
+    
+    const max = metrics?.ajustesPorComprobante?.reduce((maxVal, item) => {
+      try {
+        if (!maxVal || new Date(formatDate(item.fecha)) > new Date(formatDate(maxVal))) {
+          return item.fecha;
+        }
+      } catch (e) {}
+      return maxVal;
+    }, '');
+
+    return { fechaMin: min, fechaMax: max };
+  }, [metrics?.ajustesPorComprobante]);
+
+  // Memoizar KPIs globales de calendarios
+  const calendarioKPIs = useMemo(() => {
+    let totalItems = 0;
+    let totalCompletados = 0;
+    let sucursalesCompletas = 0;
+    
+    SUCURSALES_CALENDARIO.forEach(sucId => {
+      const calendario = getCalendarioSucursal(sucId);
+      if (calendario) {
+        const branchData = branchesData?.[sucId];
+        const codigos = calendario.semanas.flatMap(s => s.items);
+        totalItems += codigos.length;
+        const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
+        totalCompletados += completados;
+        if (completados >= codigos.length) sucursalesCompletas++;
+      }
+    });
+    
+    const porcentajeGlobal = totalItems > 0 ? Math.round((totalCompletados / totalItems) * 100) : 0;
+    
+    return { totalItems, totalCompletados, sucursalesCompletas, porcentajeGlobal };
+  }, [branchesData]);
+
+  // Memoizar datos de sucursales para tarjetas
+  const sucursalesData = useMemo(() => {
+    return SUCURSALES_CALENDARIO.map(sucursalId => {
+      const calendario = getCalendarioSucursal(sucursalId);
+      if (!calendario) return null;
+      
+      const branchData = branchesData?.[sucursalId];
+      const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
+      const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
+      const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
+      
+      const mesesMap: { [key: string]: number } = {};
+      calendario.semanas.forEach(s => {
+        mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
+      });
+      
+      let acumulado = 0;
+      const objetivosMes = Object.entries(mesesMap).map(([mes, obj]) => {
+        acumulado += obj;
+        const acumAnterior = acumulado - obj;
+        const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
+        const cumplido = completadosMes >= obj;
+        return { mes: MESES_MAP[mes] || mes.slice(0,3), obj, completadosMes, cumplido };
+      });
+      
+      return { sucursalId, completados, total: todosLosCodigos.length, porcentaje, objetivosMes };
+    }).filter(Boolean);
+  }, [branchesData]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -207,25 +299,6 @@ export function ReportsView() {
       </div>
     );
   }
-
-  // Calcular el rango de fechas disponible
-  const fechaMin = metrics?.ajustesPorComprobante?.reduce((min, item) => {
-    try {
-      if (!min || new Date(formatDate(item.fecha)) < new Date(formatDate(min))) {
-        return item.fecha;
-      }
-    } catch (e) {}
-    return min;
-  }, '');
-  
-  const fechaMax = metrics?.ajustesPorComprobante?.reduce((max, item) => {
-    try {
-      if (!max || new Date(formatDate(item.fecha)) > new Date(formatDate(max))) {
-        return item.fecha;
-      }
-    } catch (e) {}
-    return max;
-  }, '');
   
   return (
     <motion.div 
@@ -247,14 +320,14 @@ export function ReportsView() {
               <div className="w-full sm:w-auto">
                 <BranchSelectorNew 
                   value={selectedBranch}
-                  onChange={(value) => setSelectedBranch(value)}
+                  onChange={handleBranchChange}
                   showPlaceholder={true}
                 />
               </div>
               <div className="w-full sm:w-auto">
                 <SeasonSelector
                   value={selectedSeason}
-                  onChange={(value) => setSelectedSeason(value as Temporada)}
+                  onChange={handleSeasonChange}
                 />
               </div>
             </div>
@@ -297,90 +370,43 @@ export function ReportsView() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* KPIs Globales */}
+            {/* KPIs Globales - Usando datos memoizados */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {(() => {
-                let totalItems = 0;
-                let totalCompletados = 0;
-                let sucursalesCompletas = 0;
-                
-                SUCURSALES_CALENDARIO.forEach(sucId => {
-                  const calendario = getCalendarioSucursal(sucId);
-                  if (calendario) {
-                    const branchData = branchesData?.[sucId];
-                    const codigos = calendario.semanas.flatMap(s => s.items);
-                    totalItems += codigos.length;
-                    const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
-                    totalCompletados += completados;
-                    if (completados >= codigos.length) sucursalesCompletas++;
-                  }
-                });
-                
-                const porcentajeGlobal = totalItems > 0 ? Math.round((totalCompletados / totalItems) * 100) : 0;
-                
-                return (
-                  <>
-                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                        <Package className="h-4 w-4" />
-                        Items Totales
-                      </div>
-                      <div className="text-2xl font-bold">{totalItems}</div>
-                    </div>
-                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        Completados
-                      </div>
-                      <div className="text-2xl font-bold text-green-600">{totalCompletados}</div>
-                    </div>
-                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                        <Clock className="h-4 w-4 text-amber-500" />
-                        Pendientes
-                      </div>
-                      <div className="text-2xl font-bold text-amber-600">{totalItems - totalCompletados}</div>
-                    </div>
-                    <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        Avance Global
-                      </div>
-                      <div className="text-2xl font-bold text-primary">{porcentajeGlobal}%</div>
-                    </div>
-                  </>
-                );
-              })()}
+              <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Package className="h-4 w-4" />
+                  Items Totales
+                </div>
+                <div className="text-2xl font-bold">{calendarioKPIs.totalItems}</div>
+              </div>
+              <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  Completados
+                </div>
+                <div className="text-2xl font-bold text-green-600">{calendarioKPIs.totalCompletados}</div>
+              </div>
+              <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  Pendientes
+                </div>
+                <div className="text-2xl font-bold text-amber-600">{calendarioKPIs.totalItems - calendarioKPIs.totalCompletados}</div>
+              </div>
+              <div className="bg-white dark:bg-background p-4 rounded-lg border shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Avance Global
+                </div>
+                <div className="text-2xl font-bold text-primary">{calendarioKPIs.porcentajeGlobal}%</div>
+              </div>
             </div>
 
-            {/* Tarjetas por Sucursal */}
+            {/* Tarjetas por Sucursal - Usando datos memoizados */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {SUCURSALES_CALENDARIO.map(sucursalId => {
-                const calendario = getCalendarioSucursal(sucursalId);
-                if (!calendario) return null;
-                
-                const branchData = branchesData?.[sucursalId];
-                const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
-                const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
-                const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
-                
-                // Calcular objetivos por mes
-                const mesesMap: { [key: string]: number } = {};
-                calendario.semanas.forEach(s => {
-                  mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
-                });
-                
-                let acumulado = 0;
-                const objetivosMes = Object.entries(mesesMap).map(([mes, obj]) => {
-                  acumulado += obj;
-                  const acumAnterior = acumulado - obj;
-                  const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
-                  const cumplido = completadosMes >= obj;
-                  return { mes: MESES_MAP[mes] || mes.slice(0,3), obj, completadosMes, cumplido };
-                });
-                
-                const mesActualIdx = objetivosMes.findIndex(m => !m.cumplido);
-                const mesActual = mesActualIdx >= 0 ? objetivosMes[mesActualIdx] : objetivosMes[objetivosMes.length - 1];
+              {sucursalesData.map((data: any) => {
+                if (!data) return null;
+                const { sucursalId, completados, total, porcentaje, objetivosMes } = data;
                 
                 return (
                   <motion.div 
@@ -408,7 +434,7 @@ export function ReportsView() {
                     
                     <div className="mb-3">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">{completados} de {todosLosCodigos.length} items</span>
+                        <span className="text-muted-foreground">{completados} de {total} items</span>
                         <span className="font-medium">{porcentaje}%</span>
                       </div>
                       <Progress value={porcentaje} className={`h-2 ${porcentaje === 100 ? '[&>div]:bg-green-500' : ''}`} />
@@ -630,7 +656,7 @@ export function ReportsView() {
               <div className="mt-4 flex justify-center">
                 <Button
                   variant="outline"
-                  onClick={() => setVisibleArticulos(prev => prev + 5)}
+                  onClick={handleShowMoreArticulos}
                   className="transition-all duration-200 hover:scale-105"
                 >
                   Mostrar más artículos
@@ -688,7 +714,7 @@ export function ReportsView() {
               <div className="mt-4 flex justify-center">
                 <Button
                   variant="outline"
-                  onClick={() => setVisibleComprobantes(prev => prev + 5)}
+                  onClick={handleShowMoreComprobantes}
                   className="transition-all duration-200 hover:scale-105"
                 >
                   Mostrar más comprobantes
