@@ -234,6 +234,41 @@ export function ReportsView() {
       initial="hidden"
       animate="show"
     >
+      {/* Filtros fijos en la parte superior */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 -mx-1 px-1 border-b border-border/50">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 bg-muted/30 p-3 rounded-lg border border-border/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Filter className="h-4 w-4" />
+              Filtros:
+            </div>
+            <BranchSelectorNew 
+              value={selectedBranch}
+              onChange={(value) => setSelectedBranch(value)}
+              showPlaceholder={true}
+            />
+            <SeasonSelector
+              value={selectedSeason}
+              onChange={(value) => setSelectedSeason(value as Temporada)}
+            />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>
+              {selectedBranch === "Todas las Sucursales" 
+                ? `Vista consolidada`
+                : selectedBranch}
+              {selectedSeason !== 'todas' && ` - ${selectedSeason}`}
+            </span>
+            {fechaMin && fechaMax && (
+              <span className="text-xs ml-2">
+                ({formatDate(fechaMin)} - {formatDate(fechaMax)})
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Resumen de Muestreos por Sucursal */}
       <motion.div variants={fadeInUp}>
         <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -400,81 +435,6 @@ export function ReportsView() {
       {/* Dashboard de Ajustes */}
       <AjustesDashboard />
       
-      <motion.div 
-        className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 bg-muted/30 p-4 rounded-lg border border-border/50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex flex-col gap-2 w-full md:w-auto">
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </h3>
-          <div className="flex flex-wrap gap-4">
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-full sm:w-auto">
-                    <BranchSelectorNew 
-                      value={selectedBranch}
-                      onChange={(value) => setSelectedBranch(value)}
-                      showPlaceholder={true}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Seleccione una sucursal para filtrar los datos</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-full sm:w-auto">
-                    <SeasonSelector
-                      value={selectedSeason}
-                      onChange={(value) => setSelectedSeason(value as Temporada)}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Filtre por temporada del año</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 w-full md:w-auto">
-          <motion.div 
-            className="text-sm text-muted-foreground bg-background p-3 rounded-md border border-border/50 shadow-sm"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {selectedBranch === "Todas las Sucursales" 
-                  ? `Vista consolidada - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`
-                  : `${selectedBranch} - ${selectedSeason === 'todas' ? 'Todas las temporadas' : `Temporada ${selectedSeason}`}`}
-              </span>
-            </div>
-          </motion.div>
-          
-          {fechaMin && fechaMax && (
-            <div className="text-xs text-muted-foreground bg-primary/5 p-2 rounded-md border border-primary/20">
-              <div className="flex items-center gap-1">
-                <AlertCircle className="h-3 w-3 text-primary" />
-                <span>
-                  Datos disponibles: {formatDate(fechaMin)} - {formatDate(fechaMax)}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
 
       <motion.div 
         className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
