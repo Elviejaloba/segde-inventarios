@@ -520,6 +520,5 @@ export const AVAILABLE_BRANCHES: Branch[] = [
   'T.Tunuyan',
   'T.Lujan',
   'T.Maipu',
-  'T.Srafael',
-  'Ctro. de Distribucion'
+  'T.Srafael'
 ];
