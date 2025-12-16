@@ -63,8 +63,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
-  // Helper para sanitizar códigos (mismo que en home.tsx)
-  const sanitizeCode = (code: string) => code.replace(/[.#$[\]]/g, '_');
+  // Helper para sanitizar códigos (DEBE coincidir exactamente con home.tsx)
+  const sanitizeCode = (code: string) => code.toLowerCase().replace(/[/.#$[\]]/g, '-');
   
   const branches = AVAILABLE_BRANCHES.map(branchId => {
     const branchData = data?.find(d => d.id === branchId);
