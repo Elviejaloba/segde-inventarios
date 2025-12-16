@@ -215,7 +215,14 @@ export default function Home() {
     // Solo actualizar si hay diferencias para evitar loops innecesarios
     // IMPORTANTE: Buscar PRIMERO el código sanitizado, luego el original
     // Esto debe coincidir con loadBranchData y Dashboard
-    const newItems = CODES.reduce((acc, code) => {
+    
+    // Usar los códigos del calendario si existe, de lo contrario CODES
+    const calendario = getCalendarioSucursal(selectedBranch);
+    const codesToUse = calendario 
+      ? calendario.semanas.flatMap(s => s.items) 
+      : CODES;
+    
+    const newItems = codesToUse.reduce((acc, code) => {
       const sanitizedCode = sanitizeCode(code);
       const existingItem = branchData.items[sanitizedCode] || branchData.items[code];
       if (existingItem) {
@@ -365,19 +372,42 @@ export default function Home() {
         console.log('Total de códigos en Firebase:', Object.keys(branchData.items).length);
       }
       
-      const initializedItems = CODES.reduce((acc, code) => {
+      // DEBUG: Verificar items con completed=true en Firebase
+      const itemsConCompleted = Object.entries(branchData?.items || {}).filter(([_, item]) => (item as any)?.completed === true);
+      console.log(`🔍 Items con completed=true en Firebase (${itemsConCompleted.length}):`, itemsConCompleted.slice(0, 10).map(([k]) => k));
+      
+      // IMPORTANTE: Si la sucursal tiene calendario, usar los códigos del calendario
+      // Si no, usar CODES de store.ts
+      const calendario = getCalendarioSucursal(branch);
+      const codesToUse = calendario 
+        ? calendario.semanas.flatMap(s => s.items) 
+        : CODES;
+      
+      console.log(`📋 Usando ${codesToUse.length} códigos de ${calendario ? 'calendario' : 'CODES'}`);
+      
+      const initializedItems = codesToUse.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
         // Buscar el item en Firebase: PRIMERO el código sanitizado, luego el original
         // Esto debe coincidir con la lógica del Dashboard
-        const existingItem = branchData?.items?.[sanitizedCode] || branchData?.items?.[code];
+        const fromSanitized = branchData?.items?.[sanitizedCode];
+        const fromOriginal = branchData?.items?.[code];
+        const existingItem = fromSanitized || fromOriginal;
+        
         if (existingItem) {
           acc[sanitizedCode] = existingItem;
+          // Debug: si encontramos algo con completed=true, loguearlo
+          if ((existingItem as any)?.completed) {
+            console.log(`✅ Encontrado completed=true: ${code} -> ${sanitizedCode}, fuente: ${fromSanitized ? 'sanitizado' : 'original'}`);
+          }
         } else {
           acc[sanitizedCode] = { completed: false, hasStock: true };
         }
         return acc;
       }, {} as Record<string, ItemState>);
 
+      // Contar completados
+      const completedCount = Object.values(initializedItems).filter(i => i.completed).length;
+      console.log(`📊 Total items completados después de inicializar: ${completedCount}`);
       console.log('Items inicializados con CODES:', Object.keys(initializedItems).slice(0, 10));
       console.log('Ejemplo de items inicializados:', Object.entries(initializedItems).slice(0, 3));
       setItems(initializedItems);
