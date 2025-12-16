@@ -247,26 +247,6 @@ export function AjustesDashboard() {
         </Card>
       </div>
 
-      {/* Información de estado */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Estado de la Base de Datos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 text-green-800">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="font-medium">PostgreSQL conectado exitosamente</span>
-            </div>
-            <div className="mt-2 text-sm text-green-700">
-              <p>✓ 8,951 registros de ajustes importados desde Excel</p>
-              <p>✓ Datos distribuidos en {stats?.sucursales?.length || 10} sucursales</p>
-              <p>✓ APIs funcionando correctamente con datos reales</p>
-              <p>✓ Dashboard actualizado en tiempo real</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
