@@ -186,7 +186,7 @@ export function ReportsView() {
   );
   
   // Obtener datos de Firebase para los calendarios
-  const { branchesData } = useFirebaseData();
+  const { data: branchesData } = useFirebaseData();
 
   // Handlers memoizados para evitar re-renders
   const handleBranchChange = useCallback((value: string) => {
@@ -237,7 +237,7 @@ export function ReportsView() {
     SUCURSALES_CALENDARIO.forEach(sucId => {
       const calendario = getCalendarioSucursal(sucId);
       if (calendario) {
-        const branchData = branchesData?.[sucId];
+        const branchData = branchesData?.find(b => b.id === sucId);
         const codigos = calendario.semanas.flatMap(s => s.items);
         totalItems += codigos.length;
         const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
@@ -257,7 +257,7 @@ export function ReportsView() {
       const calendario = getCalendarioSucursal(sucursalId);
       if (!calendario) return null;
       
-      const branchData = branchesData?.[sucursalId];
+      const branchData = branchesData?.find(b => b.id === sucursalId);
       const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
       const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
       const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
@@ -442,7 +442,7 @@ export function ReportsView() {
                     
                     {/* Indicadores de meses */}
                     <div className="flex flex-wrap gap-1">
-                      {objetivosMes.map(({ mes, obj, completadosMes, cumplido }) => (
+                      {objetivosMes.map(({ mes, obj, completadosMes, cumplido }: { mes: string; obj: number; completadosMes: number; cumplido: boolean }) => (
                         <span 
                           key={mes}
                           className={`text-[11px] px-2 py-1 rounded-full ${
@@ -652,7 +652,7 @@ export function ReportsView() {
                 </AnimatePresence>
               </TableBody>
             </Table>
-            {metrics?.topArticulos.length > visibleArticulos && (
+            {(metrics?.topArticulos?.length ?? 0) > visibleArticulos && (
               <div className="mt-4 flex justify-center">
                 <Button
                   variant="outline"
@@ -710,7 +710,7 @@ export function ReportsView() {
                 </AnimatePresence>
               </TableBody>
             </Table>
-            {metrics?.ajustesPorComprobante.length > visibleComprobantes && (
+            {(metrics?.ajustesPorComprobante?.length ?? 0) > visibleComprobantes && (
               <div className="mt-4 flex justify-center">
                 <Button
                   variant="outline"
@@ -727,10 +727,3 @@ export function ReportsView() {
     </motion.div>
   );
 }
-
-<style jsx global>{`
-  .hover\\:bg-muted\\/50:hover {
-    transform: translateX(4px);
-    transition: all 0.2s ease;
-  }
-`}</style>
