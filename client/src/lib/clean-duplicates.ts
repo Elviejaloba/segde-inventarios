@@ -59,7 +59,7 @@ export async function cleanDuplicatesForBranch(branchId: string) {
 
 export async function cleanAllBranches() {
   const branches = [
-    'T.Mendoza', 'T.Sjuan', 'T.Luis', 'Crisa2', 
+    'T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2', 
     'T.S.Martin', 'T.Tunuyan', 'T.Lujan', 'T.Maipu', 'T.Srafael'
   ];
   

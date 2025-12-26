@@ -243,7 +243,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       </motion.span>
                     </div>
                     {/* Indicadores de objetivos mensuales para sucursales con calendario */}
-                    {['T.Mendoza', 'T.Sjuan', 'T.Luis', 'Crisa2'].includes(branch.id) && (() => {
+                    {['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'].includes(branch.id) && (() => {
                       const calendario = getCalendarioSucursal(branch.id);
                       if (!calendario) return null;
                       

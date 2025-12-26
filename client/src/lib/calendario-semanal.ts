@@ -464,7 +464,7 @@ export const CALENDARIO_TSJUAN: CalendarioSucursal = {
 };
 
 export const CALENDARIO_TLUIS: CalendarioSucursal = {
-  sucursal: "T.Luis",
+  sucursal: "T.SLuis",
   totalItems: 169,
   semanas: [
     {
@@ -614,7 +614,7 @@ export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | 
       return CALENDARIO_TMENDOZA;
     case "T.Sjuan":
       return CALENDARIO_TSJUAN;
-    case "T.Luis":
+    case "T.SLuis":
       return CALENDARIO_TLUIS;
     case "Crisa2":
       return CALENDARIO_CRISA2;

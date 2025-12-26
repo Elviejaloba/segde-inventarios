@@ -7,7 +7,7 @@ export type Branch =
   | 'T.Tunuyan' 
   | 'T.Sjuan' 
   | 'T.Mendoza' 
-  | 'T.Luis' 
+  | 'T.SLuis' 
   | 'Crisa2' 
   | 'T.Srafael'
   | 'Ctro. de Distribucion';
@@ -21,7 +21,7 @@ export const SUCURSAL_MAPPING: Record<string, Branch> = {
   'LA TIJERA TUNUYAN': 'T.Tunuyan',
   'LA TIJERA SAN JUAN': 'T.Sjuan',
   'LA TIJERA MENDOZA': 'T.Mendoza',
-  'LA TIJERA SAN LUIS': 'T.Luis',
+  'LA TIJERA SAN LUIS': 'T.SLuis',
   'CRISA 2': 'Crisa2',
   'LA TIJERA SAN RAFAEL': 'T.Srafael',
   'CENTRO DE DISTRIBUCION': 'Ctro. de Distribucion'
@@ -514,7 +514,7 @@ export const useSeasonStore = create<SeasonState>((set) => ({
 export const AVAILABLE_BRANCHES: Branch[] = [
   'T.Mendoza',
   'T.Sjuan',
-  'T.Luis',
+  'T.SLuis',
   'Crisa2',
   'T.S.Martin',
   'T.Tunuyan',
