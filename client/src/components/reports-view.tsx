@@ -172,7 +172,8 @@ const MESES_MAP: { [key: string]: string } = {
   'ENERO': 'Ene',
   'FEBRERO': 'Feb',
   'MARZO': 'Mar',
-  'ABRIL': 'Abr'
+  'ABRIL': 'Abr',
+  'MAYO': 'May'
 };
 
 export function ReportsView() {

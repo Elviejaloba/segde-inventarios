@@ -256,7 +256,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         'ENERO': { corto: 'Ene', items: 0 },
                         'FEBRERO': { corto: 'Feb', items: 0 },
                         'MARZO': { corto: 'Mar', items: 0 },
-                        'ABRIL': { corto: 'Abr', items: 0 }
+                        'ABRIL': { corto: 'Abr', items: 0 },
+                        'MAYO': { corto: 'May', items: 0 }
                       };
                       calendario.semanas.forEach(s => {
                         if (mesesMap[s.mes]) {
