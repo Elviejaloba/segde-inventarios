@@ -1,5 +1,5 @@
 // Calendario semanal de muestreo para T.Mendoza
-// 260 items distribuidos en 14 semanas (Diciembre 2024 - Marzo 2025)
+// 260 items distribuidos en 14 semanas (Enero 2025 - Abril 2025)
 
 export interface SemanaCalendario {
   mes: string;
@@ -18,7 +18,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
   totalItems: 260,
   semanas: [
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "3° Semana",
         "items": [
             "TA80800",
@@ -42,7 +42,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "4° Semana",
         "items": [
             "TA89G",
@@ -66,7 +66,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "1° Semana",
         "items": [
             "TA86",
@@ -90,7 +90,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "2° Semana",
         "items": [
             "TD09052",
@@ -114,7 +114,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "3° Semana",
         "items": [
             "TC23607",
@@ -138,7 +138,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "4° Semana",
         "items": [
             "TCCOMBO25",
@@ -162,7 +162,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "1° Semana",
         "items": [
             "PVFD70030009",
@@ -186,7 +186,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "2° Semana",
         "items": [
             "TA56X",
@@ -210,7 +210,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "3° Semana",
         "items": [
             "TD09022",
@@ -234,7 +234,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "4° Semana",
         "items": [
             "TV82SM",
@@ -258,7 +258,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "1° Semana",
         "items": [
             "PVFD70040015",
@@ -284,7 +284,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "2° Semana",
         "items": [
             "TF166A",
@@ -310,7 +310,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "3° Semana",
         "items": [
             "TF165",
@@ -336,7 +336,7 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
         ]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "4° Semana",
         "items": [
             "TA75L",
@@ -385,78 +385,78 @@ export function getSemanaActual(): { mes: string; semana: string } | null {
   return { mes: meses[mes], semana: semanaStr };
 }
 
-// Calendario T.Sjuan - 244 items
+// Calendario T.Sjuan - 244 items (Enero 2025 - Abril 2025)
 export const CALENDARIO_TSJUAN: CalendarioSucursal = {
   sucursal: "T.Sjuan",
   totalItems: 244,
   semanas: [
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "3° Semana",
         "items": ["ME18109", "TV06X", "ME221781", "TA11E", "ME1941", "TA11", "ME19406", "TD2135", "ME38346", "TD39C", "BL8000", "BL7505C00", "ME2838", "ME2132", "ME3992", "ME298", "OT7025M00"]
     },
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "4° Semana",
         "items": ["BL719500", "BL7198M00", "BL7045S00", "PVREM06P", "TC605LX16", "ME11690", "ARACQUACAR120", "BL8021-00", "TC6019", "TC400R17", "ARSUEÑITOS", "BL544C-3", "BL7118B01", "BL7198V00", "BL7219P00", "SI6817", "OT05M00"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "1° Semana",
         "items": ["ME1165", "TD302SM", "TA1240", "ME24216", "TA89", "TA89C00", "OT05M16", "ME192019", "TD37S", "OT3702600", "BL7115L00", "ME11700", "ME27", "ME16103", "BL556-100", "BL7047I00", "BL7383BM00"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "2° Semana",
         "items": ["ME19205", "ME19207", "ME19209", "TC506M08", "BL7017L00", "ME1111", "ME16105", "TC400R19", "TV605TV", "TD111M", "BL080100", "BL544M-200", "BL701200", "BL7114CX00", "BL7118B14", "SI6818", "TA454T"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "3° Semana",
         "items": ["TA456M04", "BL558-200", "BL7009K00", "BL7055G00", "BL7222A00", "BL8D-300", "ME19411", "TA118S09", "TD09027", "TD37B", "ARACQUA500", "ARWAN120", "ARWANTED-60M120", "BL35022", "BL544C-00", "BL556-300", "BL61300"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "4° Semana",
         "items": ["BL6546MC00", "BL7010G00", "BL7014H", "BL711100", "BL7198200", "ME1115", "ME2144", "ME221765", "ME33174", "TD36D", "TF169P", "TF61M", "TF112L", "ME16326", "TA01B00", "ME266", "TA11PM"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "1° Semana",
         "items": ["TA56X", "OT003M26", "ME1972", "OT05M06", "ME2121", "OT05M01", "ME194717", "OT003M67", "TA73", "OT05M09", "ME3993", "OT05M07", "BL711000", "ME39911", "OT003M34", "OT003M10", "OT003M22"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "2° Semana",
         "items": ["OT003M54", "BL7007I00", "BL544MF-200", "ME3998", "OT003M62", "ME542", "TA56LF02", "BL7045S03", "OT003M94", "ME161617", "OT003M69", "BL8-100", "OT003M33", "OT003M41", "OT003M50", "TA137R00", "TM40F"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "3° Semana",
         "items": ["ME163132", "BL7047P-100", "TD36TM00", "TV80E", "ME163133", "BL544E-200", "BL003KE", "OT003B00", "ME3834", "OT05M05", "BL544E-100", "BL7111", "BL719700", "BL67099F", "BL7008A00", "BL080300", "BL544MF-300", "BL7383P00"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "4° Semana",
         "items": ["BL8V-100", "BL8V-200", "OT05M03", "BL701000", "BL7019H00", "BL706900", "BL8000MF00", "PVPB919600", "ME1934", "TA77-1T00", "TA138G", "TA605S", "TD195OT", "BL556-200", "TA605LX", "TA82PT21", "OT003M60", "OT003M39"]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "1° Semana",
         "items": ["BL8E-200", "OT003M25", "OT003M83", "OT003M63", "OT003M37", "OT003M38", "OT003M19", "TC195M01", "OT003M79", "OT05M04", "OT003M28", "TA170C", "TC40003", "TD09012", "PVPB730900", "ME1611", "TV102L", "ME1888"]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "2° Semana",
         "items": ["ME18810", "ME19537", "TA56LF07", "TA77-3T11", "TC605LX01", "TC605LX04", "ME19102", "BL7018X00", "ME1119", "TC81M04", "ME18510", "ME1859", "PV750500", "TA82F", "TC605M21", "TC150C03", "TC40015", "TV84C"]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "3° Semana",
         "items": ["TA56L", "TV456M00", "TV51S01", "TC510L00", "TC400I00", "TC505X09", "TC400TX00", "BL7104-400", "TC30T15", "TC150C32", "BL7115M00", "TC40001", "BL7383C-00", "BL557-200", "TA89D00", "BL60400", "BL704000", "BL7313N00"]
     },
     {
-        "mes": "MARZO",
+        "mes": "ABRIL",
         "semana": "4° Semana",
         "items": ["TV80M", "TV84S", "TV139F", "TF61T", "TF166M", "TA56LF03", "TV103", "TF44KM", "TA77-3S00", "TA452T", "BL61700", "TA605V", "TA70KF07", "BL67100V15", "BL67100V10", "TA72RJ00", "TA70MF", "BL89AT00"]
     }
@@ -468,52 +468,52 @@ export const CALENDARIO_TLUIS: CalendarioSucursal = {
   totalItems: 169,
   semanas: [
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "3° Semana",
         "items": ["BL710100", "TF61M", "TF112L", "TD36TM", "BL54X-100", "TA56L", "TA11PM", "TA58E", "TF165", "TV103", "TV84S", "TV84C", "TA137R00", "TA170S00", "OT003M38", "TA73"]
     },
     {
-        "mes": "DICIEMBRE",
+        "mes": "ENERO",
         "semana": "4° Semana",
         "items": ["TF166A", "TF307S", "TA605LX", "TV139F", "BL704400", "TD195OT", "TD197M", "TF61T", "TD2163", "TA70SF", "TV51S01", "TC507M00", "TV80M", "TA148J", "TF72R", "TA008T00", "TA400TX00"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "1° Semana",
         "items": ["TF166L", "TA56LF06", "TA77-3T11", "BL54E-100", "TV84B", "TD39C", "TA451S03", "OT003M39", "TV80C", "TA01B00", "TF172L", "BL8000", "OT05M09", "TA56LF08", "OT003M66", "TA424P", "BL544MF-200"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "2° Semana",
         "items": ["BL719600", "OT003M68", "TA82F", "BL7007I00", "TV450L", "TD2135", "OT003M50", "TD106G", "TA456T", "BL54E-200", "TD09012", "TF44KM", "BL7045S03", "TA451S09", "TA53L", "BL7505C00", "BL8-100"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "3° Semana",
         "items": ["OT05M01", "TD106G-3", "OT003M19", "TA451S04", "BL7108-200", "TA70S", "TA89R00", "BL7039", "OT003M02", "OT003M10", "OT003M69", "TC605LX04", "OT003M83", "TD2155", "TA82PT00", "BL8P", "OT003M87"]
     },
     {
-        "mes": "ENERO",
+        "mes": "FEBRERO",
         "semana": "4° Semana",
         "items": ["BL3600500", "BL7198M00", "BL8000E", "OT003M01", "OT003M22", "OT003M54", "OT003M67", "TA450T", "BL8E-200", "OT003M33", "BL7090", "TA451S12", "BL7114R00", "BL7119X", "BL7198P00", "BL7198V00", "BL8I-200"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "1° Semana",
         "items": ["TA77-3T27", "TV451F", "BL542M-200", "BL7019M00", "BL7108-400", "BL719500", "PVREM06P", "TC6019", "TF169P", "OT003M14", "OT003M25", "OT003M32", "OT003M75", "OT003M77", "OT003M96", "PVREM05P", "TC6029"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "2° Semana",
         "items": ["TA56LX00", "BL67100V04", "BL7108-300", "TC6027", "TC605LX16", "TA451S11", "BL700600", "BL7108-100", "PVPB730900", "BL54X-200", "BL67100V10", "OT003M94", "OT05M07", "TC400TX00", "TA451S19", "BL540-104", "BL7047P-100"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "3° Semana",
         "items": ["BL7054R00", "OT003M76", "TD67098", "TF62M", "TA58I", "TD36TM00", "TA148G", "TD89G-300", "BL7045S01", "BL54A-200", "BL544MF-100", "BL003KE", "BL544CF3", "BL7016X200", "BL7016200", "BL7018H00", "BL8000M"]
     },
     {
-        "mes": "FEBRERO",
+        "mes": "MARZO",
         "semana": "4° Semana",
         "items": ["OT003B00", "TA09023", "TA452T", "OT05M05", "TD09027", "TV82M", "TA77-3S00", "TA72RJ00", "TD37C", "TA170", "TD302SM", "BL54A-100", "TV450", "BL35024", "BL60200", "BL7045S02", "BL7045S04"]
     }
