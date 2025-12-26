@@ -46,7 +46,7 @@ export function startTour(page: 'home' | 'muestreos') {
       element: '[data-testid="indicadores-meses-ranking"]',
       popover: {
         title: '📅 Indicadores Mensuales',
-        description: 'Estos badges muestran el progreso por mes de cada sucursal: Dic 4/36 significa 4 completados de 36 del objetivo de Diciembre. Verde con ✓ = meta cumplida, azul = en progreso, gris = sin iniciar.',
+        description: 'Estos badges muestran el progreso por mes de cada sucursal: Ene 4/36 significa 4 completados de 36 del objetivo de Enero. Verde con ✓ = meta cumplida, azul = en progreso, gris = sin iniciar.',
         side: 'top',
         align: 'end'
       }
@@ -73,7 +73,7 @@ export function startTour(page: 'home' | 'muestreos') {
       element: '[data-testid="header-calendario"]',
       popover: {
         title: '📋 Artículos Sin Rotación',
-        description: 'Esta sección muestra los 260 artículos con sobrestock o sin rotación que debes revisar durante la temporada.',
+        description: 'Esta sección muestra los artículos con sobrestock o sin rotación que debes revisar durante la temporada. La cantidad varía por sucursal (T.Mendoza: 260, T.Sjuan: 244, T.SLuis: 169, Crisa2: 410).',
         side: 'bottom',
         align: 'center'
       }
@@ -91,7 +91,7 @@ export function startTour(page: 'home' | 'muestreos') {
       element: '[data-testid="progreso-total"]',
       popover: {
         title: '📊 Progreso Total',
-        description: 'Aquí ves cuántos items has completado en total de los 260. La barra muestra tu avance general.',
+        description: 'Aquí ves cuántos items has completado del total de la sucursal. La barra muestra tu avance general.',
         side: 'top',
         align: 'center'
       }
