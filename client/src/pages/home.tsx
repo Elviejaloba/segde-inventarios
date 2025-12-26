@@ -290,12 +290,17 @@ export default function Home() {
     const todosLosCodigos = calendarioSemanal.semanas.flatMap(s => s.items);
     const totalCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed).length;
     
-    const objetivosMensuales = [
-      { mes: 'DICIEMBRE', objetivo: 36, acumulado: 36 },
-      { mes: 'ENERO', objetivo: 72, acumulado: 108 },
-      { mes: 'FEBRERO', objetivo: 72, acumulado: 180 },
-      { mes: 'MARZO', objetivo: 80, acumulado: 260 },
-    ];
+    // Calcular objetivos dinámicamente desde el calendario
+    const mesesMap: { [key: string]: number } = {};
+    calendarioSemanal.semanas.forEach(s => {
+      mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
+    });
+    
+    let acumuladoCalc = 0;
+    const objetivosMensuales = Object.entries(mesesMap).map(([mes, objetivo]) => {
+      acumuladoCalc += objetivo;
+      return { mes, objetivo, acumulado: acumuladoCalc };
+    });
     
     return objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
       const acumuladoAnterior = acumulado - objetivo;
