@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,8 @@ import {
   ArrowUpDown,
   Eye,
   RefreshCw,
-  BarChart3
+  BarChart3,
+  ArrowUp
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
@@ -113,6 +114,19 @@ export default function ReportesPage() {
   const [sortBy, setSortBy] = useState<'valorizado' | 'perdida' | 'unidades'>('valorizado');
   const [selectedCodigo, setSelectedCodigo] = useState<string | null>(null);
   const [showHistorial, setShowHistorial] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const { data: analisis, isLoading, refetch } = useQuery<{ detalle: AnalisisItem[]; resumen: ResumenSucursal[] }>({
     queryKey: ['/api/ajustes/valorizado', selectedSucursal],
@@ -545,6 +559,19 @@ export default function ReportesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {showScrollTop && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors z-50"
+          title="Volver arriba"
+        >
+          <ArrowUp className="h-6 w-6" />
+        </motion.button>
+      )}
     </div>
   );
 }
