@@ -31,7 +31,10 @@ import {
   Eye,
   RefreshCw,
   BarChart3,
-  ArrowUp
+  ArrowUp,
+  FileText,
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
@@ -108,6 +111,15 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+interface MuestreoFile {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  modified: string;
+  sharedLink?: string;
+}
+
 export default function ReportesPage() {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,6 +127,9 @@ export default function ReportesPage() {
   const [selectedCodigo, setSelectedCodigo] = useState<string | null>(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showDocumentos, setShowDocumentos] = useState(false);
+  const [selectedCodigoDoc, setSelectedCodigoDoc] = useState<{ codigo: string; articulo: string; sucursal: string } | null>(null);
+  const [loadingLink, setLoadingLink] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -153,6 +168,53 @@ export default function ReportesPage() {
     },
     enabled: !!selectedCodigo
   });
+
+  const { data: muestreos, isLoading: loadingMuestreos } = useQuery<MuestreoFile[]>({
+    queryKey: ['/api/muestreos'],
+    queryFn: async () => {
+      const response = await fetch('/api/muestreos');
+      if (!response.ok) throw new Error('Error fetching muestreos');
+      return response.json();
+    },
+    enabled: showDocumentos
+  });
+
+  const filteredMuestreos = muestreos?.filter(file => {
+    if (!selectedCodigoDoc) return true;
+    const sucursal = selectedCodigoDoc.sucursal.toLowerCase();
+    const fileName = file.name.toLowerCase();
+    return fileName.includes(sucursal.toLowerCase()) || 
+           fileName.includes(sucursal.replace(/\./g, '').toLowerCase()) ||
+           fileName.includes(sucursal.replace('t.', '').toLowerCase());
+  }) || [];
+
+  const handleOpenDocument = async (file: MuestreoFile) => {
+    if (file.sharedLink) {
+      window.open(file.sharedLink, '_blank');
+      return;
+    }
+    setLoadingLink(file.id);
+    try {
+      const response = await fetch(`/api/muestreos/${encodeURIComponent(file.id)}/link?path=${encodeURIComponent(file.path)}`);
+      if (response.ok) {
+        const data = await response.json();
+        window.open(data.link, '_blank');
+      }
+    } catch (error) {
+      console.error('Error getting file link:', error);
+    } finally {
+      setLoadingLink(null);
+    }
+  };
+
+  const handleVerDocumentos = (item: AnalisisItem) => {
+    setSelectedCodigoDoc({ 
+      codigo: item.codigo, 
+      articulo: item.articulo, 
+      sucursal: item.sucursal 
+    });
+    setShowDocumentos(true);
+  };
 
   const filteredData = analisis?.detalle?.filter(item => {
     const matchesSearch = searchTerm === "" || 
@@ -460,9 +522,14 @@ export default function ReportesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(item.codigo)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(item.codigo)} title="Ver historial">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleVerDocumentos(item)} title="Buscar en documentos">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -555,6 +622,132 @@ export default function ReportesPage() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               No hay historial de ajustes para este código
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDocumentos} onOpenChange={setShowDocumentos}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Documentos de Muestreo
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedCodigoDoc && (
+            <div className="mb-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Buscando código:</p>
+              <p className="font-mono font-bold text-lg">{selectedCodigoDoc.codigo}</p>
+              <p className="text-sm text-muted-foreground">{selectedCodigoDoc.articulo}</p>
+              <Badge variant="secondary" className="mt-2">
+                <Building2 className="h-3 w-3 mr-1" />
+                {selectedCodigoDoc.sucursal}
+              </Badge>
+            </div>
+          )}
+
+          <p className="text-sm text-muted-foreground mb-4">
+            Documentos de la sucursal donde puedes buscar este código:
+          </p>
+
+          {loadingMuestreos ? (
+            <div className="flex items-center justify-center py-8">
+              <LoadingMascot size="sm" message="Cargando documentos..." />
+            </div>
+          ) : filteredMuestreos.length > 0 ? (
+            <div className="space-y-2">
+              {filteredMuestreos.slice(0, 20).map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <FileText className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate" title={file.name}>
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(file.modified).toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })} • {(file.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenDocument(file)}
+                    disabled={loadingLink === file.id}
+                  >
+                    {loadingLink === file.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Abrir
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))}
+              {filteredMuestreos.length > 20 && (
+                <p className="text-center text-sm text-muted-foreground pt-2">
+                  Mostrando 20 de {filteredMuestreos.length} documentos
+                </p>
+              )}
+            </div>
+          ) : muestreos && muestreos.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+                No hay documentos específicos para {selectedCodigoDoc?.sucursal}. 
+                Mostrando todos los documentos disponibles:
+              </p>
+              <div className="space-y-2">
+                {muestreos.slice(0, 10).map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(file.modified).toLocaleDateString('es-AR')}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenDocument(file)}
+                      disabled={loadingLink === file.id}
+                    >
+                      {loadingLink === file.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Abrir
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay documentos de muestreo disponibles
             </div>
           )}
         </DialogContent>
