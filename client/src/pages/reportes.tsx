@@ -509,13 +509,22 @@ export default function ReportesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={
-                        Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24)) > 180 
-                          ? "destructive" 
-                          : "secondary"
-                      }>
-                        {Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24))}
-                      </Badge>
+                      {(() => {
+                        const dias = Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24));
+                        if (dias === 0 || item.sinAjusteAnual) {
+                          return (
+                            <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300" title="Sin ajuste hace más de 1 año">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              1A
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge variant={dias > 180 ? "destructive" : "secondary"}>
+                            {dias}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
