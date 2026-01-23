@@ -228,7 +228,7 @@ export default function ReportesPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
           <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
             <CardHeader className="pb-2">
@@ -313,6 +313,7 @@ export default function ReportesPage() {
               <Building2 className="h-5 w-5" />
               Resumen por Sucursal
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">* Los valores están calculados a precio público</p>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -320,10 +321,10 @@ export default function ReportesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Sucursal</TableHead>
-                    <TableHead className="text-right">Artículos</TableHead>
-                    <TableHead className="text-right">Unidades Ajustadas</TableHead>
-                    <TableHead className="text-right">Pérdida Valorizada</TableHead>
-                    <TableHead className="text-right">Ventas Período</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">Artículos</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Unidades</TableHead>
+                    <TableHead className="text-right">Pérdida $</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">Ventas $</TableHead>
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -331,12 +332,12 @@ export default function ReportesPage() {
                   {analisis.resumen.map((item) => (
                     <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
                       <TableCell className="font-medium">{item.sucursal}</TableCell>
-                      <TableCell className="text-right">{item.articulosConAjuste}</TableCell>
-                      <TableCell className="text-right">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
+                      <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
+                      <TableCell className="text-right hidden md:table-cell">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
                       <TableCell className="text-right text-red-600 font-medium">
                         {formatCurrency(item.totalValorizado)}
                       </TableCell>
-                      <TableCell className="text-right text-green-600">
+                      <TableCell className="text-right text-green-600 hidden sm:table-cell">
                         {formatCurrency(item.totalVentas)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -367,15 +368,15 @@ export default function ReportesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>
-                  <TableHead>Artículo</TableHead>
-                  <TableHead className="text-center">Ajustes</TableHead>
-                  <TableHead className="text-right">Unidades</TableHead>
-                  <TableHead className="text-right">Precio Unit.</TableHead>
+                  <TableHead className="hidden sm:table-cell">Artículo</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Ajustes</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Unidades</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Precio Unit.</TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
-                  <TableHead className="text-right">Ventas $</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Ventas $</TableHead>
                   <TableHead className="text-right">% Pérdida</TableHead>
-                  <TableHead className="text-center">Primer Ajuste</TableHead>
-                  <TableHead className="text-center">Último Ajuste</TableHead>
+                  <TableHead className="text-center hidden xl:table-cell">1er Ajuste</TableHead>
+                  <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead className="text-center">Días</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -384,20 +385,20 @@ export default function ReportesPage() {
                 {sortedData.slice(0, 100).map((item, idx) => (
                   <TableRow key={`${item.sucursal}-${item.codigo}-${idx}`} className={item.alertaPerdida ? "bg-red-50 dark:bg-red-900/10" : ""}>
                     <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={item.articulo}>
+                    <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center hidden md:table-cell">
                       <Badge variant="outline">{item.totalAjustes}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">{item.totalUnidades.toFixed(2)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">
+                    <TableCell className="text-right hidden lg:table-cell">{item.totalUnidades.toFixed(2)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground hidden lg:table-cell">
                       {formatCurrency(item.precioUnitario)}
                     </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
-                    <TableCell className="text-right text-green-600">
+                    <TableCell className="text-right text-green-600 hidden md:table-cell">
                       {formatCurrency(item.totalVentaValorizada)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -412,10 +413,10 @@ export default function ReportesPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-center text-xs">
+                    <TableCell className="text-center text-xs hidden xl:table-cell">
                       {formatDate(item.primerAjuste)}
                     </TableCell>
-                    <TableCell className="text-center text-xs">
+                    <TableCell className="text-center text-xs hidden xl:table-cell">
                       <div className="flex flex-col items-center gap-1">
                         {formatDate(item.ultimoAjuste)}
                         {item.sinAjusteAnual && (
