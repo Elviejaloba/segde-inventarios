@@ -190,6 +190,7 @@ export class PostgreSQLStorage implements IStorage {
             GROUP BY "Sucursal", "Codigo"
           ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
           WHERE a."FechaMovimiento" IS NOT NULL
+            AND a."FechaMovimiento" >= '2026-01-01'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
         ),
         resumen_por_codigo AS (
@@ -256,13 +257,14 @@ export class PostgreSQLStorage implements IStorage {
           FROM ajustes_sucursales a
           LEFT JOIN ventas_agregadas v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
           WHERE a."FechaMovimiento" IS NOT NULL
+            AND a."FechaMovimiento" >= '2026-01-01'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           GROUP BY a."Sucursal"
         ),
         ventas_por_sucursal AS (
           SELECT "Sucursal", SUM(total_importe) as total_ventas
           FROM ventas_agregadas
-          WHERE "Codigo" IN (SELECT DISTINCT "Codigo" FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL)
+          WHERE "Codigo" IN (SELECT DISTINCT "Codigo" FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "FechaMovimiento" >= '2026-01-01')
           ${sucursal ? 'AND "Sucursal" = $1' : ''}
           GROUP BY "Sucursal"
         )
@@ -290,6 +292,7 @@ export class PostgreSQLStorage implements IStorage {
             GROUP BY "Sucursal", "Codigo"
           ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
           WHERE a."FechaMovimiento" IS NOT NULL
+            AND a."FechaMovimiento" >= '2026-01-01'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
         ),
         resumen_por_codigo AS (
