@@ -238,17 +238,24 @@ export default function MuestreosPage() {
                   className="hidden"
                   accept=".xlsx,.xls,.pdf,.doc,.docx,.jpg,.jpeg,.png"
                   data-testid="input-muestreo-file"
+                  disabled={!selectedBranch}
                 />
                 <Button
                   variant="outline"
                   onClick={() => document.getElementById('file-input')?.click()}
                   className="flex-1"
+                  disabled={!selectedBranch}
                   data-testid="button-select-file"
                 >
                   <FolderOpen className="h-4 w-4 mr-2" />
-                  {selectedFile ? selectedFile.name : "Seleccionar archivo..."}
+                  {!selectedBranch ? "Primero selecciona una sucursal" : selectedFile ? selectedFile.name : "Seleccionar archivo..."}
                 </Button>
               </div>
+              {!selectedBranch && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Debes seleccionar una sucursal antes de elegir el archivo
+                </p>
+              )}
               {selectedFile && (
                 <p className="text-sm text-muted-foreground">
                   Tamaño: {formatFileSize(selectedFile.size)}
