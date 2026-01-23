@@ -457,7 +457,6 @@ export default function ReportesPage() {
                   <TableHead className="hidden sm:table-cell">Artículo</TableHead>
                   <TableHead className="text-center hidden md:table-cell">Ajustes</TableHead>
                   <TableHead className="text-right hidden lg:table-cell">Unidades</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Precio Unit.</TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Ventas $</TableHead>
                   <TableHead className="text-right">% Pérdida</TableHead>
@@ -478,9 +477,6 @@ export default function ReportesPage() {
                       <Badge variant="outline">{item.totalAjustes}</Badge>
                     </TableCell>
                     <TableCell className="text-right hidden lg:table-cell">{item.totalUnidades.toFixed(2)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground hidden lg:table-cell">
-                      {formatCurrency(item.precioUnitario)}
-                    </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
