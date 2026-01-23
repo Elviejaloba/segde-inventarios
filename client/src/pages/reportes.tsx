@@ -365,6 +365,12 @@ export default function ReportesPage() {
               </span>
             )}
           </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            {selectedSucursal 
+              ? `Datos de la sucursal ${selectedSucursal}. Valores a precio público.`
+              : "Datos consolidados de todas las sucursales. Valores a precio público. Haga clic en una sucursal del resumen para filtrar."
+            }
+          </p>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
