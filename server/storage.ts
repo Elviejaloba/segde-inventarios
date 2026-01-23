@@ -238,24 +238,39 @@ export class PostgreSQLStorage implements IStorage {
       const params = sucursal ? [sucursal] : [];
       const result = await sql(query, params);
       
-      // Resumen general
+      // Resumen general - con ventas pre-agregadas para evitar duplicados
       const resumenQuery = `
-        SELECT 
-          a."Sucursal",
-          COUNT(DISTINCT a."Codigo") as articulos_con_ajuste,
-          SUM(ABS(a."Diferencia")) as total_unidades_ajustadas,
-          SUM(ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0)) as total_valorizado,
-          COALESCE(SUM(vt."ImporteConIVA"), 0) as total_ventas
-        FROM ajustes_sucursales a
-        LEFT JOIN (
-          SELECT "Sucursal", "Codigo", AVG("PrecioConIVA") as precio_promedio
+        WITH ventas_agregadas AS (
+          SELECT "Sucursal", "Codigo", 
+            AVG("PrecioConIVA") as precio_promedio,
+            SUM("ImporteConIVA") as total_importe
           FROM ventas_sucursales
           GROUP BY "Sucursal", "Codigo"
-        ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
-        LEFT JOIN ventas_sucursales vt ON a."Sucursal" = vt."Sucursal" AND a."Codigo" = vt."Codigo"
-        WHERE a."FechaMovimiento" IS NOT NULL
-        ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-        GROUP BY a."Sucursal"
+        ),
+        ajustes_por_sucursal AS (
+          SELECT 
+            a."Sucursal",
+            COUNT(DISTINCT a."Codigo") as articulos_con_ajuste,
+            SUM(ABS(a."Diferencia")) as total_unidades_ajustadas,
+            SUM(ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0)) as total_valorizado
+          FROM ajustes_sucursales a
+          LEFT JOIN ventas_agregadas v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          GROUP BY a."Sucursal"
+        ),
+        ventas_por_sucursal AS (
+          SELECT "Sucursal", SUM(total_importe) as total_ventas
+          FROM ventas_agregadas
+          WHERE "Codigo" IN (SELECT DISTINCT "Codigo" FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL)
+          ${sucursal ? 'AND "Sucursal" = $1' : ''}
+          GROUP BY "Sucursal"
+        )
+        SELECT 
+          a.*, 
+          COALESCE(v.total_ventas, 0) as total_ventas
+        FROM ajustes_por_sucursal a
+        LEFT JOIN ventas_por_sucursal v ON a."Sucursal" = v."Sucursal"
         ORDER BY total_valorizado DESC
       `;
       
