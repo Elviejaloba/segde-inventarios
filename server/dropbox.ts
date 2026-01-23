@@ -12,6 +12,11 @@ export interface DropboxFile {
 let cachedAccessToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
+// Cache for file list to avoid repeated API calls
+let cachedFileList: DropboxFile[] | null = null;
+let fileListCacheTime: number = 0;
+const FILE_LIST_CACHE_DURATION = 60000; // 1 minute cache
+
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
   const appKey = process.env.DROPBOX_APP_KEY;
@@ -156,6 +161,11 @@ async function createSharedLink(path: string): Promise<string> {
 }
 
 export async function listFiles(): Promise<DropboxFile[]> {
+  // Return cached list if still valid
+  if (cachedFileList && Date.now() - fileListCacheTime < FILE_LIST_CACHE_DURATION) {
+    return cachedFileList;
+  }
+
   const accessToken = await getAccessToken();
 
   const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
@@ -183,23 +193,45 @@ export async function listFiles(): Promise<DropboxFile[]> {
   const data = await response.json();
   const files: DropboxFile[] = [];
 
+  // Process files without blocking on shared links (faster initial load)
   for (const entry of data.entries) {
     if (entry['.tag'] === 'file') {
-      const sharedLink = await createSharedLink(entry.path_display);
       files.push({
         id: entry.id,
         name: entry.name,
         path: entry.path_display,
         size: entry.size,
         modified: entry.server_modified,
-        sharedLink,
       });
     }
   }
 
   files.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
 
+  // Cache the result
+  cachedFileList = files;
+  fileListCacheTime = Date.now();
+
   return files;
+}
+
+// Pre-initialize token on server start
+export async function initializeDropbox(): Promise<void> {
+  try {
+    if (process.env.DROPBOX_REFRESH_TOKEN) {
+      console.log('Pre-initializing Dropbox token...');
+      await getAccessToken();
+      console.log('Dropbox token ready');
+    }
+  } catch (error) {
+    console.error('Failed to pre-initialize Dropbox:', error);
+  }
+}
+
+// Invalidate cache when files are uploaded
+export function invalidateFileCache(): void {
+  cachedFileList = null;
+  fileListCacheTime = 0;
 }
 
 export async function getFileLink(path: string): Promise<string> {

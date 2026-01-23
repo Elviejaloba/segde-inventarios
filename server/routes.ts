@@ -6,6 +6,9 @@ import * as dropbox from "./dropbox";
 import multer from "multer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Pre-initialize Dropbox token on startup
+  dropbox.initializeDropbox();
+
   // Rutas API básicas
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
@@ -108,6 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.file.buffer,
         sucursal
       );
+      // Invalidate cache so new file appears immediately
+      dropbox.invalidateFileCache();
       res.json(result);
     } catch (error) {
       console.error('Error uploading muestreo:', error);
