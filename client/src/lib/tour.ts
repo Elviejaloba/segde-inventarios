@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-export function startTour(page: 'home' | 'muestreos') {
+export function startTour(page: 'home' | 'muestreos' | 'reportes') {
   if (typeof window.driver === 'undefined' || !window.driver.js) {
     console.error('Driver.js not loaded');
     return;
@@ -25,10 +25,19 @@ export function startTour(page: 'home' | 'muestreos') {
       }
     },
     {
+      element: '[data-testid="nav-reportes"]',
+      popover: {
+        title: 'Reportes Valorizados',
+        description: 'Aquí puedes ver el análisis económico de los ajustes de inventario por sucursal.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
       element: '[data-testid="nav-muestreos"]',
       popover: {
         title: 'Subir Muestreos',
-        description: 'En esta sección puedes subir los archivos de muestreo de cada sucursal a Dropbox.',
+        description: 'En esta sección puedes subir los archivos de muestreo de cada sucursal.',
         side: 'bottom',
         align: 'center'
       }
@@ -45,19 +54,10 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="indicadores-meses-ranking"]',
       popover: {
-        title: '📅 Indicadores Mensuales',
-        description: 'Estos badges muestran el progreso por mes de cada sucursal: Ene 4/36 significa 4 completados de 36 del objetivo de Enero. Verde con ✓ = meta cumplida, azul = en progreso, gris = sin iniciar.',
+        title: 'Indicadores Mensuales',
+        description: 'Estos badges muestran el progreso por mes de cada sucursal. Verde = meta cumplida, azul = en progreso.',
         side: 'top',
         align: 'end'
-      }
-    },
-    {
-      element: '[data-testid="button-reportes"]',
-      popover: {
-        title: 'Reportes',
-        description: 'Accede a los reportes detallados y análisis de las sucursales.',
-        side: 'bottom',
-        align: 'start'
       }
     },
     {
@@ -72,8 +72,8 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="header-calendario"]',
       popover: {
-        title: '📋 Artículos Sin Rotación',
-        description: 'Esta sección muestra los artículos con sobrestock o sin rotación que debes revisar durante la temporada. La cantidad varía por sucursal (T.Mendoza: 260, T.Sjuan: 244, T.SLuis: 169, Crisa2: 410).',
+        title: 'Artículos Sin Rotación',
+        description: 'Esta sección muestra los artículos con sobrestock o sin rotación que debes revisar. La cantidad varía por sucursal.',
         side: 'bottom',
         align: 'center'
       }
@@ -81,8 +81,8 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="objetivos-mensuales"]',
       popover: {
-        title: '🎯 Objetivos Mensuales',
-        description: 'Cada tarjeta representa un mes con su objetivo de items a completar. Cuando llegas al objetivo, la tarjeta se pone verde con trofeo y aparece confetti de celebración.',
+        title: 'Objetivos Mensuales',
+        description: 'Cada tarjeta representa un mes con su objetivo de items a completar. Cuando llegas al objetivo, aparece confetti de celebración.',
         side: 'bottom',
         align: 'center'
       }
@@ -90,8 +90,8 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="progreso-total"]',
       popover: {
-        title: '📊 Progreso Total',
-        description: 'Aquí ves cuántos items has completado del total de la sucursal. La barra muestra tu avance general.',
+        title: 'Progreso Total',
+        description: 'Aquí ves cuántos items has completado del total de la sucursal.',
         side: 'top',
         align: 'center'
       }
@@ -99,8 +99,8 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="buscador-items"]',
       popover: {
-        title: '🔍 Buscador Rápido',
-        description: 'Escribe el código del artículo para encontrarlo rápidamente. Filtra la lista mientras escribes.',
+        title: 'Buscador Rápido',
+        description: 'Escribe el código del artículo para encontrarlo rápidamente.',
         side: 'top',
         align: 'start'
       }
@@ -108,9 +108,53 @@ export function startTour(page: 'home' | 'muestreos') {
     {
       element: '[data-testid="items-lista"]',
       popover: {
-        title: '✅ Lista de Items',
-        description: 'Haz clic en cualquier item para marcarlo como completado. El progreso se suma automáticamente al objetivo del mes actual.',
+        title: 'Lista de Items',
+        description: 'Haz clic en cualquier item para marcarlo como completado.',
         side: 'top',
+        align: 'center'
+      }
+    }
+  ];
+
+  const reportesSteps = [
+    {
+      element: '[data-testid="nav-reportes"]',
+      popover: {
+        title: 'Reportes Valorizados',
+        description: 'Estás en la sección de análisis económico de ajustes de inventario.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Filtros',
+        description: 'Usa los selectores para filtrar por sucursal, ordenar por valor o buscar artículos específicos.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Tarjetas de Resumen',
+        description: 'Las 4 tarjetas muestran: Pérdida total valorizada, Ventas del período, Alertas críticas (>3% pérdida) y Total de artículos analizados.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Tabla de Detalle',
+        description: 'Cada fila muestra un artículo con su código, cantidad de ajustes, pérdida valorizada, ventas y % de pérdida. Los artículos en rojo tienen pérdida crítica.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Acciones por Artículo',
+        description: 'El ícono del ojo permite ver el historial completo de ajustes. El ícono de documento busca muestreos relacionados.',
+        side: 'left',
         align: 'center'
       }
     }
@@ -155,8 +199,8 @@ export function startTour(page: 'home' | 'muestreos') {
     }
   ];
 
-  const steps = page === 'home' ? homeSteps : muestreosSteps;
-  const validSteps = steps.filter(step => document.querySelector(step.element));
+  const steps = page === 'home' ? homeSteps : page === 'reportes' ? reportesSteps : muestreosSteps;
+  const validSteps = steps.filter(step => !step.element || document.querySelector(step.element));
   
   if (validSteps.length === 0) {
     console.warn('No tour elements found on this page');

@@ -23,7 +23,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
 
   return (
     <Select value={value} onValueChange={handleChange}>
-      <SelectTrigger className="w-full sm:w-[180px] md:w-[200px]">
+      <SelectTrigger className="w-full sm:w-[180px] md:w-[200px]" data-testid="select-branch">
         <SelectValue placeholder="Selecciona Sucursal" />
       </SelectTrigger>
       <SelectContent>

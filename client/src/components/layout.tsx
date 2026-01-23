@@ -96,7 +96,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      const page = location === "/muestreos" ? "muestreos" : "home";
+                      const page = location === "/muestreos" ? "muestreos" : location === "/reportes" ? "reportes" : "home";
                       startTour(page);
                     }}
                     data-testid="button-tour"
