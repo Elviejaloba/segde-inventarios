@@ -116,7 +116,7 @@ export default function MuestreosPage() {
       setUploadProgress(100);
       toast({
         title: "Archivo subido exitosamente",
-        description: `${data.name} se ha guardado en Dropbox`,
+        description: `${data.name} se ha guardado correctamente`,
         variant: "success",
       });
       setSelectedFile(null);
@@ -404,7 +404,7 @@ export default function MuestreosPage() {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Ver archivo en Dropbox</p>
+                                <p>Ver archivo</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>

@@ -124,7 +124,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Subir archivos de muestreo a Dropbox</p>
+                  <p>Subir archivos de muestreo</p>
                 </TooltipContent>
               </Tooltip>
 
