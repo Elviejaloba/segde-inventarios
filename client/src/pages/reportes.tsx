@@ -255,69 +255,72 @@ export default function ReportesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold">Reportes Valorizados</h1>
-        <p className="text-muted-foreground">
-          Análisis de ajustes con valorización económica y comparativa vs ventas
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-1 sm:gap-2">
+        <h1 className="text-lg sm:text-2xl font-bold">Reportes Valorizados</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Análisis de ajustes con valorización económica
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center">
-        <Select value={selectedSucursal || "todas"} onValueChange={(v) => setSelectedSucursal(v === "todas" ? "" : v)}>
-          <SelectTrigger className="w-[180px]">
-            <Building2 className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Sucursal" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas las sucursales</SelectItem>
-            {SUCURSALES.map((suc) => (
-              <SelectItem key={suc} value={suc}>{suc}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Select value={selectedSucursal || "todas"} onValueChange={(v) => setSelectedSucursal(v === "todas" ? "" : v)}>
+            <SelectTrigger className="flex-1 sm:w-[180px]">
+              <Building2 className="h-4 w-4 mr-2 hidden sm:block" />
+              <SelectValue placeholder="Sucursal" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas las sucursales</SelectItem>
+              {SUCURSALES.map((suc) => (
+                <SelectItem key={suc} value={suc}>{suc}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-[130px] sm:w-[160px]">
+              <ArrowUpDown className="h-4 w-4 mr-1 sm:mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="valorizado">Mayor valor</SelectItem>
+              <SelectItem value="perdida">Mayor % pérdida</SelectItem>
+              <SelectItem value="unidades">Más unidades</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="icon" onClick={() => refetch()} className="shrink-0">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="relative w-full sm:flex-1 sm:max-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar código o artículo..."
+            placeholder="Buscar código..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
           />
         </div>
-
-        <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-          <SelectTrigger className="w-[160px]">
-            <ArrowUpDown className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="valorizado">Mayor valor</SelectItem>
-            <SelectItem value="perdida">Mayor % pérdida</SelectItem>
-            <SelectItem value="unidades">Más unidades</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button variant="outline" size="icon" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
           <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-red-600" />
-                Total Pérdida Valorizada
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+                <span className="hidden sm:inline">Total Pérdida Valorizada</span>
+                <span className="sm:hidden">Pérdida</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-base sm:text-2xl font-bold text-red-600">
                 {formatCurrency(totalValorizado)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                 En ajustes de inventario
               </p>
             </CardContent>
@@ -326,17 +329,18 @@ export default function ReportesPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-green-600" />
-                Total Ventas Período
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                <span className="hidden sm:inline">Total Ventas Período</span>
+                <span className="sm:hidden">Ventas</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-base sm:text-2xl font-bold text-green-600">
                 {formatCurrency(totalVentas)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                 Ventas de artículos con ajustes
               </p>
             </CardContent>
@@ -345,17 +349,17 @@ export default function ReportesPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                Alertas &gt;3%
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
+                <span>Alertas &gt;3%</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-base sm:text-2xl font-bold text-amber-600">
                 {articulosConAlerta}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                 Artículos con pérdida crítica
               </p>
             </CardContent>
@@ -364,17 +368,18 @@ export default function ReportesPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Package className="h-4 w-4 text-blue-600" />
-                Artículos Analizados
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <span className="hidden sm:inline">Artículos Analizados</span>
+                <span className="sm:hidden">Artículos</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-base sm:text-2xl font-bold text-blue-600">
                 {totalArticulos}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                 Con ajustes registrados
               </p>
             </CardContent>

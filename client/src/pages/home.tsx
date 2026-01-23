@@ -577,9 +577,9 @@ export default function Home() {
   }, [selectedBranch, items, calendarioSemanal]);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-background pt-4 pb-4">
-        <div className="flex flex-wrap items-center gap-4">
+    <div className="space-y-4 sm:space-y-8">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center justify-between bg-background pt-2 sm:pt-4 pb-2 sm:pb-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {selectedBranch && (
             <Button
               variant="outline"
@@ -588,6 +588,7 @@ export default function Home() {
                 setItems({});
                 setLastToastProgress(0);
               }}
+              size="sm"
               className="gap-2 w-full sm:w-auto bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <ArrowLeft className="h-4 w-4 text-primary" />
@@ -605,13 +606,13 @@ export default function Home() {
 
 
         </div>
-        <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg w-full md:w-auto">
+        <div className="flex items-center gap-2 p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg w-full md:w-auto">
           <div className="flex-shrink-0 animate-bounce">
-            <svg className="h-5 w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           </div>
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+          <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
             Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
           </p>
         </div>
@@ -664,7 +665,7 @@ export default function Home() {
                         {/* Sección fija: objetivos y progreso */}
                         <div className="sticky top-16 z-10 bg-white dark:bg-background pb-3 pt-2 space-y-3 shadow-sm">
                         {/* Resumen de objetivos por mes */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="objetivos-mensuales">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3" data-testid="objetivos-mensuales">
                           {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
                             // Calcular cuántos items corresponden a este mes
                             const acumuladoAnterior = acumulado - objetivo;

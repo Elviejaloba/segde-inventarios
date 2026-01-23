@@ -20,18 +20,18 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b fixed top-0 left-0 right-0 bg-background z-50">
-        <div className="container flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-2 sm:py-0">
-          <div className="flex items-center gap-4 mb-2 sm:mb-0">
+        <div className="container flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <img 
               src="/assets/GRUPO CRISA.jpeg" 
               alt="GRUPO CRISA" 
-              className="h-8 sm:h-10 w-auto"
+              className="h-7 sm:h-10 w-auto"
             />
-            <h1 className="text-lg sm:text-xl font-bold text-center sm:text-left">
+            <h1 className="text-sm sm:text-xl font-bold hidden xs:block">
               Seguimiento de Muestreos
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -40,9 +40,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-home"
+                      className="px-2 sm:px-3"
                     >
-                      <Home className="h-4 w-4 mr-2" />
-                      Dashboard
+                      <Home className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Dashboard</span>
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -51,46 +52,6 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                 </TooltipContent>
               </Tooltip>
 
-{/* Botón oculto temporalmente
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href="/importacion-inventario">
-                    <Button
-                      variant={location === "/importacion-inventario" ? "default" : "ghost"}
-                      size="sm"
-                      data-testid="nav-importacion"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Suba de Inventario
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Importación de Toma de Inventario</p>
-                </TooltipContent>
-              </Tooltip>
-*/}
-
-{/* Botón oculto temporalmente
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href="/consolidado">
-                    <Button
-                      variant={location === "/consolidado" ? "default" : "ghost"}
-                      size="sm"
-                      data-testid="nav-consolidado"
-                    >
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Consolidado
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Consolidado Multi-Sucursal</p>
-                </TooltipContent>
-              </Tooltip>
-*/}
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link href="/reportes">
@@ -98,10 +59,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/reportes" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-reportes"
-                      className={location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}
+                      className={`px-2 sm:px-3 ${location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}`}
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Reportes
+                      <FileText className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Reportes</span>
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -117,9 +78,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/muestreos" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-muestreos"
+                      className="px-2 sm:px-3"
                     >
-                      <FileUp className="h-4 w-4 mr-2" />
-                      Muestreos
+                      <FileUp className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Muestreos</span>
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -138,7 +100,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       startTour(page);
                     }}
                     data-testid="button-tour"
-                    className="relative"
+                    className="relative h-8 w-8 sm:h-9 sm:w-9"
                   >
                     <HelpCircle className="h-4 w-4 animate-pulse" />
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
@@ -155,6 +117,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                     variant="ghost"
                     size="icon"
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
                     {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   </Button>
@@ -167,7 +130,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
           </div>
         </div>
       </header>
-      <main className="container py-8 mt-20 sm:mt-16">
+      <main className="container py-4 sm:py-8 mt-16 px-2 sm:px-4">
         {children}
       </main>
       <ImportExcel isHidden={hideImport} />
