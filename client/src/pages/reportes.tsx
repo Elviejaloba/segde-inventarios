@@ -356,10 +356,14 @@ export default function ReportesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-3">
             <TrendingDown className="h-5 w-5" />
             Detalle de Ajustes Valorizados
-            {selectedSucursal && <Badge variant="outline">{selectedSucursal}</Badge>}
+            {selectedSucursal && (
+              <span className="bg-gradient-to-r from-primary to-primary/80 text-white px-4 py-1 rounded-full text-lg font-bold shadow-md">
+                {selectedSucursal}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
