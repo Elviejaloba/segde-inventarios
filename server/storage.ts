@@ -276,6 +276,58 @@ export class PostgreSQLStorage implements IStorage {
       
       const resumen = await sql(resumenQuery, params);
       
+      // Totales globales (sin límite de 500)
+      const totalesQuery = `
+        WITH ajustes_con_precio AS (
+          SELECT 
+            a.*,
+            COALESCE(v.precio_promedio, 0) as precio_unitario,
+            ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0) as valor_ajuste
+          FROM ajustes_sucursales a
+          LEFT JOIN (
+            SELECT "Sucursal", "Codigo", AVG("PrecioConIVA") as precio_promedio
+            FROM ventas_sucursales
+            GROUP BY "Sucursal", "Codigo"
+          ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+        ),
+        resumen_por_codigo AS (
+          SELECT 
+            "Sucursal",
+            "Codigo",
+            SUM(valor_ajuste) as total_valorizado
+          FROM ajustes_con_precio
+          GROUP BY "Sucursal", "Codigo"
+        ),
+        ventas_totales AS (
+          SELECT 
+            "Sucursal",
+            "Codigo",
+            SUM("ImporteConIVA") as total_venta_valorizada
+          FROM ventas_sucursales
+          ${sucursal ? 'WHERE "Sucursal" = $1' : ''}
+          GROUP BY "Sucursal", "Codigo"
+        ),
+        con_porcentaje AS (
+          SELECT 
+            r.*,
+            COALESCE(vt.total_venta_valorizada, 0) as total_venta_valorizada,
+            CASE 
+              WHEN COALESCE(vt.total_venta_valorizada, 0) > 0 
+              THEN (r.total_valorizado / vt.total_venta_valorizada * 100)
+              ELSE 0 
+            END as porcentaje_perdida
+          FROM resumen_por_codigo r
+          LEFT JOIN ventas_totales vt ON r."Sucursal" = vt."Sucursal" AND r."Codigo" = vt."Codigo"
+        )
+        SELECT 
+          COUNT(*) as total_articulos,
+          COUNT(*) FILTER (WHERE porcentaje_perdida > 3) as total_alertas
+        FROM con_porcentaje
+      `;
+      const totales = await sql(totalesQuery, params);
+      
       return {
         detalle: result.map((row: any) => ({
           sucursal: row.Sucursal,
@@ -302,11 +354,15 @@ export class PostgreSQLStorage implements IStorage {
           porcentajePerdida: parseFloat(row.total_ventas) > 0 
             ? parseFloat((parseFloat(row.total_valorizado) / parseFloat(row.total_ventas) * 100).toFixed(2))
             : 0
-        }))
+        })),
+        totales: {
+          totalArticulos: parseInt(totales[0]?.total_articulos || '0'),
+          totalAlertas: parseInt(totales[0]?.total_alertas || '0')
+        }
       };
     } catch (error) {
       console.error('Error getting análisis valorizado:', error);
-      return { detalle: [], resumen: [] };
+      return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0 } };
     }
   }
 

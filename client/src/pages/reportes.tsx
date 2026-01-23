@@ -162,8 +162,8 @@ export default function ReportesPage() {
 
   const totalValorizado = analisis?.resumen?.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
   const totalVentas = analisis?.resumen?.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
-  const articulosConAlerta = filteredData.filter(item => item.alertaPerdida).length;
-  const totalArticulos = filteredData.length;
+  const articulosConAlerta = (analisis as any)?.totales?.totalAlertas || 0;
+  const totalArticulos = (analisis as any)?.totales?.totalArticulos || 0;
 
   const handleVerHistorial = (codigo: string) => {
     setSelectedCodigo(codigo);
