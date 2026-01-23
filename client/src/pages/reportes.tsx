@@ -374,7 +374,9 @@ export default function ReportesPage() {
                   <TableHead className="text-right">Pérdida $</TableHead>
                   <TableHead className="text-right">Ventas $</TableHead>
                   <TableHead className="text-right">% Pérdida</TableHead>
-                  <TableHead className="text-center">Período</TableHead>
+                  <TableHead className="text-center">Primer Ajuste</TableHead>
+                  <TableHead className="text-center">Último Ajuste</TableHead>
+                  <TableHead className="text-center">Días</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -410,18 +412,27 @@ export default function ReportesPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
+                    <TableCell className="text-center text-xs">
+                      {formatDate(item.primerAjuste)}
+                    </TableCell>
+                    <TableCell className="text-center text-xs">
                       <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(item.primerAjuste)} - {formatDate(item.ultimoAjuste)}
-                        </div>
+                        {formatDate(item.ultimoAjuste)}
                         {item.sinAjusteAnual && (
                           <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">
-                            Sin ajuste en 1 año
+                            +1 año
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={
+                        Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24)) > 180 
+                          ? "destructive" 
+                          : "secondary"
+                      }>
+                        {Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24))}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(item.codigo)}>
