@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Home, Upload, BarChart3, FileUp, HelpCircle } from "lucide-react";
+import { Moon, Sun, Home, Upload, BarChart3, FileUp, HelpCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -90,6 +90,25 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                 </TooltipContent>
               </Tooltip>
 */}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/reportes">
+                    <Button
+                      variant={location === "/reportes" ? "default" : "ghost"}
+                      size="sm"
+                      data-testid="nav-reportes"
+                      className={location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Reportes
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ver reportes de ajustes</p>
+                </TooltipContent>
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
