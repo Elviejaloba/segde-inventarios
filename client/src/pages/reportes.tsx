@@ -54,6 +54,8 @@ interface AnalisisItem {
   porcentajePerdida: number;
   alertaPerdida: boolean;
   sinAjusteAnual: boolean;
+  diferencia2025: number;
+  diferencia2026: number;
 }
 
 interface ResumenSucursal {
@@ -460,14 +462,13 @@ export default function ReportesPage() {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead className="hidden sm:table-cell">Artículo</TableHead>
-                  <TableHead className="text-center hidden md:table-cell">Ajustes</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Unidades</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Dif.2025</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Dif.2026</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Total</TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Ventas $</TableHead>
                   <TableHead className="text-right">% Pérdida</TableHead>
-                  <TableHead className="text-center hidden xl:table-cell">1er Ajuste</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
-                  <TableHead className="text-center">Días</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -478,10 +479,15 @@ export default function ReportesPage() {
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
-                    <TableCell className="text-center hidden md:table-cell">
-                      <Badge variant="outline">{item.totalAjustes}</Badge>
+                    <TableCell className="text-right hidden lg:table-cell text-orange-600">
+                      {item.diferencia2025 !== 0 ? item.diferencia2025.toFixed(0) : '-'}
                     </TableCell>
-                    <TableCell className="text-right hidden lg:table-cell">{item.totalUnidades.toFixed(2)}</TableCell>
+                    <TableCell className="text-right hidden lg:table-cell text-blue-600">
+                      {item.diferencia2026 !== 0 ? item.diferencia2026.toFixed(0) : '-'}
+                    </TableCell>
+                    <TableCell className="text-right hidden md:table-cell font-medium">
+                      {item.totalUnidades.toFixed(0)}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
@@ -501,35 +507,14 @@ export default function ReportesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center text-xs hidden xl:table-cell">
-                      {formatDate(item.primerAjuste)}
-                    </TableCell>
-                    <TableCell className="text-center text-xs hidden xl:table-cell">
                       <div className="flex flex-col items-center gap-1">
                         {formatDate(item.ultimoAjuste)}
                         {item.sinAjusteAnual && (
                           <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">
-                            +1 año
+                            Solo 2025
                           </Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {(() => {
-                        const dias = Math.floor((new Date(item.ultimoAjuste).getTime() - new Date(item.primerAjuste).getTime()) / (1000 * 60 * 60 * 24));
-                        if (dias === 0 || item.sinAjusteAnual) {
-                          return (
-                            <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300" title="Sin ajuste hace más de 1 año">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              1A
-                            </Badge>
-                          );
-                        }
-                        return (
-                          <Badge variant={dias > 180 ? "destructive" : "secondary"}>
-                            {dias}
-                          </Badge>
-                        );
-                      })()}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">

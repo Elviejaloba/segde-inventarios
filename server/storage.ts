@@ -171,67 +171,110 @@ export class PostgreSQLStorage implements IStorage {
 
   async getAnalisisValorizado(sucursal?: string): Promise<any> {
     try {
-      // Obtener ajustes con precio promedio de ventas
+      // Análisis valorizado agrupando por código base (sin sufijo de color 01-32)
+      // Lógica: TI400I 01 al TI400I 32 son el mismo producto, se consolidan
       let query = `
-        WITH ajustes_con_precio AS (
+        WITH codigo_base AS (
+          -- Extraer código base removiendo el sufijo de color (últimos 2 dígitos)
           SELECT 
             a."Sucursal",
-            a."Codigo",
+            a."Codigo" as codigo_original,
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
             a."Articulo",
             a."FechaMovimiento",
             a."TipoMovimiento",
             a."Diferencia",
-            COALESCE(v.precio_promedio, 0) as precio_unitario,
-            ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0) as valor_ajuste
+            EXTRACT(YEAR FROM a."FechaMovimiento") as anio
           FROM ajustes_sucursales a
-          LEFT JOIN (
-            SELECT "Sucursal", "Codigo", AVG("PrecioConIVA") as precio_promedio
-            FROM ventas_sucursales
-            GROUP BY "Sucursal", "Codigo"
-          ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
           WHERE a."FechaMovimiento" IS NOT NULL
-            AND a."FechaMovimiento" >= '2026-01-01'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
         ),
-        resumen_por_codigo AS (
+        ventas_base AS (
+          -- Ventas agrupadas por código base
           SELECT 
             "Sucursal",
-            "Codigo",
-            "Articulo",
-            COUNT(*) as total_ajustes,
-            SUM(ABS("Diferencia")) as total_unidades,
-            SUM(valor_ajuste) as total_valorizado,
-            MIN("FechaMovimiento") as primer_ajuste,
-            MAX("FechaMovimiento") as ultimo_ajuste,
-            precio_unitario
-          FROM ajustes_con_precio
-          GROUP BY "Sucursal", "Codigo", "Articulo", precio_unitario
-        ),
-        ventas_totales AS (
-          SELECT 
-            "Sucursal",
-            "Codigo",
+            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
             SUM("CantidadVenta") as total_vendido,
-            SUM("ImporteConIVA") as total_venta_valorizada
+            SUM("ImporteConIVA") as total_venta_valorizada,
+            AVG("PrecioConIVA") as precio_promedio
           FROM ventas_sucursales
           ${sucursal ? 'WHERE "Sucursal" = $1' : ''}
-          GROUP BY "Sucursal", "Codigo"
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+        ),
+        ajustes_2025 AS (
+          -- Último ajuste de 2025 por código base
+          SELECT DISTINCT ON ("Sucursal", codigo_base)
+            "Sucursal",
+            codigo_base,
+            "FechaMovimiento" as fecha_ajuste_2025,
+            SUM("Diferencia") OVER (PARTITION BY "Sucursal", codigo_base) as diferencia_2025
+          FROM codigo_base
+          WHERE anio = 2025
+          ORDER BY "Sucursal", codigo_base, "FechaMovimiento" DESC
+        ),
+        ajustes_2026 AS (
+          -- Ajustes de 2026 (vigente) por código base
+          SELECT 
+            "Sucursal",
+            codigo_base,
+            MAX("FechaMovimiento") as fecha_ajuste_2026,
+            SUM("Diferencia") as diferencia_2026,
+            COUNT(*) as cant_ajustes_2026
+          FROM codigo_base
+          WHERE anio = 2026
+          GROUP BY "Sucursal", codigo_base
+        ),
+        consolidado AS (
+          -- Consolidar ajustes históricos + vigentes
+          SELECT 
+            COALESCE(a25."Sucursal", a26."Sucursal") as "Sucursal",
+            COALESCE(a25.codigo_base, a26.codigo_base) as codigo_base,
+            a25.fecha_ajuste_2025,
+            COALESCE(a25.diferencia_2025, 0) as diferencia_2025,
+            a26.fecha_ajuste_2026,
+            COALESCE(a26.diferencia_2026, 0) as diferencia_2026,
+            COALESCE(a26.cant_ajustes_2026, 0) as total_ajustes,
+            ABS(COALESCE(a25.diferencia_2025, 0)) + ABS(COALESCE(a26.diferencia_2026, 0)) as diferencia_consolidada
+          FROM ajustes_2025 a25
+          FULL OUTER JOIN ajustes_2026 a26 
+            ON a25."Sucursal" = a26."Sucursal" AND a25.codigo_base = a26.codigo_base
+        ),
+        articulo_desc AS (
+          -- Obtener descripción del artículo
+          SELECT DISTINCT ON ("Sucursal", codigo_base)
+            "Sucursal",
+            codigo_base,
+            "Articulo"
+          FROM codigo_base
+          ORDER BY "Sucursal", codigo_base, "FechaMovimiento" DESC
         )
         SELECT 
-          r.*,
-          COALESCE(vt.total_vendido, 0) as total_vendido,
-          COALESCE(vt.total_venta_valorizada, 0) as total_venta_valorizada,
+          c."Sucursal",
+          c.codigo_base as "Codigo",
+          COALESCE(ad."Articulo", c.codigo_base) as "Articulo",
+          c.total_ajustes,
+          c.diferencia_consolidada as total_unidades,
+          COALESCE(v.precio_promedio, 0) as precio_unitario,
+          c.diferencia_consolidada * COALESCE(v.precio_promedio, 0) as total_valorizado,
+          c.fecha_ajuste_2025 as primer_ajuste,
+          COALESCE(c.fecha_ajuste_2026, c.fecha_ajuste_2025) as ultimo_ajuste,
+          COALESCE(v.total_vendido, 0) as total_vendido,
+          COALESCE(v.total_venta_valorizada, 0) as total_venta_valorizada,
           CASE 
-            WHEN COALESCE(vt.total_venta_valorizada, 0) > 0 
-            THEN ROUND((r.total_valorizado / vt.total_venta_valorizada * 100)::numeric, 2)
+            WHEN COALESCE(v.total_venta_valorizada, 0) > 0 
+            THEN ROUND((c.diferencia_consolidada * COALESCE(v.precio_promedio, 0) / v.total_venta_valorizada * 100)::numeric, 2)
             ELSE 0 
           END as porcentaje_perdida,
           CASE 
-            WHEN r.ultimo_ajuste < CURRENT_DATE - INTERVAL '1 year' THEN true
+            WHEN c.fecha_ajuste_2026 IS NULL THEN true
             ELSE false
-          END as sin_ajuste_anual
-        FROM resumen_por_codigo r
-        LEFT JOIN ventas_totales vt ON r."Sucursal" = vt."Sucursal" AND r."Codigo" = vt."Codigo"
+          END as sin_ajuste_anual,
+          c.diferencia_2025,
+          c.diferencia_2026
+        FROM consolidado c
+        LEFT JOIN ventas_base v ON c."Sucursal" = v."Sucursal" AND c.codigo_base = v.codigo_base
+        LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
+        WHERE c.diferencia_consolidada > 0
         ORDER BY total_valorizado DESC
         LIMIT 500
       `;
@@ -239,34 +282,47 @@ export class PostgreSQLStorage implements IStorage {
       const params = sucursal ? [sucursal] : [];
       const result = await sql(query, params);
       
-      // Resumen general - con ventas pre-agregadas para evitar duplicados
+      // Resumen general - agrupando por código base
       const resumenQuery = `
-        WITH ventas_agregadas AS (
-          SELECT "Sucursal", "Codigo", 
+        WITH ventas_base AS (
+          SELECT 
+            "Sucursal",
+            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
             AVG("PrecioConIVA") as precio_promedio,
             SUM("ImporteConIVA") as total_importe
           FROM ventas_sucursales
-          GROUP BY "Sucursal", "Codigo"
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+        ),
+        ajustes_base AS (
+          SELECT 
+            a."Sucursal",
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            SUM(ABS(a."Diferencia")) as total_diferencia
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', ''))
         ),
         ajustes_por_sucursal AS (
           SELECT 
-            a."Sucursal",
-            COUNT(DISTINCT a."Codigo") as articulos_con_ajuste,
-            SUM(ABS(a."Diferencia")) as total_unidades_ajustadas,
-            SUM(ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0)) as total_valorizado
-          FROM ajustes_sucursales a
-          LEFT JOIN ventas_agregadas v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
-          WHERE a."FechaMovimiento" IS NOT NULL
-            AND a."FechaMovimiento" >= '2026-01-01'
-          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-          GROUP BY a."Sucursal"
+            ab."Sucursal",
+            COUNT(DISTINCT ab.codigo_base) as articulos_con_ajuste,
+            SUM(ab.total_diferencia) as total_unidades_ajustadas,
+            SUM(ab.total_diferencia * COALESCE(vb.precio_promedio, 0)) as total_valorizado
+          FROM ajustes_base ab
+          LEFT JOIN ventas_base vb ON ab."Sucursal" = vb."Sucursal" AND ab.codigo_base = vb.codigo_base
+          GROUP BY ab."Sucursal"
+        ),
+        codigos_con_ajuste AS (
+          SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base
+          FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL
         ),
         ventas_por_sucursal AS (
-          SELECT "Sucursal", SUM(total_importe) as total_ventas
-          FROM ventas_agregadas
-          WHERE "Codigo" IN (SELECT DISTINCT "Codigo" FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "FechaMovimiento" >= '2026-01-01')
-          ${sucursal ? 'AND "Sucursal" = $1' : ''}
-          GROUP BY "Sucursal"
+          SELECT vb."Sucursal", SUM(vb.total_importe) as total_ventas
+          FROM ventas_base vb
+          INNER JOIN codigos_con_ajuste ca ON vb."Sucursal" = ca."Sucursal" AND vb.codigo_base = ca.codigo_base
+          ${sucursal ? 'WHERE vb."Sucursal" = $1' : ''}
+          GROUP BY vb."Sucursal"
         )
         SELECT 
           a.*, 
@@ -278,51 +334,40 @@ export class PostgreSQLStorage implements IStorage {
       
       const resumen = await sql(resumenQuery, params);
       
-      // Totales globales (sin límite de 500)
+      // Totales globales (sin límite de 500) - agrupando por código base
       const totalesQuery = `
-        WITH ajustes_con_precio AS (
-          SELECT 
-            a.*,
-            COALESCE(v.precio_promedio, 0) as precio_unitario,
-            ABS(a."Diferencia") * COALESCE(v.precio_promedio, 0) as valor_ajuste
-          FROM ajustes_sucursales a
-          LEFT JOIN (
-            SELECT "Sucursal", "Codigo", AVG("PrecioConIVA") as precio_promedio
-            FROM ventas_sucursales
-            GROUP BY "Sucursal", "Codigo"
-          ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
-          WHERE a."FechaMovimiento" IS NOT NULL
-            AND a."FechaMovimiento" >= '2026-01-01'
-          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-        ),
-        resumen_por_codigo AS (
+        WITH ventas_base AS (
           SELECT 
             "Sucursal",
-            "Codigo",
-            SUM(valor_ajuste) as total_valorizado
-          FROM ajustes_con_precio
-          GROUP BY "Sucursal", "Codigo"
-        ),
-        ventas_totales AS (
-          SELECT 
-            "Sucursal",
-            "Codigo",
-            SUM("ImporteConIVA") as total_venta_valorizada
+            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            AVG("PrecioConIVA") as precio_promedio,
+            SUM("ImporteConIVA") as total_importe
           FROM ventas_sucursales
-          ${sucursal ? 'WHERE "Sucursal" = $1' : ''}
-          GROUP BY "Sucursal", "Codigo"
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+        ),
+        ajustes_base AS (
+          SELECT 
+            a."Sucursal",
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            SUM(ABS(a."Diferencia")) as total_diferencia
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', ''))
         ),
         con_porcentaje AS (
           SELECT 
-            r.*,
-            COALESCE(vt.total_venta_valorizada, 0) as total_venta_valorizada,
+            ab."Sucursal",
+            ab.codigo_base,
+            ab.total_diferencia * COALESCE(vb.precio_promedio, 0) as total_valorizado,
+            COALESCE(vb.total_importe, 0) as total_venta_valorizada,
             CASE 
-              WHEN COALESCE(vt.total_venta_valorizada, 0) > 0 
-              THEN (r.total_valorizado / vt.total_venta_valorizada * 100)
+              WHEN COALESCE(vb.total_importe, 0) > 0 
+              THEN (ab.total_diferencia * COALESCE(vb.precio_promedio, 0) / vb.total_importe * 100)
               ELSE 0 
             END as porcentaje_perdida
-          FROM resumen_por_codigo r
-          LEFT JOIN ventas_totales vt ON r."Sucursal" = vt."Sucursal" AND r."Codigo" = vt."Codigo"
+          FROM ajustes_base ab
+          LEFT JOIN ventas_base vb ON ab."Sucursal" = vb."Sucursal" AND ab.codigo_base = vb.codigo_base
         )
         SELECT 
           COUNT(*) as total_articulos,
@@ -346,7 +391,9 @@ export class PostgreSQLStorage implements IStorage {
           totalVentaValorizada: parseFloat(row.total_venta_valorizada),
           porcentajePerdida: parseFloat(row.porcentaje_perdida),
           alertaPerdida: parseFloat(row.porcentaje_perdida) > 3,
-          sinAjusteAnual: row.sin_ajuste_anual === true || row.sin_ajuste_anual === 't'
+          sinAjusteAnual: row.sin_ajuste_anual === true || row.sin_ajuste_anual === 't',
+          diferencia2025: parseFloat(row.diferencia_2025 || 0),
+          diferencia2026: parseFloat(row.diferencia_2026 || 0)
         })),
         resumen: resumen.map((row: any) => ({
           sucursal: row.Sucursal,
