@@ -269,7 +269,7 @@ export class PostgreSQLStorage implements IStorage {
           COALESCE(vp.total_venta_valorizada, 0) as total_venta_valorizada,
           CASE 
             WHEN COALESCE(vp.total_venta_valorizada, 0) > 0 
-            THEN ROUND((c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) / vp.total_venta_valorizada * 100)::numeric, 2)
+            THEN LEAST(ROUND((c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) / vp.total_venta_valorizada * 100)::numeric, 2), 100)
             ELSE 0 
           END as porcentaje_perdida,
           CASE 
