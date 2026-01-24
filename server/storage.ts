@@ -173,6 +173,7 @@ export class PostgreSQLStorage implements IStorage {
     try {
       // Análisis valorizado agrupando por código base (sin sufijo de color 01-32)
       // Lógica: TI400I 01 al TI400I 32 son el mismo producto, se consolidan
+      // % Pérdida = Valorizado Pérdida / Total Vendido en el período desde último ajuste
       let query = `
         WITH codigo_base AS (
           -- Extraer código base removiendo el sufijo de color (últimos 2 dígitos)
@@ -188,18 +189,6 @@ export class PostgreSQLStorage implements IStorage {
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-        ),
-        ventas_base AS (
-          -- Ventas agrupadas por código base
-          SELECT 
-            "Sucursal",
-            TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
-            SUM("CantidadVenta") as total_vendido,
-            SUM("ImporteConIVA") as total_venta_valorizada,
-            AVG("PrecioConIVA") as precio_promedio
-          FROM ventas_sucursales
-          ${sucursal ? 'WHERE "Sucursal" = $1' : ''}
-          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
         ),
         ajustes_2025 AS (
           -- Último ajuste de 2025 por código base
@@ -234,7 +223,9 @@ export class PostgreSQLStorage implements IStorage {
             a26.fecha_ajuste_2026,
             COALESCE(a26.diferencia_2026, 0) as diferencia_2026,
             COALESCE(a26.cant_ajustes_2026, 0) as total_ajustes,
-            ABS(COALESCE(a25.diferencia_2025, 0)) + ABS(COALESCE(a26.diferencia_2026, 0)) as diferencia_consolidada
+            ABS(COALESCE(a25.diferencia_2025, 0)) + ABS(COALESCE(a26.diferencia_2026, 0)) as diferencia_consolidada,
+            -- Fecha desde la cual contar ventas (último ajuste)
+            COALESCE(a26.fecha_ajuste_2026, a25.fecha_ajuste_2025) as fecha_ultimo_ajuste
           FROM ajustes_2025 a25
           FULL OUTER JOIN ajustes_2026 a26 
             ON a25."Sucursal" = a26."Sucursal" AND a25.codigo_base = a26.codigo_base
@@ -247,6 +238,22 @@ export class PostgreSQLStorage implements IStorage {
             "Articulo"
           FROM codigo_base
           ORDER BY "Sucursal", codigo_base, "FechaMovimiento" DESC
+        ),
+        ventas_periodo AS (
+          -- Ventas desde el último ajuste hasta hoy, agrupadas por código base
+          SELECT 
+            v."Sucursal",
+            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            SUM(v."CantidadVenta") as total_vendido,
+            SUM(v."ImporteConIVA") as total_venta_valorizada,
+            AVG(v."PrecioConIVA") as precio_promedio
+          FROM ventas_sucursales v
+          INNER JOIN consolidado c 
+            ON v."Sucursal" = c."Sucursal" 
+            AND TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) = c.codigo_base
+          WHERE v."Fecha" >= c.fecha_ultimo_ajuste
+          ${sucursal ? 'AND v."Sucursal" = $1' : ''}
+          GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
         )
         SELECT 
           c."Sucursal",
@@ -254,15 +261,15 @@ export class PostgreSQLStorage implements IStorage {
           COALESCE(ad."Articulo", c.codigo_base) as "Articulo",
           c.total_ajustes,
           c.diferencia_consolidada as total_unidades,
-          COALESCE(v.precio_promedio, 0) as precio_unitario,
-          c.diferencia_consolidada * COALESCE(v.precio_promedio, 0) as total_valorizado,
+          COALESCE(vp.precio_promedio, 0) as precio_unitario,
+          c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) as total_valorizado,
           c.fecha_ajuste_2025 as primer_ajuste,
-          COALESCE(c.fecha_ajuste_2026, c.fecha_ajuste_2025) as ultimo_ajuste,
-          COALESCE(v.total_vendido, 0) as total_vendido,
-          COALESCE(v.total_venta_valorizada, 0) as total_venta_valorizada,
+          c.fecha_ultimo_ajuste as ultimo_ajuste,
+          COALESCE(vp.total_vendido, 0) as total_vendido,
+          COALESCE(vp.total_venta_valorizada, 0) as total_venta_valorizada,
           CASE 
-            WHEN COALESCE(v.total_venta_valorizada, 0) > 0 
-            THEN ROUND((c.diferencia_consolidada * COALESCE(v.precio_promedio, 0) / v.total_venta_valorizada * 100)::numeric, 2)
+            WHEN COALESCE(vp.total_venta_valorizada, 0) > 0 
+            THEN ROUND((c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) / vp.total_venta_valorizada * 100)::numeric, 2)
             ELSE 0 
           END as porcentaje_perdida,
           CASE 
@@ -272,7 +279,7 @@ export class PostgreSQLStorage implements IStorage {
           c.diferencia_2025,
           c.diferencia_2026
         FROM consolidado c
-        LEFT JOIN ventas_base v ON c."Sucursal" = v."Sucursal" AND c.codigo_base = v.codigo_base
+        LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
         WHERE c.diferencia_consolidada > 0
         ORDER BY total_valorizado DESC
