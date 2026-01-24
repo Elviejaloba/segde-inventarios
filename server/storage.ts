@@ -409,7 +409,7 @@ export class PostgreSQLStorage implements IStorage {
           totalValorizado: parseFloat(row.total_valorizado),
           totalVentas: parseFloat(row.total_ventas),
           porcentajePerdida: parseFloat(row.total_ventas) > 0 
-            ? parseFloat((parseFloat(row.total_valorizado) / parseFloat(row.total_ventas) * 100).toFixed(2))
+            ? Math.min(parseFloat((parseFloat(row.total_valorizado) / parseFloat(row.total_ventas) * 100).toFixed(2)), 100)
             : 0
         })),
         totales: {
