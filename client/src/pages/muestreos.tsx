@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -56,13 +56,13 @@ const BRANCHES = [
   "Ctro. de Distribucion"
 ];
 
-function extractSucursalFromName(fileName: string): string | null {
+function extractSucursalFromName(fileName: string): string | undefined {
   for (const branch of BRANCHES) {
     if (fileName.includes(`[${branch}]`)) {
       return branch;
     }
   }
-  return null;
+  return undefined;
 }
 
 export default function MuestreosPage() {
@@ -72,6 +72,8 @@ export default function MuestreosPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterBranch, setFilterBranch] = useState<string>("");
   const [fileStatuses, setFileStatuses] = useState<Record<string, FileStatus>>(getFileStatuses);
+  const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
+  const [cachedLinks, setCachedLinks] = useState<Record<string, string>>({});
 
   const cycleStatus = (fileId: string) => {
     const currentStatus = fileStatuses[fileId] || "no_visto";
@@ -79,6 +81,39 @@ export default function MuestreosPage() {
     setFileStatus(fileId, nextStatus);
     setFileStatuses(prev => ({ ...prev, [fileId]: nextStatus }));
   };
+
+  const openFileLink = useCallback(async (file: DropboxFile, action: 'view' | 'download') => {
+    if (file.sharedLink || cachedLinks[file.id]) {
+      const link = file.sharedLink || cachedLinks[file.id];
+      if (action === 'download') {
+        window.open(link.replace('?raw=1', '?dl=1'), '_blank');
+      } else {
+        window.open(link, '_blank');
+      }
+      return;
+    }
+
+    setLoadingLinks(prev => ({ ...prev, [file.id]: true }));
+    try {
+      const response = await fetch(`/api/muestreos/${file.id}/link?path=${encodeURIComponent(file.path)}`);
+      if (!response.ok) throw new Error('Failed to get link');
+      const { link } = await response.json();
+      setCachedLinks(prev => ({ ...prev, [file.id]: link }));
+      if (action === 'download') {
+        window.open(link.replace('?raw=1', '?dl=1'), '_blank');
+      } else {
+        window.open(link, '_blank');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo obtener el enlace del archivo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingLinks(prev => ({ ...prev, [file.id]: false }));
+    }
+  }, [cachedLinks, toast]);
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
@@ -388,44 +423,46 @@ export default function MuestreosPage() {
                             <p>Clic para cambiar estado del archivo</p>
                           </TooltipContent>
                         </Tooltip>
-                        {file.sharedLink && (
-                          <>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  asChild
-                                  data-testid={`button-view-${file.id}`}
-                                >
-                                  <a href={file.sharedLink} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Ver archivo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  asChild
-                                  data-testid={`button-download-${file.id}`}
-                                >
-                                  <a href={file.sharedLink.replace('?raw=1', '?dl=1')} download>
-                                    <Download className="h-3 w-3" />
-                                  </a>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Descargar archivo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </>
-                        )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openFileLink(file, 'view')}
+                              disabled={loadingLinks[file.id]}
+                              data-testid={`button-view-${file.id}`}
+                            >
+                              {loadingLinks[file.id] ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <ExternalLink className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ver archivo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openFileLink(file, 'download')}
+                              disabled={loadingLinks[file.id]}
+                              data-testid={`button-download-${file.id}`}
+                            >
+                              {loadingLinks[file.id] ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Download className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Descargar archivo</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   );
