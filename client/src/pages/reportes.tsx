@@ -265,10 +265,10 @@ export default function ReportesPage() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3" data-testid="reportes-filtros">
         <div className="flex gap-2 w-full sm:w-auto">
           <Select value={selectedSucursal || "todas"} onValueChange={(v) => setSelectedSucursal(v === "todas" ? "" : v)}>
-            <SelectTrigger className="flex-1 sm:w-[180px]">
+            <SelectTrigger className="flex-1 sm:w-[180px]" data-testid="select-sucursal">
               <Building2 className="h-4 w-4 mr-2 hidden sm:block" />
               <SelectValue placeholder="Sucursal" />
             </SelectTrigger>
@@ -308,9 +308,9 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4" data-testid="reportes-kpis">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
+          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800" data-testid="kpi-perdida">
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
@@ -330,7 +330,7 @@ export default function ReportesPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800" data-testid="kpi-ventas">
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
@@ -350,7 +350,7 @@ export default function ReportesPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800" data-testid="kpi-alertas">
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
@@ -369,7 +369,7 @@ export default function ReportesPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800" data-testid="kpi-articulos">
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
@@ -390,7 +390,7 @@ export default function ReportesPage() {
       </div>
 
       {analisis?.resumen && analisis.resumen.length > 0 && (
-        <Card>
+        <Card data-testid="tabla-resumen">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -437,7 +437,7 @@ export default function ReportesPage() {
         </Card>
       )}
 
-      <Card>
+      <Card data-testid="tabla-detalle">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <TrendingDown className="h-5 w-5" />

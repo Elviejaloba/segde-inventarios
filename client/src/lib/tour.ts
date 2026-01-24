@@ -120,41 +120,96 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     {
       element: '[data-testid="nav-reportes"]',
       popover: {
-        title: 'Reportes Valorizados',
-        description: 'Estás en la sección de análisis económico de ajustes de inventario.',
+        title: 'Bienvenido a Reportes Valorizados',
+        description: 'Aquí analizamos cuánto dinero representa cada ajuste de inventario. Te guiaremos paso a paso para que entiendas cómo interpretar esta información.',
         side: 'bottom',
         align: 'center'
       }
     },
     {
+      element: '[data-testid="reportes-filtros"]',
       popover: {
-        title: 'Filtros',
-        description: 'Usa los selectores para filtrar por sucursal, ordenar por valor o buscar artículos específicos.',
+        title: 'Filtros de Búsqueda',
+        description: 'Selecciona una sucursal específica o déjalo en "Todas" para ver el consolidado. Puedes ordenar por mayor valor de pérdida, mayor porcentaje o más unidades. El buscador te ayuda a encontrar un artículo específico por código.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: '[data-testid="kpi-perdida"]',
+      popover: {
+        title: 'Pérdida Total Valorizada',
+        description: 'Este es el monto total en pesos de mercadería faltante. Se calcula multiplicando las unidades faltantes por su precio de venta. Un número alto aquí indica que hay mucho dinero "perdido" en ajustes.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: '[data-testid="kpi-ventas"]',
+      popover: {
+        title: 'Total Ventas del Período',
+        description: 'Este monto representa lo que se vendió de estos mismos artículos desde su último ajuste. Lo usamos para calcular el porcentaje de pérdida: dividimos la pérdida entre las ventas.',
         side: 'bottom',
         align: 'center'
       }
     },
     {
+      element: '[data-testid="kpi-alertas"]',
       popover: {
-        title: 'Tarjetas de Resumen',
-        description: 'Las 4 tarjetas muestran: Pérdida total valorizada, Ventas del período, Alertas críticas (>3% pérdida) y Total de artículos analizados.',
+        title: 'Alertas Críticas (más del 3%)',
+        description: 'Estos son los artículos con pérdida superior al 3% de sus ventas. Son los que necesitan atención urgente porque representan un problema significativo. Aparecen resaltados en rojo en la tabla.',
         side: 'bottom',
         align: 'center'
       }
     },
     {
+      element: '[data-testid="kpi-articulos"]',
       popover: {
-        title: 'Tabla de Detalle',
-        description: 'Cada fila muestra un artículo con su código, cantidad de ajustes, pérdida valorizada, ventas y % de pérdida. Los artículos en rojo tienen pérdida crítica.',
+        title: 'Artículos Analizados',
+        description: 'El total de códigos de productos que tienen algún ajuste registrado. Este número te da una idea de la magnitud del análisis.',
+        side: 'bottom',
+        align: 'end'
+      }
+    },
+    {
+      element: '[data-testid="tabla-resumen"]',
+      popover: {
+        title: 'Resumen por Sucursal',
+        description: 'Esta tabla compara el rendimiento de cada sucursal. Puedes ver cuántos artículos tienen ajustes, la pérdida total y el porcentaje. Haz clic en una fila para filtrar y ver solo esa sucursal.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-testid="tabla-detalle"]',
+      popover: {
+        title: 'Detalle de Cada Artículo',
+        description: 'Aquí ves cada producto con ajustes. Las columnas Dif.2025 (naranja) y Dif.2026 (azul) muestran las unidades faltantes por año. "Pérdida $" es el valor en pesos. "% Pérdida" es la fórmula: (Pérdida ÷ Ventas del período) × 100, con máximo 100%.',
         side: 'top',
         align: 'center'
       }
     },
     {
       popover: {
-        title: 'Acciones por Artículo',
-        description: 'El ícono del ojo permite ver el historial completo de ajustes. El ícono de documento busca muestreos relacionados.',
+        title: 'Cómo Interpretar los Datos',
+        description: 'Un % de pérdida alto (rojo parpadeante) significa que de lo que se vende, un porcentaje importante se pierde. Por ejemplo: 5% significa que de cada $100 vendidos, $5 se pierden en ajustes. Prioriza investigar los de mayor valor y mayor porcentaje.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Acciones Disponibles',
+        description: 'El botón del ojo te muestra el historial completo de ajustes de ese artículo para ver su evolución. El botón de documento busca los muestreos relacionados para que puedas revisar la evidencia física.',
         side: 'left',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: '¡Listo para Analizar!',
+        description: 'Ya conoces todas las herramientas. Recuerda: enfócate primero en los artículos con alertas rojas (>3%) y con mayor valor de pérdida. Estos son los que más impactan al negocio.',
+        side: 'top',
         align: 'center'
       }
     }
