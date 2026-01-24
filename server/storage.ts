@@ -179,7 +179,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             a."Sucursal",
             a."Codigo" as codigo_original,
-            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             a."Articulo",
             a."FechaMovimiento",
             a."TipoMovimiento",
@@ -193,13 +193,13 @@ export class PostgreSQLStorage implements IStorage {
           -- Ventas agrupadas por código base
           SELECT 
             "Sucursal",
-            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             SUM("CantidadVenta") as total_vendido,
             SUM("ImporteConIVA") as total_venta_valorizada,
             AVG("PrecioConIVA") as precio_promedio
           FROM ventas_sucursales
           ${sucursal ? 'WHERE "Sucursal" = $1' : ''}
-          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
         ),
         ajustes_2025 AS (
           -- Último ajuste de 2025 por código base
@@ -287,21 +287,21 @@ export class PostgreSQLStorage implements IStorage {
         WITH ventas_base AS (
           SELECT 
             "Sucursal",
-            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             AVG("PrecioConIVA") as precio_promedio,
             SUM("ImporteConIVA") as total_importe
           FROM ventas_sucursales
-          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
         ),
         ajustes_base AS (
           SELECT 
             a."Sucursal",
-            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             SUM(ABS(a."Diferencia")) as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', ''))
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
         ),
         ajustes_por_sucursal AS (
           SELECT 
@@ -314,7 +314,7 @@ export class PostgreSQLStorage implements IStorage {
           GROUP BY ab."Sucursal"
         ),
         codigos_con_ajuste AS (
-          SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base
+          SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
           FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL
         ),
         ventas_por_sucursal AS (
@@ -339,21 +339,21 @@ export class PostgreSQLStorage implements IStorage {
         WITH ventas_base AS (
           SELECT 
             "Sucursal",
-            TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             AVG("PrecioConIVA") as precio_promedio,
             SUM("ImporteConIVA") as total_importe
           FROM ventas_sucursales
-          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s+\\d{2}$', ''))
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
         ),
         ajustes_base AS (
           SELECT 
             a."Sucursal",
-            TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', '')) as codigo_base,
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             SUM(ABS(a."Diferencia")) as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s+\\d{2}$', ''))
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
         ),
         con_porcentaje AS (
           SELECT 
