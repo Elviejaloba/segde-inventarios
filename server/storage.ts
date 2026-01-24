@@ -426,6 +426,7 @@ export class PostgreSQLStorage implements IStorage {
   async getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any> {
     try {
       // Historial de ajustes para un código específico
+      // Busca el código exacto O variantes con sufijo de color (01-32)
       let query = `
         WITH ajustes_ordenados AS (
           SELECT 
@@ -439,7 +440,7 @@ export class PostgreSQLStorage implements IStorage {
             FROM ventas_sucursales
             GROUP BY "Sucursal", "Codigo"
           ) v ON a."Sucursal" = v."Sucursal" AND a."Codigo" = v."Codigo"
-          WHERE a."Codigo" = $1
+          WHERE (a."Codigo" = $1 OR a."Codigo" LIKE $1 || '%')
           ${sucursal ? 'AND a."Sucursal" = $2' : ''}
         )
         SELECT 

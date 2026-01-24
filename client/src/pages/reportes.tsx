@@ -615,8 +615,18 @@ export default function ReportesPage() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No hay historial de ajustes para este código
+            <div className="text-center py-8 space-y-3">
+              <div className="text-muted-foreground">
+                No se encontraron ajustes para el código <span className="font-mono font-bold">{selectedCodigo}</span>
+              </div>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg max-w-md mx-auto">
+                <p className="font-medium mb-1">Posibles razones:</p>
+                <ul className="list-disc list-inside text-left space-y-1">
+                  <li>El código fue dado de baja o cambió de nombre</li>
+                  <li>Los ajustes fueron registrados con un código diferente</li>
+                  <li>Este artículo no tiene ajustes en el sistema actual</li>
+                </ul>
+              </div>
             </div>
           )}
         </DialogContent>
