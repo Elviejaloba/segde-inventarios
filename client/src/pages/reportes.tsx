@@ -557,17 +557,47 @@ export default function ReportesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Sucursal</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Diferencia</TableHead>
                     <TableHead className="text-right">Valor Ajuste</TableHead>
-                    <TableHead className="text-right">Ventas entre ajustes</TableHead>
+                    <TableHead className="text-right">Ventas período</TableHead>
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {historial.map((item) => (
+                  {historial.map((item) => {
+                    const colorMatch = item.codigo.match(/\s+(\d{2})$/);
+                    const colorCode = colorMatch ? colorMatch[1] : null;
+                    const colorNum = colorCode ? parseInt(colorCode) : 0;
+                    const colorStyle = colorNum > 0 ? {
+                      backgroundColor: `hsl(${(colorNum * 25) % 360}, 70%, 90%)`,
+                      color: `hsl(${(colorNum * 25) % 360}, 70%, 30%)`,
+                      border: `1px solid hsl(${(colorNum * 25) % 360}, 70%, 70%)`
+                    } : {};
+                    
+                    return (
                     <TableRow key={item.id} className={item.porcentajePerdida > 3 ? "bg-red-50 dark:bg-red-900/10" : ""}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs">{item.codigo.replace(/\s+\d{2}$/, '')}</span>
+                          {colorCode && (
+                            <span 
+                              className="px-2 py-0.5 rounded-full text-xs font-bold"
+                              style={colorStyle}
+                            >
+                              {colorCode}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {item.sucursal}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{formatDate(item.fechaMovimiento)}</span>
@@ -610,7 +640,7 @@ export default function ReportesPage() {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </div>
