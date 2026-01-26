@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, CheckCheck } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<FileStatus, { label: string; color: string; bgColor:
   no_visto: { label: "No visto", color: "text-gray-500", bgColor: "bg-gray-100 dark:bg-gray-800", icon: EyeOff },
   visto: { label: "Visto", color: "text-blue-500", bgColor: "bg-blue-100 dark:bg-blue-900/30", icon: Eye },
   analizado: { label: "Analizado", color: "text-green-500", bgColor: "bg-green-100 dark:bg-green-900/30", icon: CheckCircle2 },
-  sin_diferencias: { label: "Sin diferencias", color: "text-emerald-600", bgColor: "bg-emerald-100 dark:bg-emerald-900/30", icon: CheckCheck },
+  sin_diferencias: { label: "Sin diferencias", color: "text-emerald-600", bgColor: "bg-emerald-100 dark:bg-emerald-900/30", icon: ThumbsUp },
   revisar: { label: "Revisar", color: "text-red-600", bgColor: "bg-red-100 dark:bg-red-900/30", icon: AlertTriangle },
 };
 
