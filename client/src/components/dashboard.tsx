@@ -123,65 +123,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
         <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        {selectedView === 'ranking' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-              <LineChart className="h-6 w-6" />
-              Ranking de Sucursales
-            </h2>
-            <p className="text-muted-foreground">
-              Seleccione su sucursal para ver los articulos solicitados:
-            </p>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-full sm:w-auto"
-          >
-            <Button
-              variant={selectedView === 'ranking' ? "default" : "outline"}
-              onClick={() => setSelectedView('ranking')}
-              className="gap-2 w-full sm:w-auto"
-              data-testid="button-ranking"
-            >
-              <Trophy className="h-4 w-4" />
-              Ranking
-            </Button>
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative w-full sm:w-auto"
-          >
-            <Button
-              variant={selectedView === 'reporte' ? "default" : "ghost"}
-              onClick={() => setSelectedView('reporte')}
-              className={`gap-2 relative bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg w-full sm:w-auto ${
-                selectedView === 'reporte' ? 'ring-2 ring-purple-300 ring-offset-2' : ''
-              }`}
-              data-testid="button-reportes"
-            >
-              <FileText className="h-4 w-4" />
-              Reportes
-              <motion.div
-                className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [1, 0.8, 1]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </Button>
-          </motion.div>
+      {selectedView === 'ranking' && (
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            <LineChart className="h-6 w-6" />
+            Ranking de Sucursales
+          </h2>
+          <p className="text-muted-foreground">
+            Seleccione su sucursal para ver los articulos solicitados:
+          </p>
         </div>
-      </div>
+      )}
 
       {selectedView === 'ranking' ? (
         <div className="rounded-md border bg-card overflow-hidden">
