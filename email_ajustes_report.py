@@ -181,6 +181,76 @@ def get_ajustes_por_unidad(dias=30):
         traceback.print_exc()
         return {'UN': {'cantidad_ajustes': 0, 'total_ajustado': 0}, 'MTS': {'cantidad_ajustes': 0, 'total_ajustado': 0}, 'KG': {'cantidad_ajustes': 0, 'total_ajustado': 0}}
 
+def get_resumen_consolidado_por_sucursal():
+    """
+    Obtiene el resumen consolidado por sucursal con desglose de UN, MTS, KG
+    Similar al cuadro mostrado en el dashboard
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        query = """
+        WITH ajustes_base AS (
+            SELECT 
+                a."Sucursal",
+                TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+                SUM(ABS(a."Diferencia")) as total_diferencia,
+                SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'UN' THEN ABS(a."Diferencia") ELSE 0 END) as total_un,
+                SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'MTS' THEN ABS(a."Diferencia") ELSE 0 END) as total_mts,
+                SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'KG' THEN ABS(a."Diferencia") ELSE 0 END) as total_kg
+            FROM ajustes_sucursales a
+            WHERE a."FechaMovimiento" IS NOT NULL
+            GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        ventas_base AS (
+            SELECT 
+                "Sucursal",
+                TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+                SUM("ImporteConIVA") as total_importe,
+                SUM("CantidadVenta") as total_cantidad
+            FROM ventas_sucursales
+            GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
+        ),
+        resumen AS (
+            SELECT 
+                ab."Sucursal",
+                COUNT(DISTINCT ab.codigo_base) as articulos_con_ajuste,
+                SUM(ab.total_un) as total_un,
+                SUM(ab.total_mts) as total_mts,
+                SUM(ab.total_kg) as total_kg,
+                SUM(ab.total_diferencia * COALESCE(vb.total_importe / NULLIF(vb.total_cantidad, 0), 0)) as total_valorizado,
+                COALESCE(SUM(vb.total_importe), 0) as total_ventas
+            FROM ajustes_base ab
+            LEFT JOIN ventas_base vb ON ab."Sucursal" = vb."Sucursal" AND ab.codigo_base = vb.codigo_base
+            GROUP BY ab."Sucursal"
+        )
+        SELECT 
+            "Sucursal",
+            articulos_con_ajuste,
+            total_un,
+            total_mts,
+            total_kg,
+            total_valorizado,
+            total_ventas,
+            CASE WHEN total_ventas > 0 THEN LEAST((total_valorizado / total_ventas * 100), 100) ELSE 0 END as porcentaje_perdida
+        FROM resumen
+        ORDER BY total_valorizado DESC
+        """
+        
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return resultados
+    except Exception as e:
+        print(f"Error obteniendo resumen consolidado: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
 def clasificar_sucursal(perdida_valorizada):
     """Clasifica el estado de la sucursal según pérdida valorizada"""
     perdida = abs(float(perdida_valorizada or 0))
@@ -196,6 +266,7 @@ def generar_html_reporte(dias=30):
     ajustes = get_ajustes_valorizados(dias)
     comprobantes = get_resumen_comprobantes(dias)
     unidades = get_ajustes_por_unidad(dias)
+    resumen_consolidado = get_resumen_consolidado_por_sucursal()
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
     
     # Calcular totales
@@ -244,6 +315,37 @@ def generar_html_reporte(dias=30):
             </td>
             <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:center;font-family:Arial,sans-serif;font-size:14px;">
                 {int(ajuste['articulos_afectados'] or 0)}
+            </td>
+        </tr>
+        """
+    
+    # Filas de tabla consolidada (UN, MTS, KG)
+    filas_consolidado = ""
+    for i, row in enumerate(resumen_consolidado):
+        sucursal_raw = row.get('Sucursal') or row.get('sucursal', 'N/A')
+        sucursal = sucursal_raw.replace('LA TIJERA ', '').replace('SMARTIN', 'SAN MARTIN')
+        articulos = int(row.get('articulos_con_ajuste') or 0)
+        total_un = float(row.get('total_un') or 0)
+        total_mts = float(row.get('total_mts') or 0)
+        total_kg = float(row.get('total_kg') or 0)
+        perdida = float(row.get('total_valorizado') or 0)
+        porcentaje = float(row.get('porcentaje_perdida') or 0)
+        bg = "#ffffff" if i % 2 == 0 else "#f9f9f9"
+        
+        # Color del porcentaje según valor
+        pct_color = "#dc3545" if porcentaje > 5 else "#f59e0b" if porcentaje > 3 else "#10b981"
+        pct_bg = "#fef2f2" if porcentaje > 5 else "#fffbeb" if porcentaje > 3 else "#ecfdf5"
+        
+        filas_consolidado += f"""
+        <tr style="background-color:{bg};">
+            <td style="padding:8px 8px;border-bottom:1px solid #eeeeee;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;">{sucursal}</td>
+            <td style="padding:8px 6px;border-bottom:1px solid #eeeeee;text-align:center;font-family:Arial,sans-serif;font-size:11px;">{articulos}</td>
+            <td style="padding:8px 6px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:#9333ea;font-weight:bold;">{total_un:,.0f}</td>
+            <td style="padding:8px 6px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:#2563eb;font-weight:bold;">{total_mts:,.0f}</td>
+            <td style="padding:8px 6px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:#ea580c;font-weight:bold;">{total_kg:,.2f}</td>
+            <td style="padding:8px 8px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:#dc3545;font-weight:bold;">${perdida:,.0f}</td>
+            <td style="padding:8px 8px;border-bottom:1px solid #eeeeee;text-align:center;">
+                <span style="display:inline-block;padding:3px 8px;background-color:{pct_bg};color:{pct_color};font-family:Arial,sans-serif;font-size:11px;font-weight:bold;border-radius:10px;">{porcentaje:.2f}%</span>
             </td>
         </tr>
         """
@@ -456,11 +558,41 @@ def generar_html_reporte(dias=30):
                         </td>
                     </tr>
                     
-                    <!-- Título tabla -->
+                    <!-- Título tabla consolidada -->
+                    <tr>
+                        <td style="padding:20px 30px 10px;">
+                            <h3 style="font-family:Arial,sans-serif;font-size:16px;color:#333333;margin:0;font-weight:bold;">
+                                📊 Resumen por Sucursal (UN, MTS, KG)
+                            </h3>
+                            <p style="font-family:Arial,sans-serif;font-size:11px;color:#666666;margin:5px 0 0;">
+                                Desglose de unidades ajustadas por tipo de medida
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Tabla consolidada UN/MTS/KG -->
+                    <tr>
+                        <td style="padding:0 30px 25px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #dddddd;">
+                                <tr style="background-color:#374151;">
+                                    <th style="padding:10px 8px;text-align:left;font-family:Arial,sans-serif;font-size:11px;color:#ffffff;font-weight:bold;">Sucursal</th>
+                                    <th style="padding:10px 6px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#ffffff;font-weight:bold;">Arts.</th>
+                                    <th style="padding:10px 6px;text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#a855f7;font-weight:bold;">UN</th>
+                                    <th style="padding:10px 6px;text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#3b82f6;font-weight:bold;">MTS</th>
+                                    <th style="padding:10px 6px;text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#f97316;font-weight:bold;">KG</th>
+                                    <th style="padding:10px 8px;text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#ffffff;font-weight:bold;">Pérdida $</th>
+                                    <th style="padding:10px 8px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#ffffff;font-weight:bold;">%</th>
+                                </tr>
+                                {filas_consolidado}
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Título tabla detalle -->
                     <tr>
                         <td style="padding:0 30px 10px;">
                             <h3 style="font-family:Arial,sans-serif;font-size:16px;color:#333333;margin:0;font-weight:bold;">
-                                📋 Detalle por Sucursal
+                                📋 Detalle por Sucursal (Valorización)
                             </h3>
                         </td>
                     </tr>
