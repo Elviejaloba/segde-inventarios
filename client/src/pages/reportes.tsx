@@ -514,15 +514,31 @@ export default function ReportesPage() {
                 const isDown = variacion < 0;
                 const isNeutral = Math.abs(variacion) < 0.5;
                 
+                const tooltipText = data 
+                  ? `${label}: ${data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'} ajustados en total.\n\n` +
+                    `En 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}.\n\n` +
+                    (isUp ? `↑ Aumento del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (más pérdidas)` : 
+                     isDown ? `↓ Disminución del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (menos pérdidas)` : 
+                     'Sin variación significativa respecto a 2025') +
+                    `\n\n${data.articulos} artículos diferentes afectados.`
+                  : 'Sin datos para esta unidad de medida';
+
                 return (
-                  <div key={unidad} className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border`}>
+                  <div 
+                    key={unidad} 
+                    className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border cursor-help transition-transform hover:scale-[1.02]`}
+                    title={tooltipText}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Package className={`h-4 w-4 ${iconColor}`} />
                         <span className="text-xs font-medium text-muted-foreground">{label}</span>
                       </div>
                       {data && !isNeutral && (
-                        <div className={`flex items-center gap-0.5 text-[10px] font-medium ${isUp ? 'text-red-600' : 'text-green-600'}`}>
+                        <div 
+                          className={`flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded ${isUp ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-green-600 bg-green-100 dark:bg-green-900/30'}`}
+                          title={isUp ? 'Aumentó respecto a 2025 (más pérdidas)' : 'Disminuyó respecto a 2025 (menos pérdidas)'}
+                        >
                           {isUp ? (
                             <TrendingUp className="h-3 w-3" />
                           ) : (
@@ -532,7 +548,10 @@ export default function ReportesPage() {
                         </div>
                       )}
                       {data && isNeutral && (
-                        <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500">
+                        <div 
+                          className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800"
+                          title="Sin variación significativa respecto a 2025"
+                        >
                           <Minus className="h-3 w-3" />
                           <span>0%</span>
                         </div>
@@ -546,7 +565,10 @@ export default function ReportesPage() {
                         {data ? `${data.articulos} artículos` : 'Sin datos'}
                       </span>
                       {data && data.total2025 > 0 && (
-                        <span className="text-[9px] text-muted-foreground">
+                        <span 
+                          className="text-[9px] text-muted-foreground cursor-help"
+                          title={`Total ajustado en el año 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}`}
+                        >
                           2025: {data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                         </span>
                       )}
