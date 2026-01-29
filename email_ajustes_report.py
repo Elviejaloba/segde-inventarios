@@ -228,7 +228,7 @@ def generar_html_reporte(dias=30):
                     <tr>
                         <td style="background-color:{COLORS['header_bg']};padding:20px;text-align:center;">
                             <h1 style="color:#ffffff;margin:0;font-family:Arial,sans-serif;font-size:22px;font-weight:bold;">
-                                REPORTE EJECUTIVO DE AJUSTES
+                                Reporte de ajustes para el directorio
                             </h1>
                             <p style="color:#93c5fd;margin:8px 0 0;font-family:Arial,sans-serif;font-size:13px;">
                                 Seguimiento de Inventario
@@ -437,7 +437,7 @@ def enviar_reporte(destinatarios, dias=30, asunto_personalizado=None):
     
     # Texto plano como fallback
     texto_plano = f"""
-REPORTE EJECUTIVO DE AJUSTES - GRUPO CRISA
+Reporte de ajustes para el directorio - GRUPO CRISA
 Fecha: {fecha}
 Período: Últimos {dias} días
 Valorización: Costo de Reposición
