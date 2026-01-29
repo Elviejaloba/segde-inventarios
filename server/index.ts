@@ -5,9 +5,9 @@ import cors from 'cors';
 
 const app = express();
 
-// Configuración básica
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Configuración básica - Aumentar límite para sincronización
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cors());
 
 // Logging middleware simplificado

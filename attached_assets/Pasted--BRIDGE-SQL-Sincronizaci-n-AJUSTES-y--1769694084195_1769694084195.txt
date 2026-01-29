@@ -1,0 +1,167 @@
+============================================================
+BRIDGE SQL - Sincronización AJUSTES y COSTOS
+============================================================
+Servidor: tangoserver
+Base de datos: crisa_real1
+Destino: https://seguimientodeinv.replit.app
+Intervalo: 300 segundos
+Tamaño de lote: 500 registros
+============================================================
+
+[2026-01-29 10:40:52.138102] Iniciando sincronización...
+  Aviso: No se pudo obtener sync-info: Expecting value: line 1 column 1 (char 0)
+  Estado actual en Replit:
+    - Ajustes: 0
+    - Costos: 0
+  Conectando a Tango...
+
+  [AJUSTES] Consultando...
+    Primera sincronización desde: 01/08/2025
+C:\Users\lreyes\Desktop\REPLIT SEG DE INV\bridge_ajustes_costos.py:261: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df_ajustes = pd.read_sql(query_ajustes, conn)
+    Registros obtenidos: 400397
+    ajustes: Lote 1/801 (500 registros)...
+    Error en lote 1: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 2/801 (500 registros)...
+    Error en lote 2: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 3/801 (500 registros)...
+    Error en lote 3: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 4/801 (500 registros)...
+    Error en lote 4: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 5/801 (500 registros)...
+    Error en lote 5: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 6/801 (500 registros)...
+    Error en lote 6: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 7/801 (500 registros)...
+    Error en lote 7: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 8/801 (500 registros)...
+    Error en lote 8: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 9/801 (500 registros)...
+    Error en lote 9: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 10/801 (500 registros)...
+    Error en lote 10: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 11/801 (500 registros)...
+    Error en lote 11: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 12/801 (500 registros)...
+    Error en lote 12: 413 - <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Payload Too Large</pre>
+</body>
+</html>
+
+    ajustes: Lote 13/801 (500 registros)...
