@@ -434,20 +434,9 @@ export class PostgreSQLStorage implements IStorage {
         unidades_por_sucursal AS (
           SELECT 
             a."Sucursal",
-            SUM(CASE 
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%KG%' 
-                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%KILO%'
-                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%MTS%' 
-                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%METRO%'
-              THEN ABS(a."Diferencia") ELSE 0 END) as total_un,
-            SUM(CASE 
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' 
-                OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%METRO%'
-              THEN ABS(a."Diferencia") ELSE 0 END) as total_mts,
-            SUM(CASE 
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KG%' 
-                OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KILO%'
-              THEN ABS(a."Diferencia") ELSE 0 END) as total_kg
+            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'UN' THEN ABS(a."Diferencia") ELSE 0 END) as total_un,
+            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'MTS' THEN ABS(a."Diferencia") ELSE 0 END) as total_mts,
+            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'KG' THEN ABS(a."Diferencia") ELSE 0 END) as total_kg
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
