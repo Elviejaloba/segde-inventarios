@@ -701,9 +701,6 @@ export default function ReportesPage() {
                       </div>
                     </TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
-                    {showCostoReposicion && (
-                      <TableHead className="text-right text-green-700">Costo Rep.</TableHead>
-                    )}
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -726,11 +723,6 @@ export default function ReportesPage() {
                         <TableCell className="text-right text-red-600 font-medium">
                           {formatCurrency(item.totalValorizado)}
                         </TableCell>
-                        {showCostoReposicion && (
-                          <TableCell className="text-right text-green-700 font-medium">
-                            {costData ? formatCurrency(costData.perdidaCosto) : '-'}
-                          </TableCell>
-                        )}
                         <TableCell className="text-right">
                           <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"}>
                             {item.porcentajePerdida.toFixed(2)}%
@@ -790,9 +782,6 @@ export default function ReportesPage() {
                     </div>
                   </TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
-                  {showCostoReposicion && (
-                    <TableHead className="text-right text-green-700"></TableHead>
-                  )}
                   <TableHead className="text-right">% Pérdida</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead></TableHead>
@@ -817,11 +806,6 @@ export default function ReportesPage() {
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
-                    {showCostoReposicion && (
-                      <TableCell className="text-right text-green-700 font-medium">
-                        {formatCurrency(item.totalCostoReposicion)}
-                      </TableCell>
-                    )}
                     <TableCell className="text-right">
                       {item.alertaPerdida ? (
                         <Badge variant="destructive" className="animate-pulse">
