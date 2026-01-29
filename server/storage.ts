@@ -537,6 +537,17 @@ export class PostgreSQLStorage implements IStorage {
       `;
       const totales = await sql(totalesQuery, params);
       
+      // Artículos únicos por año para comparación interanual
+      const articulosPorAnioQuery = `
+        SELECT 
+          COUNT(DISTINCT TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))) FILTER (WHERE EXTRACT(YEAR FROM "FechaMovimiento") = 2025) as articulos_2025,
+          COUNT(DISTINCT TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))) FILTER (WHERE EXTRACT(YEAR FROM "FechaMovimiento") = 2026) as articulos_2026
+        FROM ajustes_sucursales
+        WHERE "FechaMovimiento" IS NOT NULL
+        ${sucursal ? 'AND "Sucursal" = $1' : ''}
+      `;
+      const articulosPorAnio = await sql(articulosPorAnioQuery, params);
+      
       return {
         detalle: result.map((row: any) => ({
           sucursal: row.Sucursal,
@@ -575,12 +586,14 @@ export class PostgreSQLStorage implements IStorage {
         })),
         totales: {
           totalArticulos: parseInt(totales[0]?.total_articulos || '0'),
-          totalAlertas: parseInt(totales[0]?.total_alertas || '0')
+          totalAlertas: parseInt(totales[0]?.total_alertas || '0'),
+          articulos2025: parseInt(articulosPorAnio[0]?.articulos_2025 || '0'),
+          articulos2026: parseInt(articulosPorAnio[0]?.articulos_2026 || '0')
         }
       };
     } catch (error) {
       console.error('Error getting análisis valorizado:', error);
-      return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0 } };
+      return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0, articulos2025: 0, articulos2026: 0 } };
     }
   }
 

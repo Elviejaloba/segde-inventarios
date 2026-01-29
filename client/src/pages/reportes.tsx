@@ -483,9 +483,32 @@ export default function ReportesPage() {
               <div className="text-base sm:text-2xl font-bold text-blue-600">
                 {totalArticulos}
               </div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                Con ajustes registrados
-              </p>
+              {(() => {
+                const art2025 = (analisis as any)?.totales?.articulos2025 || 0;
+                const art2026 = (analisis as any)?.totales?.articulos2026 || 0;
+                const diferencia = art2026 - art2025;
+                const variacion = art2025 > 0 ? ((diferencia / art2025) * 100) : 0;
+                const isPositive = diferencia > 0;
+                const isNegative = diferencia < 0;
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                      <span className="text-muted-foreground">vs 2025:</span>
+                      <span className={`font-medium ${isNegative ? 'text-green-600' : isPositive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        {isPositive ? '+' : ''}{diferencia}
+                      </span>
+                      <span className={`font-medium ${isNegative ? 'text-green-600' : isPositive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        ({isPositive ? '+' : ''}{variacion.toFixed(1)}%)
+                      </span>
+                      {isNegative && <TrendingDown className="h-3 w-3 text-green-600" />}
+                      {isPositive && <TrendingUp className="h-3 w-3 text-red-600" />}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground hidden sm:block">
+                      2025: {art2025} | 2026: {art2026}
+                    </p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>
