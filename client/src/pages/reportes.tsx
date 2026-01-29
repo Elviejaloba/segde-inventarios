@@ -424,9 +424,29 @@ export default function ReportesPage() {
               <div className="text-base sm:text-2xl font-bold text-red-600">
                 {formatCurrency(totalValorizado)}
               </div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                En ajustes de inventario
-              </p>
+              {(() => {
+                const p2025 = (analisis as any)?.totales?.perdida2025 || 0;
+                const p2026 = (analisis as any)?.totales?.perdida2026 || 0;
+                const diferencia = p2026 - p2025;
+                const variacion = p2025 > 0 ? ((diferencia / p2025) * 100) : 0;
+                const isPositive = diferencia > 0;
+                const isNegative = diferencia < 0;
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                      <span className="text-muted-foreground">vs 2025:</span>
+                      <span className={`font-medium ${isNegative ? 'text-green-600' : isPositive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        {isPositive ? '+' : ''}{formatCurrency(diferencia)}
+                      </span>
+                      <span className={`font-medium ${isNegative ? 'text-green-600' : isPositive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        ({isPositive ? '+' : ''}{variacion.toFixed(1)}%)
+                      </span>
+                      {isNegative && <TrendingDown className="h-3 w-3 text-green-600" />}
+                      {isPositive && <TrendingUp className="h-3 w-3 text-red-600" />}
+                    </div>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>
@@ -444,9 +464,29 @@ export default function ReportesPage() {
               <div className="text-base sm:text-2xl font-bold text-green-600">
                 {formatCurrency(totalVentas)}
               </div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                Ventas de artículos con ajustes
-              </p>
+              {(() => {
+                const v2025 = (analisis as any)?.totales?.ventas2025 || 0;
+                const v2026 = (analisis as any)?.totales?.ventas2026 || 0;
+                const diferencia = v2026 - v2025;
+                const variacion = v2025 > 0 ? ((diferencia / v2025) * 100) : 0;
+                const isPositive = diferencia > 0;
+                const isNegative = diferencia < 0;
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                      <span className="text-muted-foreground">vs 2025:</span>
+                      <span className={`font-medium ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        {isPositive ? '+' : ''}{formatCurrency(diferencia)}
+                      </span>
+                      <span className={`font-medium ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        ({isPositive ? '+' : ''}{variacion.toFixed(1)}%)
+                      </span>
+                      {isPositive && <TrendingUp className="h-3 w-3 text-green-600" />}
+                      {isNegative && <TrendingDown className="h-3 w-3 text-red-600" />}
+                    </div>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>

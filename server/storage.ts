@@ -548,6 +548,52 @@ export class PostgreSQLStorage implements IStorage {
       `;
       const articulosPorAnio = await sql(articulosPorAnioQuery, params);
       
+      // Pérdida valorizada por año
+      const perdidaPorAnioQuery = `
+        WITH ajustes_anio AS (
+          SELECT 
+            EXTRACT(YEAR FROM a."FechaMovimiento") as anio,
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            a."Sucursal",
+            SUM(ABS(a."Diferencia")) as total_diferencia
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          GROUP BY EXTRACT(YEAR FROM a."FechaMovimiento"), TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), a."Sucursal"
+        ),
+        ventas_base AS (
+          SELECT 
+            "Sucursal",
+            TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            AVG("PrecioConIVA") as precio_promedio
+          FROM ventas_sucursales
+          GROUP BY "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))
+        )
+        SELECT 
+          SUM(CASE WHEN aa.anio = 2025 THEN aa.total_diferencia * COALESCE(vb.precio_promedio, 0) ELSE 0 END) as perdida_2025,
+          SUM(CASE WHEN aa.anio = 2026 THEN aa.total_diferencia * COALESCE(vb.precio_promedio, 0) ELSE 0 END) as perdida_2026
+        FROM ajustes_anio aa
+        LEFT JOIN ventas_base vb ON aa."Sucursal" = vb."Sucursal" AND aa.codigo_base = vb.codigo_base
+      `;
+      const perdidaPorAnio = await sql(perdidaPorAnioQuery, params);
+      
+      // Ventas por año (solo de artículos con ajustes)
+      const ventasPorAnioQuery = `
+        WITH codigos_ajustados AS (
+          SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
+          FROM ajustes_sucursales
+          WHERE "FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND "Sucursal" = $1' : ''}
+        )
+        SELECT 
+          SUM(CASE WHEN EXTRACT(YEAR FROM v."FechaMovimiento") = 2025 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2025,
+          SUM(CASE WHEN EXTRACT(YEAR FROM v."FechaMovimiento") = 2026 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2026
+        FROM ventas_sucursales v
+        INNER JOIN codigos_ajustados ca ON v."Sucursal" = ca."Sucursal" AND TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) = ca.codigo_base
+        ${sucursal ? 'WHERE v."Sucursal" = $1' : ''}
+      `;
+      const ventasPorAnio = await sql(ventasPorAnioQuery, params);
+      
       return {
         detalle: result.map((row: any) => ({
           sucursal: row.Sucursal,
@@ -588,12 +634,16 @@ export class PostgreSQLStorage implements IStorage {
           totalArticulos: parseInt(totales[0]?.total_articulos || '0'),
           totalAlertas: parseInt(totales[0]?.total_alertas || '0'),
           articulos2025: parseInt(articulosPorAnio[0]?.articulos_2025 || '0'),
-          articulos2026: parseInt(articulosPorAnio[0]?.articulos_2026 || '0')
+          articulos2026: parseInt(articulosPorAnio[0]?.articulos_2026 || '0'),
+          perdida2025: parseFloat(perdidaPorAnio[0]?.perdida_2025 || '0'),
+          perdida2026: parseFloat(perdidaPorAnio[0]?.perdida_2026 || '0'),
+          ventas2025: parseFloat(ventasPorAnio[0]?.ventas_2025 || '0'),
+          ventas2026: parseFloat(ventasPorAnio[0]?.ventas_2026 || '0')
         }
       };
     } catch (error) {
       console.error('Error getting análisis valorizado:', error);
-      return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0, articulos2025: 0, articulos2026: 0 } };
+      return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0, articulos2025: 0, articulos2026: 0, perdida2025: 0, perdida2026: 0, ventas2025: 0, ventas2026: 0 } };
     }
   }
 
