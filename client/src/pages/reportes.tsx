@@ -214,6 +214,19 @@ export default function ReportesPage() {
     enabled: showCostoReposicion
   });
 
+  const { data: ajustesPorUnidad } = useQuery<Array<{ unidadMedida: string; articulos: number; registros: number; totalAjustado: number }>>({
+    queryKey: ['/api/ajustes/por-unidad', selectedSucursal, selectedPeriodo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedSucursal) params.append('sucursal', selectedSucursal);
+      if (selectedPeriodo && selectedPeriodo !== 'todo') params.append('periodo', selectedPeriodo);
+      const url = `/api/ajustes/por-unidad${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error fetching ajustes por unidad');
+      return response.json();
+    }
+  });
+
   const filteredMuestreos = muestreos?.filter(file => {
     if (!selectedCodigoDoc) return true;
     const sucursal = selectedCodigoDoc.sucursal.toLowerCase();
@@ -474,6 +487,45 @@ export default function ReportesPage() {
           </Card>
         </motion.div>
       </div>
+
+      {ajustesPorUnidad && ajustesPorUnidad.length > 0 && (
+        <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/30 dark:to-slate-800/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-slate-600" />
+              Ajustes por Unidad de Medida
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Total ajustado consolidado por tipo de unidad
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              {(['UN', 'MTS', 'KG'] as const).map((unidad) => {
+                const data = ajustesPorUnidad.find(u => u.unidadMedida === unidad);
+                const iconColor = unidad === 'UN' ? 'text-purple-600' : unidad === 'MTS' ? 'text-blue-600' : 'text-orange-600';
+                const bgColor = unidad === 'UN' ? 'from-purple-50 to-purple-100 dark:from-purple-900/20' : unidad === 'MTS' ? 'from-blue-50 to-blue-100 dark:from-blue-900/20' : 'from-orange-50 to-orange-100 dark:from-orange-900/20';
+                const label = unidad === 'UN' ? 'Unidades' : unidad === 'MTS' ? 'Metros' : 'Kilogramos';
+                
+                return (
+                  <div key={unidad} className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className={`h-4 w-4 ${iconColor}`} />
+                      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    </div>
+                    <div className={`text-lg sm:text-xl font-bold ${iconColor}`}>
+                      {data ? data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '0'}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      {data ? `${data.articulos} artículos` : 'Sin datos'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {analisis?.resumen && analisis.resumen.length > 0 && (
         <Card data-testid="tabla-resumen">

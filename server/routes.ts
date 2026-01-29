@@ -71,6 +71,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resumen por unidad de medida
+  app.get('/api/ajustes/por-unidad', async (req, res) => {
+    try {
+      const { sucursal, periodo } = req.query;
+      const resumen = await storage.getAjustesPorUnidadMedida(sucursal as string, periodo as string);
+      res.json(resumen);
+    } catch (error) {
+      console.error('Error getting ajustes por unidad:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Historial de ajustes por código
   app.get('/api/ajustes/historial/:codigo', async (req, res) => {
     try {

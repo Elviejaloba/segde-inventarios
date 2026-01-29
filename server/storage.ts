@@ -170,6 +170,60 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
+  async getAjustesPorUnidadMedida(sucursal?: string, periodo?: string): Promise<any> {
+    try {
+      let fechaFilter = '';
+      const now = new Date();
+      
+      switch (periodo) {
+        case '2025':
+          fechaFilter = `AND "FechaMovimiento" >= '2025-01-01' AND "FechaMovimiento" <= '2025-12-31'`;
+          break;
+        case '2026':
+          fechaFilter = `AND "FechaMovimiento" >= '2026-01-01'`;
+          break;
+        case 'ultimo-trimestre':
+          const trimestre = new Date(now);
+          trimestre.setMonth(trimestre.getMonth() - 3);
+          fechaFilter = `AND "FechaMovimiento" >= '${trimestre.toISOString().split('T')[0]}'`;
+          break;
+        case 'ultimo-semestre':
+          const semestre = new Date(now);
+          semestre.setMonth(semestre.getMonth() - 6);
+          fechaFilter = `AND "FechaMovimiento" >= '${semestre.toISOString().split('T')[0]}'`;
+          break;
+      }
+
+      const sucursalFilter = sucursal ? `AND "Sucursal" = '${sucursal}'` : '';
+
+      const query = `
+        SELECT 
+          "UnidadMedida",
+          COUNT(DISTINCT "Codigo") as articulos,
+          COUNT(*) as registros,
+          SUM(ABS("Diferencia")) as total_ajustado
+        FROM ajustes_sucursales
+        WHERE "FechaMovimiento" IS NOT NULL
+        ${sucursalFilter}
+        ${fechaFilter}
+        GROUP BY "UnidadMedida"
+        ORDER BY total_ajustado DESC
+      `;
+
+      const result = await sql(query);
+      
+      return result.map((row: any) => ({
+        unidadMedida: row.UnidadMedida || 'UN',
+        articulos: parseInt(row.articulos),
+        registros: parseInt(row.registros),
+        totalAjustado: parseFloat(row.total_ajustado)
+      }));
+    } catch (error) {
+      console.error('Error getting ajustes por unidad:', error);
+      return [];
+    }
+  }
+
   async getAnalisisValorizado(sucursal?: string, periodo?: string): Promise<any> {
     try {
       // Calcular filtro de fechas basado en período
