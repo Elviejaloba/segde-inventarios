@@ -123,8 +123,17 @@ interface MuestreoFile {
   sharedLink?: string;
 }
 
+const PERIODOS = [
+  { value: 'todo', label: 'Todo el historial', description: 'Desde el inicio' },
+  { value: '2025', label: 'Año 2025', description: 'Ene - Dic 2025' },
+  { value: '2026', label: 'Año 2026', description: 'Ene 2026 en adelante' },
+  { value: 'ultimo-trimestre', label: 'Último trimestre', description: 'Últimos 3 meses' },
+  { value: 'ultimo-semestre', label: 'Último semestre', description: 'Últimos 6 meses' },
+];
+
 export default function ReportesPage() {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("");
+  const [selectedPeriodo, setSelectedPeriodo] = useState<string>("todo");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'valorizado' | 'perdida' | 'unidades'>('valorizado');
   const [selectedCodigo, setSelectedCodigo] = useState<string | null>(null);
@@ -150,12 +159,18 @@ export default function ReportesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const getPeriodoLabel = () => {
+    const periodo = PERIODOS.find(p => p.value === selectedPeriodo);
+    return periodo?.description || 'Todo el historial';
+  };
+
   const { data: analisis, isLoading, refetch } = useQuery<{ detalle: AnalisisItem[]; resumen: ResumenSucursal[] }>({
-    queryKey: ['/api/ajustes/valorizado', selectedSucursal],
+    queryKey: ['/api/ajustes/valorizado', selectedSucursal, selectedPeriodo],
     queryFn: async () => {
-      const url = selectedSucursal 
-        ? `/api/ajustes/valorizado?sucursal=${encodeURIComponent(selectedSucursal)}`
-        : '/api/ajustes/valorizado';
+      const params = new URLSearchParams();
+      if (selectedSucursal) params.append('sucursal', selectedSucursal);
+      if (selectedPeriodo && selectedPeriodo !== 'todo') params.append('periodo', selectedPeriodo);
+      const url = `/api/ajustes/valorizado${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Error fetching data');
       return response.json();
@@ -313,6 +328,23 @@ export default function ReportesPage() {
             </SelectContent>
           </Select>
 
+          <Select value={selectedPeriodo} onValueChange={setSelectedPeriodo}>
+            <SelectTrigger className="w-[140px] sm:w-[180px]">
+              <Calendar className="h-4 w-4 mr-1 sm:mr-2 text-blue-600" />
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODOS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  <div className="flex flex-col">
+                    <span>{p.label}</span>
+                    <span className="text-xs text-muted-foreground">{p.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
             <SelectTrigger className="w-[130px] sm:w-[160px]">
               <ArrowUpDown className="h-4 w-4 mr-1 sm:mr-2" />
@@ -340,6 +372,26 @@ export default function ReportesPage() {
           />
         </div>
       </div>
+
+      {selectedPeriodo && selectedPeriodo !== 'todo' && (
+        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
+          <Calendar className="h-4 w-4 text-blue-600" />
+          <span className="text-sm text-blue-700 dark:text-blue-300">
+            Período seleccionado: <strong>{PERIODOS.find(p => p.value === selectedPeriodo)?.label}</strong>
+          </span>
+          <span className="text-xs text-blue-600 dark:text-blue-400">
+            ({getPeriodoLabel()})
+          </span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedPeriodo('todo')}
+            className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
+          >
+            Ver todo
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4" data-testid="reportes-kpis">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>

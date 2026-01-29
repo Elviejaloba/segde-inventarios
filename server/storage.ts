@@ -170,8 +170,43 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getAnalisisValorizado(sucursal?: string): Promise<any> {
+  async getAnalisisValorizado(sucursal?: string, periodo?: string): Promise<any> {
     try {
+      // Calcular filtro de fechas basado en período
+      let fechaInicio = '';
+      let fechaFin = '';
+      const now = new Date();
+      
+      switch (periodo) {
+        case '2025':
+          fechaInicio = '2025-01-01';
+          fechaFin = '2025-12-31';
+          break;
+        case '2026':
+          fechaInicio = '2026-01-01';
+          fechaFin = '2099-12-31';
+          break;
+        case 'ultimo-trimestre':
+          const trimestre = new Date(now);
+          trimestre.setMonth(trimestre.getMonth() - 3);
+          fechaInicio = trimestre.toISOString().split('T')[0];
+          fechaFin = now.toISOString().split('T')[0];
+          break;
+        case 'ultimo-semestre':
+          const semestre = new Date(now);
+          semestre.setMonth(semestre.getMonth() - 6);
+          fechaInicio = semestre.toISOString().split('T')[0];
+          fechaFin = now.toISOString().split('T')[0];
+          break;
+        default:
+          // 'todo' - sin filtro de fecha
+          break;
+      }
+
+      const periodoFilter = fechaInicio && fechaFin 
+        ? `AND a."FechaMovimiento" >= '${fechaInicio}' AND a."FechaMovimiento" <= '${fechaFin}'`
+        : '';
+
       // Análisis valorizado agrupando por código base (sin sufijo de color 01-32)
       // Lógica: TI400I 01 al TI400I 32 son el mismo producto, se consolidan
       // % Pérdida = Valorizado Pérdida / Total Vendido en el período desde último ajuste
@@ -190,6 +225,7 @@ export class PostgreSQLStorage implements IStorage {
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          ${periodoFilter}
         ),
         ajustes_2025 AS (
           -- Último ajuste de 2025 por código base

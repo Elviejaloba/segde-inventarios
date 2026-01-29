@@ -50,8 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Análisis valorizado de ajustes
   app.get('/api/ajustes/valorizado', async (req, res) => {
     try {
-      const { sucursal } = req.query;
-      const analisis = await storage.getAnalisisValorizado(sucursal as string);
+      const { sucursal, periodo } = req.query;
+      const analisis = await storage.getAnalisisValorizado(sucursal as string, periodo as string);
       res.json(analisis);
     } catch (error) {
       console.error('Error getting análisis valorizado:', error);
