@@ -463,37 +463,27 @@ def generar_html_reporte(dias=30):
                         <td style="padding:10px 30px 25px;">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td width="25%" style="padding:5px;">
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{COLORS['primary']};">
-                                            <tr>
-                                                <td style="padding:20px;text-align:center;">
-                                                    <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;">{int(total_ajustes):,}</div>
-                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#aaaaaa;text-transform:uppercase;margin-top:5px;">Total Ajustes</div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                    <td width="25%" style="padding:5px;">
+                                    <td width="33%" style="padding:5px;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{COLORS['red']};">
                                             <tr>
                                                 <td style="padding:20px;text-align:center;">
                                                     <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;">${abs(total_perdida):,.0f}</div>
-                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#ffcccc;text-transform:uppercase;margin-top:5px;">Pérdida Total</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#ffcccc;text-transform:uppercase;margin-top:5px;">Faltantes</div>
                                                 </td>
                                             </tr>
                                         </table>
                                     </td>
-                                    <td width="25%" style="padding:5px;">
+                                    <td width="33%" style="padding:5px;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{COLORS['green']};">
                                             <tr>
                                                 <td style="padding:20px;text-align:center;">
                                                     <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;">${total_ganancia:,.0f}</div>
-                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#ccffcc;text-transform:uppercase;margin-top:5px;">Ganancia Total</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#ccffcc;text-transform:uppercase;margin-top:5px;">Sobrantes</div>
                                                 </td>
                                             </tr>
                                         </table>
                                     </td>
-                                    <td width="25%" style="padding:5px;">
+                                    <td width="33%" style="padding:5px;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{'#b91c1c' if total_balance < 0 else '#15803d'};">
                                             <tr>
                                                 <td style="padding:20px;text-align:center;">
@@ -505,6 +495,62 @@ def generar_html_reporte(dias=30):
                                     </td>
                                 </tr>
                             </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Leyenda explicativa de los indicadores -->
+                    <tr>
+                        <td style="padding:10px 30px 20px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                                <tr>
+                                    <td style="padding:15px 20px;">
+                                        <p style="font-family:Arial,sans-serif;font-size:12px;color:#475569;margin:0 0 10px 0;font-weight:bold;">
+                                            📖 ¿Cómo interpretar estos números?
+                                        </p>
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td style="padding:5px 0;">
+                                                    <span style="display:inline-block;width:12px;height:12px;background-color:{COLORS['red']};border-radius:2px;margin-right:8px;vertical-align:middle;"></span>
+                                                    <span style="font-family:Arial,sans-serif;font-size:11px;color:#64748b;"><strong>FALTANTES:</strong> Mercadería que debería estar pero no se encontró en el conteo físico. Representa pérdida de inventario.</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:5px 0;">
+                                                    <span style="display:inline-block;width:12px;height:12px;background-color:{COLORS['green']};border-radius:2px;margin-right:8px;vertical-align:middle;"></span>
+                                                    <span style="font-family:Arial,sans-serif;font-size:11px;color:#64748b;"><strong>SOBRANTES:</strong> Mercadería que apareció en el conteo físico pero no estaba registrada en el sistema.</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:5px 0;">
+                                                    <span style="display:inline-block;width:12px;height:12px;background-color:#15803d;border-radius:2px;margin-right:8px;vertical-align:middle;"></span>
+                                                    <span style="font-family:Arial,sans-serif;font-size:11px;color:#64748b;"><strong>BALANCE NETO:</strong> Sobrantes - Faltantes. Si es positivo (verde) hay más sobrantes; si es negativo (rojo) hay más faltantes.</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <p style="font-family:Arial,sans-serif;font-size:11px;color:#94a3b8;margin:12px 0 0 0;text-align:center;">
+                                            💡 Todos los valores están calculados a <strong>Costo de Reposición</strong>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Botón Dashboard -->
+                    <tr>
+                        <td style="padding:5px 30px 25px;text-align:center;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+                                <tr>
+                                    <td style="background-color:{COLORS['header_bg']};border-radius:6px;">
+                                        <a href="{DASHBOARD_URL}/reportes" target="_blank" style="display:inline-block;padding:14px 30px;font-family:Arial,sans-serif;font-size:14px;color:#ffffff;text-decoration:none;font-weight:bold;">
+                                            📊 Ver Detalle Completo en el Dashboard
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-family:Arial,sans-serif;font-size:10px;color:#94a3b8;margin:10px 0 0 0;">
+                                Accede al dashboard para filtrar por sucursal, ver historial de cada artículo y más detalles
+                            </p>
                         </td>
                     </tr>
                     
