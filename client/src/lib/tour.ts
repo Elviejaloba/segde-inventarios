@@ -175,8 +175,25 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="tabla-resumen"]',
       popover: {
         title: 'Resumen por Sucursal',
-        description: 'Esta tabla compara el rendimiento de cada sucursal. Puedes ver cuántos artículos tienen ajustes, la pérdida total y el porcentaje. Haz clic en una fila para filtrar y ver solo esa sucursal.',
+        description: 'Esta tabla compara el rendimiento de cada sucursal. Las columnas UN (violeta), MTS (azul) y KG (naranja) muestran el desglose de unidades ajustadas por tipo de medida. Haz clic en una fila para filtrar y ver solo esa sucursal.',
         side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Columnas UN, MTS, KG',
+        description: 'UN = Unidades (productos que se cuentan por pieza). MTS = Metros (telas que se miden en longitud). KG = Kilogramos (productos que se pesan). Cada sucursal muestra el total ajustado en cada tipo de medida.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-testid="btn-ver-costo"]',
+      popover: {
+        title: 'Ver a Costo de Reposición',
+        description: 'Este botón permite ver los valores a costo de reposición en lugar de precio público. Requiere contraseña ya que es información exclusiva para el Directorio. Muestra cuánto costaría reponer la mercadería faltante.',
+        side: 'left',
         align: 'center'
       }
     },
@@ -184,7 +201,7 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="tabla-detalle"]',
       popover: {
         title: 'Detalle de Cada Artículo',
-        description: 'Aquí ves cada producto con ajustes. Las columnas Dif.2025 (naranja) y Dif.2026 (azul) muestran las unidades faltantes por año. "Pérdida $" es el valor en pesos. "% Pérdida" es la fórmula: (Pérdida ÷ Ventas del período) × 100, con máximo 100%.',
+        description: 'Aquí ves cada producto con ajustes. Las columnas UN, MTS y KG muestran cuántas unidades de cada tipo se ajustaron. "Pérdida $" es el valor en pesos. "% Pérdida" es la fórmula: (Pérdida ÷ Ventas del período) × 100.',
         side: 'top',
         align: 'center'
       }

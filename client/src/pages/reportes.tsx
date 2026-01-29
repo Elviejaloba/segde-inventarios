@@ -595,7 +595,7 @@ export default function ReportesPage() {
                   Ocultar Costo
                 </Button>
               ) : (
-                <Button variant="outline" size="sm" onClick={() => setShowPasswordDialog(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowPasswordDialog(true)} data-testid="btn-ver-costo">
                   <DollarSign className="h-4 w-4 mr-1" />
                   Ver con Costo
                 </Button>
