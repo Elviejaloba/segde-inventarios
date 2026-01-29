@@ -300,6 +300,15 @@ def generar_html_reporte(dias=30):
                         </td>
                     </tr>
                     
+                    <!-- Título KPIs con período -->
+                    <tr>
+                        <td style="padding:15px 30px 5px;">
+                            <h3 style="font-family:Arial,sans-serif;font-size:14px;color:#333333;margin:0;font-weight:bold;">
+                                Resumen del Período: Últimos {dias} días
+                            </h3>
+                        </td>
+                    </tr>
+                    
                     <!-- KPIs Principales -->
                     <tr>
                         <td style="padding:10px 30px 25px;">
