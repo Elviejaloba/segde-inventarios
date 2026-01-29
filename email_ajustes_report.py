@@ -187,7 +187,7 @@ def generar_html_reporte(dias=30):
                 ${ganancia:,.0f}
             </td>
             <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:{'#dc3545' if balance < 0 else '#28a745'};font-weight:bold;">
-                ${balance:,.0f}
+                {'-$' + f'{abs(balance):,.0f}' if balance < 0 else '$' + f'{balance:,.0f}'}
             </td>
             <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:center;font-family:Arial,sans-serif;font-size:14px;">
                 {int(ajuste['total_ajustes'] or 0)}
