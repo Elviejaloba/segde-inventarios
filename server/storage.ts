@@ -518,20 +518,21 @@ export class PostgreSQLStorage implements IStorage {
       
       for (const ajuste of ajustes) {
         const sucursal = ajuste['Sucursal'] || ajuste['sucursal'];
-        const comprobante = ajuste['Comprobante'] || ajuste['comprobante'] || ajuste['T_COMP'] || ajuste['Nro. comprobante'];
+        const comprobante = ajuste['Comprobante'] || ajuste['comprobante'] || ajuste['T_COMP'];
+        const nroComprobante = ajuste['Nro. comprobante'] || ajuste['NroComprobante'] || ajuste['N_COMP'] || '';
         const codigo = ajuste['Cód. Artículo'] || ajuste['Codigo'] || ajuste['codigo'];
         const articulo = ajuste['Artículo'] || ajuste['Articulo'] || ajuste['articulo'];
         const fechaMovimiento = ajuste['Fecha movimiento'] || ajuste['FechaMovimiento'] || ajuste['fecha_movimiento'];
         const tipoMovimiento = ajuste['Tipo de Movimiento'] || ajuste['TipoMovimiento'] || ajuste['tipo_movimiento'];
         const diferencia = parseFloat(ajuste['Cantidad'] || ajuste['Diferencia'] || ajuste['diferencia'] || 0);
         
-        if (!codigo || !sucursal) continue;
+        if (!codigo || !sucursal || !nroComprobante) continue;
         
-        // UPSERT - ignora duplicados basado en índice único
+        // UPSERT basado en Sucursal + NroComprobante + Codigo (clave única por comprobante)
         const fechaVal = fechaMovimiento ? new Date(fechaMovimiento) : null;
         await sql`
-          INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
-          VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaVal}, ${tipoMovimiento}, ${diferencia})
+          INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "NroComprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
+          VALUES (${sucursal}, ${comprobante}, ${nroComprobante}, ${codigo}, ${articulo}, ${fechaVal}, ${tipoMovimiento}, ${diferencia})
           ON CONFLICT DO NOTHING
         `;
         synced++;
