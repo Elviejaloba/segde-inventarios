@@ -407,7 +407,6 @@ export default function ReportesPage() {
                     <TableHead className="text-right hidden sm:table-cell">Artículos</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Unidades</TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">Ventas $</TableHead>
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -419,9 +418,6 @@ export default function ReportesPage() {
                       <TableCell className="text-right hidden md:table-cell">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
                       <TableCell className="text-right text-red-600 font-medium">
                         {formatCurrency(item.totalValorizado)}
-                      </TableCell>
-                      <TableCell className="text-right text-green-600 hidden sm:table-cell">
-                        {formatCurrency(item.totalVentas)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"}>
@@ -466,7 +462,6 @@ export default function ReportesPage() {
                   <TableHead className="text-right hidden lg:table-cell">Dif.2026</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Total</TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">Ventas $</TableHead>
                   <TableHead className="text-right">% Pérdida</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead></TableHead>
@@ -490,9 +485,6 @@ export default function ReportesPage() {
                     </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
-                    </TableCell>
-                    <TableCell className="text-right text-green-600 hidden md:table-cell">
-                      {formatCurrency(item.totalVentaValorizada)}
                     </TableCell>
                     <TableCell className="text-right">
                       {item.alertaPerdida ? (
