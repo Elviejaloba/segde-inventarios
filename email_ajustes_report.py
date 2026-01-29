@@ -709,7 +709,7 @@ def enviar_reporte(destinatarios, dias=30, asunto_personalizado=None):
         destinatarios = [d.strip() for d in destinatarios.split(',')]
     
     fecha = datetime.now().strftime("%d/%m/%Y")
-    asunto = asunto_personalizado or f"Reporte Ejecutivo de Ajustes - {fecha}"
+    asunto = asunto_personalizado or f"Reporte de seguimientos de inventario y ajustes - {fecha}"
     
     html_content = generar_html_reporte(dias)
     
