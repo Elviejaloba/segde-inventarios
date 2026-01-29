@@ -1,6 +1,7 @@
 import express from "express";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
+import { iniciarScheduler } from "./emailScheduler";
 import cors from 'cors';
 
 const app = express();
@@ -43,4 +44,6 @@ const server = app.listen(5000, '0.0.0.0', () => {
   log('Servidor iniciado en puerto 5000');
   // Configurar todo después de que el servidor esté en funcionamiento
   startServer();
+  // Iniciar scheduler de emails semanales
+  iniciarScheduler();
 });
