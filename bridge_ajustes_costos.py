@@ -31,7 +31,7 @@ REPL_URL = "https://seguimientodeinv.replit.app"
 # CONFIGURACIÓN DE SINCRONIZACIÓN
 # ==============================================================
 SYNC_INTERVAL = 300      # 5 minutos entre sincronizaciones
-BATCH_SIZE = 2000        # Registros por lote
+BATCH_SIZE = 5000        # Registros por lote (aumentado para velocidad)
 MAX_RETRIES = 3          # Reintentos por lote
 
 # Horario de sincronización (opcional)
