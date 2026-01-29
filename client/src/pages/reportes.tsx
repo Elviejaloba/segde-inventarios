@@ -457,7 +457,7 @@ export default function ReportesPage() {
                     <TableHead className="text-right hidden md:table-cell">Unidades</TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
                     {showCostoReposicion && (
-                      <TableHead className="text-right text-green-700">Costo Rep.</TableHead>
+                      <TableHead className="text-right text-green-700"></TableHead>
                     )}
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
