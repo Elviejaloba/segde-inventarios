@@ -1062,6 +1062,11 @@ export default function ReportesPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+              <p className="text-sm font-medium text-amber-800 text-center">
+                ⚠️ De uso exclusivo para el Directorio
+              </p>
+            </div>
             <p className="text-sm text-muted-foreground">
               Ingrese la contraseña para ver los valores a costo de reposición
             </p>
