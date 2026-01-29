@@ -527,19 +527,13 @@ export class PostgreSQLStorage implements IStorage {
         
         if (!codigo || !sucursal) continue;
         
-        if (incremental) {
-          // UPSERT - update if exists, insert if not
-          await sql`
-            INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
-            VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaMovimiento ? new Date(fechaMovimiento) : null}, ${tipoMovimiento}, ${diferencia})
-            ON CONFLICT DO NOTHING
-          `;
-        } else {
-          await sql`
-            INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
-            VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaMovimiento ? new Date(fechaMovimiento) : null}, ${tipoMovimiento}, ${diferencia})
-          `;
-        }
+        // UPSERT - ignora duplicados basado en índice único
+        const fechaVal = fechaMovimiento ? new Date(fechaMovimiento) : null;
+        await sql`
+          INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
+          VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaVal}, ${tipoMovimiento}, ${diferencia})
+          ON CONFLICT DO NOTHING
+        `;
         synced++;
       }
       
