@@ -586,8 +586,8 @@ export class PostgreSQLStorage implements IStorage {
           ${sucursal ? 'AND "Sucursal" = $1' : ''}
         )
         SELECT 
-          SUM(CASE WHEN EXTRACT(YEAR FROM v."FechaMovimiento") = 2025 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2025,
-          SUM(CASE WHEN EXTRACT(YEAR FROM v."FechaMovimiento") = 2026 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2026
+          SUM(CASE WHEN EXTRACT(YEAR FROM v."Fecha") = 2025 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2025,
+          SUM(CASE WHEN EXTRACT(YEAR FROM v."Fecha") = 2026 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2026
         FROM ventas_sucursales v
         INNER JOIN codigos_ajustados ca ON v."Sucursal" = ca."Sucursal" AND TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) = ca.codigo_base
         ${sucursal ? 'WHERE v."Sucursal" = $1' : ''}
