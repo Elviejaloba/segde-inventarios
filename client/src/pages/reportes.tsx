@@ -313,11 +313,11 @@ export default function ReportesPage() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3" data-testid="reportes-filtros">
-        <div className="flex gap-2 w-full sm:w-auto">
+      <div className="flex flex-col gap-3" data-testid="reportes-filtros">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Select value={selectedSucursal || "todas"} onValueChange={(v) => setSelectedSucursal(v === "todas" ? "" : v)}>
-            <SelectTrigger className="flex-1 sm:w-[180px]" data-testid="select-sucursal">
-              <Building2 className="h-4 w-4 mr-2 hidden sm:block" />
+            <SelectTrigger className="w-full" data-testid="select-sucursal">
+              <Building2 className="h-4 w-4 mr-2 text-purple-600 shrink-0" />
               <SelectValue placeholder="Sucursal" />
             </SelectTrigger>
             <SelectContent>
@@ -329,15 +329,15 @@ export default function ReportesPage() {
           </Select>
 
           <Select value={selectedPeriodo} onValueChange={setSelectedPeriodo}>
-            <SelectTrigger className="w-[140px] sm:w-[180px]">
-              <Calendar className="h-4 w-4 mr-1 sm:mr-2 text-blue-600" />
+            <SelectTrigger className="w-full">
+              <Calendar className="h-4 w-4 mr-2 text-blue-600 shrink-0" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               {PERIODOS.map((p) => (
                 <SelectItem key={p.value} value={p.value}>
                   <div className="flex flex-col">
-                    <span>{p.label}</span>
+                    <span className="font-medium">{p.label}</span>
                     <span className="text-xs text-muted-foreground">{p.description}</span>
                   </div>
                 </SelectItem>
@@ -346,8 +346,8 @@ export default function ReportesPage() {
           </Select>
 
           <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-            <SelectTrigger className="w-[130px] sm:w-[160px]">
-              <ArrowUpDown className="h-4 w-4 mr-1 sm:mr-2" />
+            <SelectTrigger className="w-full">
+              <ArrowUpDown className="h-4 w-4 mr-2 text-gray-600 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -357,19 +357,20 @@ export default function ReportesPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={() => refetch()} className="shrink-0">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="relative w-full sm:flex-1 sm:max-w-[300px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar código..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button variant="outline" size="icon" onClick={() => refetch()} className="shrink-0">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
