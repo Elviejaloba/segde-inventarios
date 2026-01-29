@@ -256,6 +256,13 @@ export class PostgreSQLStorage implements IStorage {
           ${sucursal ? 'AND v."Sucursal" = $1' : ''}
           GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
         )
+        ,
+        costos_base AS (
+          SELECT "CodArticulo", AVG("Costo") as costo_promedio
+          FROM costos_articulos
+          WHERE "Costo" > 0
+          GROUP BY "CodArticulo"
+        )
         SELECT 
           c."Sucursal",
           c.codigo_base as "Codigo",
@@ -264,6 +271,7 @@ export class PostgreSQLStorage implements IStorage {
           c.diferencia_consolidada as total_unidades,
           COALESCE(vp.precio_promedio, 0) as precio_unitario,
           c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) as total_valorizado,
+          c.diferencia_consolidada * COALESCE(cb.costo_promedio, 0) as total_costo_reposicion,
           c.fecha_ajuste_2025 as primer_ajuste,
           c.fecha_ultimo_ajuste as ultimo_ajuste,
           COALESCE(vp.total_vendido, 0) as total_vendido,
@@ -282,6 +290,7 @@ export class PostgreSQLStorage implements IStorage {
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
+        LEFT JOIN costos_base cb ON c.codigo_base = cb."CodArticulo"
         WHERE c.diferencia_consolidada > 0
         ORDER BY total_valorizado DESC
         LIMIT 500
@@ -393,6 +402,7 @@ export class PostgreSQLStorage implements IStorage {
           totalUnidades: parseFloat(row.total_unidades),
           precioUnitario: parseFloat(row.precio_unitario),
           totalValorizado: parseFloat(row.total_valorizado),
+          totalCostoReposicion: parseFloat(row.total_costo_reposicion || 0),
           primerAjuste: row.primer_ajuste,
           ultimoAjuste: row.ultimo_ajuste,
           totalVendido: parseFloat(row.total_vendido),

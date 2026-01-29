@@ -47,6 +47,7 @@ interface AnalisisItem {
   totalUnidades: number;
   precioUnitario: number;
   totalValorizado: number;
+  totalCostoReposicion: number;
   primerAjuste: string;
   ultimoAjuste: string;
   totalVendido: number;
@@ -522,6 +523,9 @@ export default function ReportesPage() {
                   <TableHead className="text-right hidden lg:table-cell">Dif.2026</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Total</TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
+                  {showCostoReposicion && (
+                    <TableHead className="text-right text-green-700"></TableHead>
+                  )}
                   <TableHead className="text-right">% Pérdida</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead></TableHead>
@@ -546,6 +550,11 @@ export default function ReportesPage() {
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
+                    {showCostoReposicion && (
+                      <TableCell className="text-right text-green-700 font-medium">
+                        {formatCurrency(item.totalCostoReposicion)}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       {item.alertaPerdida ? (
                         <Badge variant="destructive" className="animate-pulse">
