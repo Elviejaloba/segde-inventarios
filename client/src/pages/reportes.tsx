@@ -37,7 +37,9 @@ import {
   Minus,
   FileText,
   ExternalLink,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
@@ -148,6 +150,7 @@ export default function ReportesPage() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [showCostoReposicion, setShowCostoReposicion] = useState(false);
+  const [detalleExpanded, setDetalleExpanded] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
 
   useEffect(() => {
@@ -739,13 +742,26 @@ export default function ReportesPage() {
       )}
 
       <Card data-testid="tabla-detalle">
-        <CardHeader>
+        <CardHeader 
+          className="cursor-pointer select-none hover:bg-muted/30 transition-colors"
+          onClick={() => setDetalleExpanded(!detalleExpanded)}
+        >
           <CardTitle className="flex items-center gap-3">
+            {detalleExpanded ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
             <TrendingDown className="h-5 w-5" />
             Detalle de Ajustes Valorizados
             {selectedSucursal && (
               <span className="bg-gradient-to-r from-primary to-primary/80 text-white px-4 py-1 rounded-full text-lg font-bold shadow-md">
                 {selectedSucursal}
+              </span>
+            )}
+            {!detalleExpanded && (
+              <span className="text-xs font-normal text-muted-foreground ml-auto">
+                Clic para expandir
               </span>
             )}
           </CardTitle>
@@ -756,6 +772,7 @@ export default function ReportesPage() {
             }
           </p>
         </CardHeader>
+        {detalleExpanded && (
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
@@ -849,6 +866,7 @@ export default function ReportesPage() {
             </p>
           )}
         </CardContent>
+        )}
       </Card>
 
       <Dialog open={showHistorial} onOpenChange={setShowHistorial}>
