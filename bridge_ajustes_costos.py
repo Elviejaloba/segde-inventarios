@@ -96,7 +96,7 @@ def enviar_en_lotes(nombre, registros, batch_size=2000):
                     f"{REPL_URL}/sync",
                     data=json_data,
                     headers={'Content-Type': 'application/json'},
-                    timeout=120
+                    timeout=300  # 5 minutos para lotes grandes
                 )
                 
                 if response.status_code == 200:
