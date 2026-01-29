@@ -219,18 +219,38 @@ def generar_html_reporte(dias=30):
                 
                 <table role="presentation" width="700" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border:1px solid #dddddd;">
                     
-                    <!-- Header -->
+                    <!-- Header con Logo -->
                     <tr>
-                        <td style="background-color:{COLORS['header_bg']};padding:30px;text-align:center;">
-                            <h1 style="color:#ffffff;margin:0;font-family:Arial,sans-serif;font-size:24px;font-weight:bold;">
-                                📊 REPORTE EJECUTIVO DE AJUSTES
+                        <td style="background-color:#4a5568;padding:25px;text-align:center;">
+                            <img src="cid:logo" alt="GRUPO CRISA" width="200" style="display:block;margin:0 auto;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color:{COLORS['header_bg']};padding:20px;text-align:center;">
+                            <h1 style="color:#ffffff;margin:0;font-family:Arial,sans-serif;font-size:22px;font-weight:bold;">
+                                REPORTE EJECUTIVO DE AJUSTES
                             </h1>
-                            <p style="color:#93c5fd;margin:10px 0 0;font-family:Arial,sans-serif;font-size:14px;">
-                                GRUPO CRISA - Seguimiento de Inventario
+                            <p style="color:#93c5fd;margin:8px 0 0;font-family:Arial,sans-serif;font-size:13px;">
+                                Seguimiento de Inventario
                             </p>
-                            <p style="color:#bfdbfe;margin:10px 0 0;font-family:Arial,sans-serif;font-size:12px;">
+                            <p style="color:#bfdbfe;margin:8px 0 0;font-family:Arial,sans-serif;font-size:11px;">
                                 Generado: {fecha} | Período: Últimos {dias} días
                             </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Leyenda de valorización -->
+                    <tr>
+                        <td style="padding:15px 30px 5px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef3c7;border-left:4px solid #f59e0b;">
+                                <tr>
+                                    <td style="padding:12px 15px;">
+                                        <p style="font-family:Arial,sans-serif;font-size:12px;color:#92400e;margin:0;">
+                                            <strong>💰 Valorización:</strong> Todos los montos están calculados a <strong>Costo de Reposición</strong> vigente.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                     
@@ -402,20 +422,25 @@ def enviar_reporte(destinatarios, dias=30, asunto_personalizado=None):
         destinatarios = [d.strip() for d in destinatarios.split(',')]
     
     fecha = datetime.now().strftime("%d/%m/%Y")
-    asunto = asunto_personalizado or f"📊 Reporte Ejecutivo de Ajustes - {fecha}"
+    asunto = asunto_personalizado or f"Reporte Ejecutivo de Ajustes - {fecha}"
     
     html_content = generar_html_reporte(dias)
     
-    msg = MIMEMultipart('alternative')
+    # Usar 'related' para soportar imágenes embebidas
+    msg = MIMEMultipart('related')
     msg['Subject'] = asunto
     msg['From'] = SMTP_USER
     msg['To'] = ', '.join(destinatarios)
+    
+    # Contenedor alternativo (texto plano + HTML)
+    msg_alternative = MIMEMultipart('alternative')
     
     # Texto plano como fallback
     texto_plano = f"""
 REPORTE EJECUTIVO DE AJUSTES - GRUPO CRISA
 Fecha: {fecha}
 Período: Últimos {dias} días
+Valorización: Costo de Reposición
 
 Para ver el reporte completo, acceda a: {DASHBOARD_URL}/reportes
 
@@ -425,8 +450,19 @@ Este es un correo automático generado por el sistema.
     part1 = MIMEText(texto_plano, 'plain')
     part2 = MIMEText(html_content, 'html')
     
-    msg.attach(part1)
-    msg.attach(part2)
+    msg_alternative.attach(part1)
+    msg_alternative.attach(part2)
+    msg.attach(msg_alternative)
+    
+    # Adjuntar logo
+    logo_path = os.path.join(os.path.dirname(__file__), 'assets', 'logo_crisa.png')
+    if os.path.exists(logo_path):
+        with open(logo_path, 'rb') as f:
+            logo_data = f.read()
+            logo_img = MIMEImage(logo_data)
+            logo_img.add_header('Content-ID', '<logo>')
+            logo_img.add_header('Content-Disposition', 'inline', filename='logo_crisa.png')
+            msg.attach(logo_img)
     
     try:
         if not SMTP_PASSWORD:
