@@ -258,10 +258,10 @@ export class PostgreSQLStorage implements IStorage {
         )
         ,
         costos_base AS (
-          SELECT "CodArticulo", AVG("Costo") as costo_promedio
+          SELECT "Codigo", AVG("Costo") as costo_promedio
           FROM costos_articulos
           WHERE "Costo" > 0
-          GROUP BY "CodArticulo"
+          GROUP BY "Codigo"
         )
         SELECT 
           c."Sucursal",
@@ -290,7 +290,7 @@ export class PostgreSQLStorage implements IStorage {
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
-        LEFT JOIN costos_base cb ON c.codigo_base = cb."CodArticulo"
+        LEFT JOIN costos_base cb ON c.codigo_base = cb."Codigo"
         WHERE c.diferencia_consolidada > 0
         ORDER BY total_valorizado DESC
         LIMIT 500
