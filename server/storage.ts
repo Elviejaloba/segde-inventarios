@@ -488,6 +488,116 @@ export class PostgreSQLStorage implements IStorage {
       return [];
     }
   }
+
+  // ========================================
+  // BRIDGE SYNC METHODS
+  // ========================================
+
+  async getSyncInfo(): Promise<any> {
+    try {
+      const ajustesCount = await sql`SELECT COUNT(*) as total FROM ajustes_sucursales`;
+      const costosCount = await sql`SELECT COUNT(*) as total FROM costos_articulos`;
+      const ultimaFechaAjustes = await sql`SELECT MAX("FechaMovimiento") as fecha FROM ajustes_sucursales`;
+      const ultimaSyncCostos = await sql`SELECT MAX(updated_at) as fecha FROM costos_articulos`;
+      
+      return {
+        total_ajustes: parseInt(ajustesCount[0]?.total || '0'),
+        total_costos: parseInt(costosCount[0]?.total || '0'),
+        ultima_fecha_ajustes: ultimaFechaAjustes[0]?.fecha || null,
+        ultima_sync_costos: ultimaSyncCostos[0]?.fecha || null
+      };
+    } catch (error) {
+      console.error('Error getting sync info:', error);
+      return { total_ajustes: 0, total_costos: 0 };
+    }
+  }
+
+  async syncAjustes(ajustes: any[], incremental: boolean = true): Promise<number> {
+    try {
+      let synced = 0;
+      
+      for (const ajuste of ajustes) {
+        const sucursal = ajuste['Sucursal'] || ajuste['sucursal'];
+        const comprobante = ajuste['Comprobante'] || ajuste['comprobante'] || ajuste['T_COMP'] || ajuste['Nro. comprobante'];
+        const codigo = ajuste['Cód. Artículo'] || ajuste['Codigo'] || ajuste['codigo'];
+        const articulo = ajuste['Artículo'] || ajuste['Articulo'] || ajuste['articulo'];
+        const fechaMovimiento = ajuste['Fecha movimiento'] || ajuste['FechaMovimiento'] || ajuste['fecha_movimiento'];
+        const tipoMovimiento = ajuste['Tipo de Movimiento'] || ajuste['TipoMovimiento'] || ajuste['tipo_movimiento'];
+        const diferencia = parseFloat(ajuste['Cantidad'] || ajuste['Diferencia'] || ajuste['diferencia'] || 0);
+        
+        if (!codigo || !sucursal) continue;
+        
+        if (incremental) {
+          // UPSERT - update if exists, insert if not
+          await sql`
+            INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
+            VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaMovimiento ? new Date(fechaMovimiento) : null}, ${tipoMovimiento}, ${diferencia})
+            ON CONFLICT DO NOTHING
+          `;
+        } else {
+          await sql`
+            INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
+            VALUES (${sucursal}, ${comprobante}, ${codigo}, ${articulo}, ${fechaMovimiento ? new Date(fechaMovimiento) : null}, ${tipoMovimiento}, ${diferencia})
+          `;
+        }
+        synced++;
+      }
+      
+      return synced;
+    } catch (error) {
+      console.error('Error syncing ajustes:', error);
+      throw error;
+    }
+  }
+
+  async syncCostos(costos: any[], incremental: boolean = true): Promise<number> {
+    try {
+      let synced = 0;
+      
+      // If not incremental, clear the table first
+      if (!incremental) {
+        await sql`TRUNCATE TABLE costos_articulos RESTART IDENTITY`;
+      }
+      
+      for (const costo of costos) {
+        const codigo = costo['Cód. Artículo'] || costo['Codigo'] || costo['codigo'];
+        const descripcion = costo['Descripción'] || costo['Descripcion'] || costo['descripcion'];
+        const sinonimo = costo['Sinónimo'] || costo['Sinonimo'] || costo['sinonimo'];
+        const codigoFamilia = costo['Cód. familia (Artículo)'] || costo['CodigoFamilia'];
+        const codigoBase = costo['Cód. Base / Artículo'] || costo['CodigoBase'];
+        const descripcionBase = costo['Desc. Base / Artículo'] || costo['DescripcionBase'];
+        const saldo = parseFloat(costo['Saldo'] || costo['saldo'] || 0);
+        const cotizacion = parseFloat(costo['gva16.cotiz'] || costo['Cotizacion'] || 0);
+        const costoVal = parseFloat(costo['Costo'] || costo['costo'] || 0);
+        const saldoValorizado = parseFloat(costo['Saldo Valorizado'] || costo['SaldoValorizado'] || 0);
+        
+        if (!codigo) continue;
+        
+        // UPSERT by codigo
+        await sql`
+          INSERT INTO costos_articulos ("Codigo", "Descripcion", "Sinonimo", "CodigoFamilia", "CodigoBase", "DescripcionBase", "Saldo", "Cotizacion", "Costo", "SaldoValorizado", "updated_at")
+          VALUES (${codigo}, ${descripcion}, ${sinonimo}, ${codigoFamilia}, ${codigoBase}, ${descripcionBase}, ${saldo}, ${cotizacion}, ${costoVal}, ${saldoValorizado}, NOW())
+          ON CONFLICT ("Codigo") DO UPDATE SET
+            "Descripcion" = EXCLUDED."Descripcion",
+            "Sinonimo" = EXCLUDED."Sinonimo",
+            "CodigoFamilia" = EXCLUDED."CodigoFamilia",
+            "CodigoBase" = EXCLUDED."CodigoBase",
+            "DescripcionBase" = EXCLUDED."DescripcionBase",
+            "Saldo" = EXCLUDED."Saldo",
+            "Cotizacion" = EXCLUDED."Cotizacion",
+            "Costo" = EXCLUDED."Costo",
+            "SaldoValorizado" = EXCLUDED."SaldoValorizado",
+            "updated_at" = NOW()
+        `;
+        synced++;
+      }
+      
+      return synced;
+    } catch (error) {
+      console.error('Error syncing costos:', error);
+      throw error;
+    }
+  }
 }
 
 // Create storage instance

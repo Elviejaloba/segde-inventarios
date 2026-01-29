@@ -135,6 +135,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========================================
+  // BRIDGE SYNC ENDPOINTS
+  // ========================================
+  
+  app.get('/sync-info', async (req: Request, res: Response) => {
+    try {
+      const syncInfo = await storage.getSyncInfo();
+      res.json(syncInfo);
+    } catch (error) {
+      console.error('Error getting sync info:', error);
+      res.status(500).json({ error: 'Failed to get sync info' });
+    }
+  });
+
+  app.post('/sync', async (req: Request, res: Response) => {
+    try {
+      const { ajustes, costos, incremental } = req.body;
+      const results: any = { success: true, timestamp: new Date().toISOString() };
+      
+      if (ajustes && Array.isArray(ajustes)) {
+        const count = await storage.syncAjustes(ajustes, incremental !== false);
+        results.ajustes = { synced: count };
+      }
+      
+      if (costos && Array.isArray(costos)) {
+        const count = await storage.syncCostos(costos, incremental !== false);
+        results.costos = { synced: count };
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error('Error syncing data:', error);
+      res.status(500).json({ error: 'Failed to sync data' });
+    }
+  });
+
   // Crear servidor HTTP
   const httpServer = createServer(app);
 
