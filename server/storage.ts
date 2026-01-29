@@ -431,33 +431,34 @@ export class PostgreSQLStorage implements IStorage {
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
         ),
-        ajustes_por_unidad AS (
+        unidades_por_sucursal AS (
           SELECT 
             a."Sucursal",
-            CASE 
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KG%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KILO%' THEN 'KG'
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%METRO%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' THEN 'MTS'
-              ELSE 'UN'
-            END as unidad_normalizada,
-            SUM(ABS(a."Diferencia")) as total_por_unidad
+            SUM(CASE 
+              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%KG%' 
+                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%KILO%'
+                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%MTS%' 
+                AND UPPER(COALESCE(a."UnidadMedida", 'UN')) NOT LIKE '%METRO%'
+              THEN ABS(a."Diferencia") ELSE 0 END) as total_un,
+            SUM(CASE 
+              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' 
+                OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%METRO%'
+              THEN ABS(a."Diferencia") ELSE 0 END) as total_mts,
+            SUM(CASE 
+              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KG%' 
+                OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KILO%'
+              THEN ABS(a."Diferencia") ELSE 0 END) as total_kg
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-          GROUP BY a."Sucursal", CASE 
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KG%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%KILO%' THEN 'KG'
-              WHEN UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%METRO%' OR UPPER(COALESCE(a."UnidadMedida", 'UN')) LIKE '%MTS%' THEN 'MTS'
-              ELSE 'UN'
-            END
+          GROUP BY a."Sucursal"
         ),
         ajustes_por_sucursal AS (
           SELECT 
             ab."Sucursal",
             COUNT(DISTINCT ab.codigo_base) as articulos_con_ajuste,
             SUM(ab.total_diferencia) as total_unidades_ajustadas,
-            SUM(ab.total_diferencia * COALESCE(vb.precio_promedio, 0)) as total_valorizado,
-            COALESCE((SELECT total_por_unidad FROM ajustes_por_unidad u WHERE u."Sucursal" = ab."Sucursal" AND u.unidad_normalizada = 'UN'), 0) as total_un,
-            COALESCE((SELECT total_por_unidad FROM ajustes_por_unidad u WHERE u."Sucursal" = ab."Sucursal" AND u.unidad_normalizada = 'MTS'), 0) as total_mts,
-            COALESCE((SELECT total_por_unidad FROM ajustes_por_unidad u WHERE u."Sucursal" = ab."Sucursal" AND u.unidad_normalizada = 'KG'), 0) as total_kg
+            SUM(ab.total_diferencia * COALESCE(vb.precio_promedio, 0)) as total_valorizado
           FROM ajustes_base ab
           LEFT JOIN ventas_base vb ON ab."Sucursal" = vb."Sucursal" AND ab.codigo_base = vb.codigo_base
           GROUP BY ab."Sucursal"
@@ -478,11 +479,12 @@ export class PostgreSQLStorage implements IStorage {
           a.articulos_con_ajuste,
           a.total_unidades_ajustadas,
           a.total_valorizado,
-          a.total_un,
-          a.total_mts,
-          a.total_kg,
+          COALESCE(u.total_un, 0) as total_un,
+          COALESCE(u.total_mts, 0) as total_mts,
+          COALESCE(u.total_kg, 0) as total_kg,
           COALESCE(v.total_ventas, 0) as total_ventas
         FROM ajustes_por_sucursal a
+        LEFT JOIN unidades_por_sucursal u ON a."Sucursal" = u."Sucursal"
         LEFT JOIN ventas_por_sucursal v ON a."Sucursal" = v."Sucursal"
         ORDER BY total_valorizado DESC
       `;
