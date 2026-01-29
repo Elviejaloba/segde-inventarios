@@ -59,6 +59,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Análisis valorizado con costo de reposición
+  app.get('/api/ajustes/valorizado-costo', async (req, res) => {
+    try {
+      const { sucursal } = req.query;
+      const analisis = await storage.getAnalisisValorizadoConCosto(sucursal as string);
+      res.json(analisis);
+    } catch (error) {
+      console.error('Error getting análisis valorizado con costo:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Historial de ajustes por código
   app.get('/api/ajustes/historial/:codigo', async (req, res) => {
     try {

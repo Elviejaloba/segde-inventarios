@@ -132,6 +132,10 @@ export default function ReportesPage() {
   const [showDocumentos, setShowDocumentos] = useState(false);
   const [selectedCodigoDoc, setSelectedCodigoDoc] = useState<{ codigo: string; articulo: string; sucursal: string } | null>(null);
   const [loadingLink, setLoadingLink] = useState<string | null>(null);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [showCostoReposicion, setShowCostoReposicion] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -181,6 +185,19 @@ export default function ReportesPage() {
     enabled: showDocumentos
   });
 
+  const { data: analisisCosto } = useQuery<{ resumen: Array<{ sucursal: string; unidadesAjustadas: number; perdidaCosto: number }> }>({
+    queryKey: ['/api/ajustes/valorizado-costo', selectedSucursal],
+    queryFn: async () => {
+      const url = selectedSucursal 
+        ? `/api/ajustes/valorizado-costo?sucursal=${encodeURIComponent(selectedSucursal)}`
+        : '/api/ajustes/valorizado-costo';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error fetching data con costo');
+      return response.json();
+    },
+    enabled: showCostoReposicion
+  });
+
   const filteredMuestreos = muestreos?.filter(file => {
     if (!selectedCodigoDoc) return true;
     const sucursal = selectedCodigoDoc.sucursal.toLowerCase();
@@ -216,6 +233,21 @@ export default function ReportesPage() {
       sucursal: item.sucursal 
     });
     setShowDocumentos(true);
+  };
+
+  const handlePasswordSubmit = () => {
+    if (passwordInput === "2809") {
+      setShowCostoReposicion(true);
+      setShowPasswordDialog(false);
+      setPasswordInput("");
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  };
+
+  const handleCloseCostoMode = () => {
+    setShowCostoReposicion(false);
   };
 
   const filteredData = analisis?.detalle?.filter(item => {
@@ -392,11 +424,28 @@ export default function ReportesPage() {
       {analisis?.resumen && analisis.resumen.length > 0 && (
         <Card data-testid="tabla-resumen">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Resumen por Sucursal
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">* Los valores están calculados a precio público</p>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Resumen por Sucursal
+              </CardTitle>
+              {showCostoReposicion ? (
+                <Button variant="outline" size="sm" onClick={handleCloseCostoMode} className="text-green-600 border-green-600">
+                  <Eye className="h-4 w-4 mr-1" />
+                  Ocultar Costo
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => setShowPasswordDialog(true)}>
+                  <DollarSign className="h-4 w-4 mr-1" />
+                  Ver con Costo
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {showCostoReposicion 
+                ? "* Los valores están calculados a COSTO DE REPOSICIÓN"
+                : "* Los valores están calculados a precio público"}
+            </p>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -407,25 +456,36 @@ export default function ReportesPage() {
                     <TableHead className="text-right hidden sm:table-cell">Artículos</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Unidades</TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
+                    {showCostoReposicion && (
+                      <TableHead className="text-right text-green-700">Costo Rep.</TableHead>
+                    )}
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analisis.resumen.map((item) => (
-                    <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
-                      <TableCell className="font-medium">{item.sucursal}</TableCell>
-                      <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
-                      <TableCell className="text-right hidden md:table-cell">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-red-600 font-medium">
-                        {formatCurrency(item.totalValorizado)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"}>
-                          {item.porcentajePerdida.toFixed(2)}%
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {analisis.resumen.map((item) => {
+                    const costData = analisisCosto?.resumen?.find(c => c.sucursal === item.sucursal);
+                    return (
+                      <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
+                        <TableCell className="font-medium">{item.sucursal}</TableCell>
+                        <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
+                        <TableCell className="text-right hidden md:table-cell">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-red-600 font-medium">
+                          {formatCurrency(item.totalValorizado)}
+                        </TableCell>
+                        {showCostoReposicion && (
+                          <TableCell className="text-right text-green-700 font-medium">
+                            {costData ? formatCurrency(costData.perdidaCosto) : '-'}
+                          </TableCell>
+                        )}
+                        <TableCell className="text-right">
+                          <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"}>
+                            {item.porcentajePerdida.toFixed(2)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -777,6 +837,50 @@ export default function ReportesPage() {
               No hay documentos de muestreo disponibles
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Ver a Costo de Reposición
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Ingrese la contraseña para ver los valores a costo de reposición
+            </p>
+            <Input
+              type="password"
+              placeholder="Contraseña"
+              value={passwordInput}
+              onChange={(e) => {
+                setPasswordInput(e.target.value);
+                setPasswordError(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handlePasswordSubmit();
+              }}
+              className={passwordError ? "border-red-500" : ""}
+            />
+            {passwordError && (
+              <p className="text-sm text-red-500">Contraseña incorrecta</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setShowPasswordDialog(false);
+                setPasswordInput("");
+                setPasswordError(false);
+              }}>
+                Cancelar
+              </Button>
+              <Button onClick={handlePasswordSubmit}>
+                Acceder
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

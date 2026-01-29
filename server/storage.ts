@@ -29,6 +29,7 @@ export interface IStorage {
   
   // Análisis valorizado
   getAnalisisValorizado(sucursal?: string): Promise<any>;
+  getAnalisisValorizadoConCosto(sucursal?: string): Promise<any>;
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
 }
 
@@ -420,6 +421,60 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Error getting análisis valorizado:', error);
       return { detalle: [], resumen: [], totales: { totalArticulos: 0, totalAlertas: 0 } };
+    }
+  }
+
+  async getAnalisisValorizadoConCosto(sucursal?: string): Promise<any> {
+    try {
+      const resumenQuery = `
+        WITH ajustes_base AS (
+          SELECT 
+            a."Sucursal",
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            SUM(ABS(a."Diferencia")) as total_diferencia
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        costos_base AS (
+          SELECT 
+            "CodArticulo",
+            AVG("Costo") as costo_promedio
+          FROM costos_articulos
+          WHERE "Costo" > 0
+          GROUP BY "CodArticulo"
+        ),
+        ajustes_valorizado AS (
+          SELECT 
+            ab."Sucursal",
+            SUM(ab.total_diferencia) as total_unidades,
+            SUM(ab.total_diferencia * COALESCE(cb.costo_promedio, 0)) as total_costo_reposicion
+          FROM ajustes_base ab
+          LEFT JOIN costos_base cb ON ab.codigo_base = cb."CodArticulo"
+          GROUP BY ab."Sucursal"
+        )
+        SELECT 
+          "Sucursal",
+          total_unidades as unidades_ajustadas,
+          total_costo_reposicion as perdida_costo
+        FROM ajustes_valorizado
+        ORDER BY total_costo_reposicion DESC
+      `;
+      
+      const params = sucursal ? [sucursal] : [];
+      const resumen = await sql(resumenQuery, params);
+      
+      return {
+        resumen: resumen.map((row: any) => ({
+          sucursal: row.Sucursal,
+          unidadesAjustadas: parseFloat(row.unidades_ajustadas || 0),
+          perdidaCosto: parseFloat(row.perdida_costo || 0)
+        }))
+      };
+    } catch (error) {
+      console.error('Error getting análisis valorizado con costo:', error);
+      return { resumen: [] };
     }
   }
 
