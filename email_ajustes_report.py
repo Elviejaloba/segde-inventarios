@@ -135,6 +135,52 @@ def get_resumen_comprobantes(dias=30):
         print(f"Error obteniendo comprobantes: {e}")
         return []
 
+def get_ajustes_por_unidad(dias=30):
+    """
+    Obtiene el desglose de ajustes por unidad de medida (UN, MTS, KG)
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Consulta simplificada sin filtro de fecha para evitar problemas
+        query = """
+        SELECT 
+            CASE 
+                WHEN UPPER(COALESCE("UnidadMedida", 'UN')) LIKE '%%KG%%' OR UPPER(COALESCE("UnidadMedida", 'UN')) LIKE '%%KILO%%' THEN 'KG'
+                WHEN UPPER(COALESCE("UnidadMedida", 'UN')) LIKE '%%MTS%%' OR UPPER(COALESCE("UnidadMedida", 'UN')) LIKE '%%METRO%%' THEN 'MTS'
+                ELSE 'UN'
+            END as unidad_medida,
+            COUNT(*) as cantidad_ajustes,
+            SUM(ABS("Diferencia")) as total_ajustado
+        FROM ajustes_sucursales
+        GROUP BY 1
+        ORDER BY total_ajustado DESC
+        """
+        
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        # Asegurar que tenemos los 3 tipos
+        default = {'cantidad_ajustes': 0, 'total_ajustado': 0}
+        result_dict = {}
+        for r in resultados:
+            key = r.get('unidad_medida') or 'UN'
+            result_dict[key] = r
+        return {
+            'UN': result_dict.get('UN', default),
+            'MTS': result_dict.get('MTS', default),
+            'KG': result_dict.get('KG', default)
+        }
+    except Exception as e:
+        print(f"Error obteniendo ajustes por unidad: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'UN': {'cantidad_ajustes': 0, 'total_ajustado': 0}, 'MTS': {'cantidad_ajustes': 0, 'total_ajustado': 0}, 'KG': {'cantidad_ajustes': 0, 'total_ajustado': 0}}
+
 def clasificar_sucursal(perdida_valorizada):
     """Clasifica el estado de la sucursal según pérdida valorizada"""
     perdida = abs(float(perdida_valorizada or 0))
@@ -149,6 +195,7 @@ def generar_html_reporte(dias=30):
     """Genera HTML del reporte ejecutivo de ajustes"""
     ajustes = get_ajustes_valorizados(dias)
     comprobantes = get_resumen_comprobantes(dias)
+    unidades = get_ajustes_por_unidad(dias)
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
     
     # Calcular totales
@@ -350,6 +397,56 @@ def generar_html_reporte(dias=30):
                                                 <td style="padding:20px;text-align:center;">
                                                     <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:bold;color:#ffffff;">${total_balance:,.0f}</div>
                                                     <div style="font-family:Arial,sans-serif;font-size:10px;color:#ffffff;text-transform:uppercase;margin-top:5px;">Balance Neto</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Desglose por Unidad de Medida -->
+                    <tr>
+                        <td style="padding:15px 30px 5px;">
+                            <h3 style="font-family:Arial,sans-serif;font-size:14px;color:#333333;margin:0;font-weight:bold;">
+                                📦 Ajustes por Unidad de Medida
+                            </h3>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 30px 25px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td width="33%" style="padding:5px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3e8ff;border:2px solid #9333ea;">
+                                            <tr>
+                                                <td style="padding:15px;text-align:center;">
+                                                    <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:#7c3aed;">{float(unidades['UN'].get('total_ajustado', 0) or 0):,.0f}</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:12px;color:#7c3aed;text-transform:uppercase;font-weight:bold;margin-top:5px;">Unidades</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#999;margin-top:3px;">{int(unidades['UN'].get('cantidad_ajustes', 0) or 0):,} registros</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td width="33%" style="padding:5px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#dbeafe;border:2px solid #2563eb;">
+                                            <tr>
+                                                <td style="padding:15px;text-align:center;">
+                                                    <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:#1d4ed8;">{float(unidades['MTS'].get('total_ajustado', 0) or 0):,.1f}</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:12px;color:#1d4ed8;text-transform:uppercase;font-weight:bold;margin-top:5px;">Metros</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#999;margin-top:3px;">{int(unidades['MTS'].get('cantidad_ajustes', 0) or 0):,} registros</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td width="33%" style="padding:5px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffedd5;border:2px solid #ea580c;">
+                                            <tr>
+                                                <td style="padding:15px;text-align:center;">
+                                                    <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:#c2410c;">{float(unidades['KG'].get('total_ajustado', 0) or 0):,.2f}</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:12px;color:#c2410c;text-transform:uppercase;font-weight:bold;margin-top:5px;">Kilogramos</div>
+                                                    <div style="font-family:Arial,sans-serif;font-size:10px;color:#999;margin-top:3px;">{int(unidades['KG'].get('cantidad_ajustes', 0) or 0):,} registros</div>
                                                 </td>
                                             </tr>
                                         </table>
