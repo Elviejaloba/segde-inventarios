@@ -616,13 +616,25 @@ export default function ReportesPage() {
                     <TableHead className="text-right hidden sm:table-cell" title="Cantidad de artículos diferentes con ajustes">
                       <div className="flex flex-col items-end">
                         <span>Artículos</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">Cant. con ajuste</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Cant. ajuste</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right hidden md:table-cell" title="Total de unidades ajustadas">
+                    <TableHead className="text-right hidden lg:table-cell text-purple-600" title="Total de unidades (UN) ajustadas">
                       <div className="flex flex-col items-end">
-                        <span>Unidades</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">Total ajustadas</span>
+                        <span>UN</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Unidades</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right hidden lg:table-cell text-blue-600" title="Total de metros (MTS) ajustados">
+                      <div className="flex flex-col items-end">
+                        <span>MTS</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Metros</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right hidden lg:table-cell text-orange-600" title="Total de kilogramos (KG) ajustados">
+                      <div className="flex flex-col items-end">
+                        <span>KG</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                       </div>
                     </TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
@@ -633,13 +645,21 @@ export default function ReportesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analisis.resumen.map((item) => {
+                  {analisis.resumen.map((item: any) => {
                     const costData = analisisCosto?.resumen?.find(c => c.sucursal === item.sucursal);
                     return (
                       <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
                         <TableCell className="font-medium">{item.sucursal}</TableCell>
                         <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
-                        <TableCell className="text-right hidden md:table-cell">{item.totalUnidadesAjustadas.toFixed(2)}</TableCell>
+                        <TableCell className="text-right hidden lg:table-cell text-purple-600 font-medium" title={`${(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} unidades ajustadas`}>
+                          {(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </TableCell>
+                        <TableCell className="text-right hidden lg:table-cell text-blue-600 font-medium" title={`${(item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} metros ajustados`}>
+                          {(item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </TableCell>
+                        <TableCell className="text-right hidden lg:table-cell text-orange-600 font-medium" title={`${(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} kilogramos ajustados`}>
+                          {(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                        </TableCell>
                         <TableCell className="text-right text-red-600 font-medium">
                           {formatCurrency(item.totalValorizado)}
                         </TableCell>
