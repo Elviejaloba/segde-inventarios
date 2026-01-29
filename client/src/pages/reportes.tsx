@@ -22,6 +22,7 @@ import {
 import {
   DollarSign,
   TrendingDown,
+  TrendingUp,
   AlertTriangle,
   Package,
   Search,
@@ -32,6 +33,8 @@ import {
   RefreshCw,
   BarChart3,
   ArrowUp,
+  ArrowDown,
+  Minus,
   FileText,
   ExternalLink,
   Loader2
@@ -214,7 +217,7 @@ export default function ReportesPage() {
     enabled: showCostoReposicion
   });
 
-  const { data: ajustesPorUnidad } = useQuery<Array<{ unidadMedida: string; articulos: number; registros: number; totalAjustado: number }>>({
+  const { data: ajustesPorUnidad } = useQuery<Array<{ unidadMedida: string; articulos: number; registros: number; totalAjustado: number; total2025: number; variacionPorcentaje: number }>>({
     queryKey: ['/api/ajustes/por-unidad', selectedSucursal, selectedPeriodo],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -496,7 +499,7 @@ export default function ReportesPage() {
               Ajustes por Unidad de Medida
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Total ajustado consolidado por tipo de unidad
+              Total ajustado consolidado por tipo de unidad (comparado vs 2025)
             </p>
           </CardHeader>
           <CardContent>
@@ -506,18 +509,47 @@ export default function ReportesPage() {
                 const iconColor = unidad === 'UN' ? 'text-purple-600' : unidad === 'MTS' ? 'text-blue-600' : 'text-orange-600';
                 const bgColor = unidad === 'UN' ? 'from-purple-50 to-purple-100 dark:from-purple-900/20' : unidad === 'MTS' ? 'from-blue-50 to-blue-100 dark:from-blue-900/20' : 'from-orange-50 to-orange-100 dark:from-orange-900/20';
                 const label = unidad === 'UN' ? 'Unidades' : unidad === 'MTS' ? 'Metros' : 'Kilogramos';
+                const variacion = data?.variacionPorcentaje || 0;
+                const isUp = variacion > 0;
+                const isDown = variacion < 0;
+                const isNeutral = Math.abs(variacion) < 0.5;
                 
                 return (
                   <div key={unidad} className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Package className={`h-4 w-4 ${iconColor}`} />
-                      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Package className={`h-4 w-4 ${iconColor}`} />
+                        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                      </div>
+                      {data && !isNeutral && (
+                        <div className={`flex items-center gap-0.5 text-[10px] font-medium ${isUp ? 'text-red-600' : 'text-green-600'}`}>
+                          {isUp ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3" />
+                          )}
+                          <span>{Math.abs(variacion).toFixed(1)}%</span>
+                        </div>
+                      )}
+                      {data && isNeutral && (
+                        <div className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500">
+                          <Minus className="h-3 w-3" />
+                          <span>0%</span>
+                        </div>
+                      )}
                     </div>
                     <div className={`text-lg sm:text-xl font-bold ${iconColor}`}>
                       {data ? data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '0'}
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      {data ? `${data.articulos} artículos` : 'Sin datos'}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {data ? `${data.articulos} artículos` : 'Sin datos'}
+                      </span>
+                      {data && data.total2025 > 0 && (
+                        <span className="text-[9px] text-muted-foreground">
+                          2025: {data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

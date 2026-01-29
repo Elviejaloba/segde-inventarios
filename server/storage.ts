@@ -210,14 +210,35 @@ export class PostgreSQLStorage implements IStorage {
         ORDER BY total_ajustado DESC
       `;
 
-      const result = await sql(query);
+      // Query para datos de 2025 (baseline para comparación)
+      const query2025 = `
+        SELECT 
+          "UnidadMedida",
+          SUM(ABS("Diferencia")) as total_ajustado_2025
+        FROM ajustes_sucursales
+        WHERE "FechaMovimiento" IS NOT NULL
+        AND "FechaMovimiento" >= '2025-01-01' AND "FechaMovimiento" <= '2025-12-31'
+        ${sucursalFilter}
+        GROUP BY "UnidadMedida"
+      `;
+
+      const [result, result2025] = await Promise.all([sql(query), sql(query2025)]);
       
-      return result.map((row: any) => ({
-        unidadMedida: row.UnidadMedida || 'UN',
-        articulos: parseInt(row.articulos),
-        registros: parseInt(row.registros),
-        totalAjustado: parseFloat(row.total_ajustado)
-      }));
+      return result.map((row: any) => {
+        const data2025 = result2025.find((r: any) => r.UnidadMedida === row.UnidadMedida);
+        const totalActual = parseFloat(row.total_ajustado);
+        const total2025 = data2025 ? parseFloat(data2025.total_ajustado_2025) : 0;
+        const variacion = total2025 > 0 ? ((totalActual - total2025) / total2025) * 100 : 0;
+        
+        return {
+          unidadMedida: row.UnidadMedida || 'UN',
+          articulos: parseInt(row.articulos),
+          registros: parseInt(row.registros),
+          totalAjustado: totalActual,
+          total2025: total2025,
+          variacionPorcentaje: variacion
+        };
+      });
     } catch (error) {
       console.error('Error getting ajustes por unidad:', error);
       return [];
