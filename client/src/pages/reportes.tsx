@@ -341,8 +341,8 @@ export default function ReportesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas las sucursales</SelectItem>
-              {SUCURSALES.map((suc) => (
-                <SelectItem key={suc} value={suc}>{suc}</SelectItem>
+              {analisis?.resumen?.map((item: any) => (
+                <SelectItem key={item.sucursal} value={item.sucursal}>{item.sucursal}</SelectItem>
               ))}
             </SelectContent>
           </Select>
