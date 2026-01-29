@@ -507,11 +507,21 @@ export default function ReportesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Sucursal</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">Artículos</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">Unidades</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell" title="Cantidad de artículos diferentes con ajustes">
+                      <div className="flex flex-col items-end">
+                        <span>Artículos</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Cant. con ajuste</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right hidden md:table-cell" title="Total de unidades ajustadas">
+                      <div className="flex flex-col items-end">
+                        <span>Unidades</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Total ajustadas</span>
+                      </div>
+                    </TableHead>
                     <TableHead className="text-right">Pérdida $</TableHead>
                     {showCostoReposicion && (
-                      <TableHead className="text-right text-green-700"></TableHead>
+                      <TableHead className="text-right text-green-700">Costo Rep.</TableHead>
                     )}
                     <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
