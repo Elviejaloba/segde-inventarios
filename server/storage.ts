@@ -524,6 +524,7 @@ export class PostgreSQLStorage implements IStorage {
         const articulo = ajuste['Artículo'] || ajuste['Articulo'] || ajuste['articulo'];
         const fechaMovimiento = ajuste['Fecha movimiento'] || ajuste['FechaMovimiento'] || ajuste['fecha_movimiento'];
         const tipoMovimiento = ajuste['Tipo de Movimiento'] || ajuste['TipoMovimiento'] || ajuste['tipo_movimiento'];
+        const unidadMedida = ajuste['U.M. stock'] || ajuste['UnidadMedida'] || ajuste['unidad_medida'] || '';
         const diferencia = parseFloat(ajuste['Cantidad'] || ajuste['Diferencia'] || ajuste['diferencia'] || 0);
         
         if (!codigo || !sucursal || !nroComprobante) continue;
@@ -531,8 +532,8 @@ export class PostgreSQLStorage implements IStorage {
         // UPSERT basado en Sucursal + NroComprobante + Codigo (clave única por comprobante)
         const fechaVal = fechaMovimiento ? new Date(fechaMovimiento) : null;
         await sql`
-          INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "NroComprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia")
-          VALUES (${sucursal}, ${comprobante}, ${nroComprobante}, ${codigo}, ${articulo}, ${fechaVal}, ${tipoMovimiento}, ${diferencia})
+          INSERT INTO ajustes_sucursales ("Sucursal", "Comprobante", "NroComprobante", "Codigo", "Articulo", "FechaMovimiento", "TipoMovimiento", "Diferencia", "UnidadMedida")
+          VALUES (${sucursal}, ${comprobante}, ${nroComprobante}, ${codigo}, ${articulo}, ${fechaVal}, ${tipoMovimiento}, ${diferencia}, ${unidadMedida})
           ON CONFLICT DO NOTHING
         `;
         synced++;
