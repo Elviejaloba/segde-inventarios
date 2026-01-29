@@ -708,9 +708,24 @@ export default function ReportesPage() {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead className="hidden sm:table-cell">Artículo</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Dif.2025</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Dif.2026</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">Total</TableHead>
+                  <TableHead className="text-right text-purple-600" title="Unidades (UN)">
+                    <div className="flex flex-col items-end">
+                      <span>UN</span>
+                      <span className="text-[10px] font-normal text-muted-foreground">Unidades</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right text-blue-600" title="Metros (MTS)">
+                    <div className="flex flex-col items-end">
+                      <span>MTS</span>
+                      <span className="text-[10px] font-normal text-muted-foreground">Metros</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right text-orange-600" title="Kilogramos (KG)">
+                    <div className="flex flex-col items-end">
+                      <span>KG</span>
+                      <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Pérdida $</TableHead>
                   {showCostoReposicion && (
                     <TableHead className="text-right text-green-700"></TableHead>
@@ -727,14 +742,14 @@ export default function ReportesPage() {
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
-                    <TableCell className="text-right hidden lg:table-cell text-orange-600">
-                      {item.diferencia2025 !== 0 ? item.diferencia2025.toFixed(0) : '-'}
+                    <TableCell className="text-right text-purple-600 font-medium">
+                      {(item.totalUn || 0) > 0 ? (item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right hidden lg:table-cell text-blue-600">
-                      {item.diferencia2026 !== 0 ? item.diferencia2026.toFixed(0) : '-'}
+                    <TableCell className="text-right text-blue-600 font-medium">
+                      {(item.totalMts || 0) > 0 ? (item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right hidden md:table-cell font-medium">
-                      {item.totalUnidades.toFixed(0)}
+                    <TableCell className="text-right text-orange-600 font-medium">
+                      {(item.totalKg || 0) > 0 ? (item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
                     </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">
                       {formatCurrency(item.totalValorizado)}

@@ -296,11 +296,22 @@ export class PostgreSQLStorage implements IStorage {
             a."FechaMovimiento",
             a."TipoMovimiento",
             a."Diferencia",
+            a."UnidadMedida",
             EXTRACT(YEAR FROM a."FechaMovimiento") as anio
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
+        ),
+        unidades_por_codigo AS (
+          SELECT 
+            "Sucursal",
+            codigo_base,
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'UN' THEN ABS("Diferencia") ELSE 0 END) as total_un,
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'MTS' THEN ABS("Diferencia") ELSE 0 END) as total_mts,
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'KG' THEN ABS("Diferencia") ELSE 0 END) as total_kg
+          FROM codigo_base
+          GROUP BY "Sucursal", codigo_base
         ),
         ajustes_2025 AS (
           -- Último ajuste de 2025 por código base
@@ -397,11 +408,15 @@ export class PostgreSQLStorage implements IStorage {
             ELSE false
           END as sin_ajuste_anual,
           c.diferencia_2025,
-          c.diferencia_2026
+          c.diferencia_2026,
+          COALESCE(uc.total_un, 0) as total_un,
+          COALESCE(uc.total_mts, 0) as total_mts,
+          COALESCE(uc.total_kg, 0) as total_kg
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
         LEFT JOIN costos_base cb ON c.codigo_base = cb."Codigo"
+        LEFT JOIN unidades_por_codigo uc ON c."Sucursal" = uc."Sucursal" AND c.codigo_base = uc.codigo_base
         WHERE c.diferencia_consolidada > 0
         ORDER BY total_valorizado DESC
         LIMIT 500
@@ -540,7 +555,10 @@ export class PostgreSQLStorage implements IStorage {
           alertaPerdida: parseFloat(row.porcentaje_perdida) > 3,
           sinAjusteAnual: row.sin_ajuste_anual === true || row.sin_ajuste_anual === 't',
           diferencia2025: parseFloat(row.diferencia_2025 || 0),
-          diferencia2026: parseFloat(row.diferencia_2026 || 0)
+          diferencia2026: parseFloat(row.diferencia_2026 || 0),
+          totalUn: parseFloat(row.total_un || 0),
+          totalMts: parseFloat(row.total_mts || 0),
+          totalKg: parseFloat(row.total_kg || 0)
         })),
         resumen: resumen.map((row: any) => ({
           sucursal: row.Sucursal,
