@@ -169,25 +169,28 @@ def generar_html_reporte(dias=30):
         perdida = float(ajuste['perdida_valorizada'] or 0)
         ganancia = float(ajuste['ganancia_valorizada'] or 0)
         balance = float(ajuste['balance_valorizado'] or 0)
-        sucursal = ajuste.get('Sucursal') or ajuste.get('sucursal', 'N/A')
+        sucursal_raw = ajuste.get('Sucursal') or ajuste.get('sucursal', 'N/A')
+        # Acortar nombre: quitar "LA TIJERA " 
+        sucursal = sucursal_raw.replace('LA TIJERA ', '').replace('SMARTIN', 'SAN MARTIN')
         nivel, color, text_color = clasificar_sucursal(perdida)
         bg = "#ffffff" if i % 2 == 0 else "#f9f9f9"
         
-        indicador = f'<span style="color:{color};font-size:16px;font-weight:bold;">&#9679;</span>'
+        indicador = f'<span style="color:{color};font-size:14px;font-weight:bold;">&#9679;</span>'
+        balance_fmt = f'-${abs(balance):,.0f}' if balance < 0 else f'${balance:,.0f}'
         
         filas_sucursales += f"""
         <tr style="background-color:{bg};">
-            <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;font-family:Arial,sans-serif;font-size:14px;">
+            <td style="padding:10px 12px;border-bottom:1px solid #eeeeee;font-family:Arial,sans-serif;font-size:13px;white-space:nowrap;">
                 {indicador} <strong>{sucursal}</strong>
             </td>
-            <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:{COLORS['red']};font-weight:bold;">
+            <td style="padding:10px 8px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:{COLORS['red']};font-weight:bold;white-space:nowrap;">
                 ${abs(perdida):,.0f}
             </td>
-            <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:{COLORS['green']};">
+            <td style="padding:10px 8px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:{COLORS['green']};white-space:nowrap;">
                 ${ganancia:,.0f}
             </td>
-            <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:{'#dc3545' if balance < 0 else '#28a745'};font-weight:bold;">
-                {'-$' + f'{abs(balance):,.0f}' if balance < 0 else '$' + f'{balance:,.0f}'}
+            <td style="padding:10px 8px;border-bottom:1px solid #eeeeee;text-align:right;font-family:Arial,sans-serif;font-size:12px;color:{'#dc3545' if balance < 0 else '#28a745'};font-weight:bold;white-space:nowrap;">
+                {balance_fmt}
             </td>
             <td style="padding:12px 15px;border-bottom:1px solid #eeeeee;text-align:center;font-family:Arial,sans-serif;font-size:14px;">
                 {int(ajuste['total_ajustes'] or 0)}
