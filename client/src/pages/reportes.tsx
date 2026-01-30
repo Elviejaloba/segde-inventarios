@@ -685,26 +685,26 @@ export default function ReportesPage() {
                         <span className="text-[10px] font-normal text-muted-foreground">Cant. ajuste</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right text-purple-600" title="Total de unidades (UN) ajustadas">
+                    <TableHead className="text-right text-purple-600 hidden md:table-cell" title="Total de unidades (UN) ajustadas">
                       <div className="flex flex-col items-end">
                         <span>UN</span>
                         <span className="text-[10px] font-normal text-muted-foreground">Unidades</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right text-blue-600" title="Total de metros (MTS) ajustados">
+                    <TableHead className="text-right text-blue-600 hidden md:table-cell" title="Total de metros (MTS) ajustados">
                       <div className="flex flex-col items-end">
                         <span>MTS</span>
                         <span className="text-[10px] font-normal text-muted-foreground">Metros</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right text-orange-600" title="Total de kilogramos (KG) ajustados">
+                    <TableHead className="text-right text-orange-600 hidden md:table-cell" title="Total de kilogramos (KG) ajustados">
                       <div className="flex flex-col items-end">
                         <span>KG</span>
                         <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">Pérdida $</TableHead>
-                    <TableHead className="text-right">% Pérdida</TableHead>
+                    <TableHead className="text-right text-xs sm:text-sm">Pérdida $</TableHead>
+                    <TableHead className="text-right text-xs sm:text-sm">% Pérd.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -714,13 +714,13 @@ export default function ReportesPage() {
                       <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
                         <TableCell className="font-medium">{item.sucursal}</TableCell>
                         <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
-                        <TableCell className="text-right text-purple-600 font-medium" title={`${(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} unidades ajustadas`}>
+                        <TableCell className="text-right text-purple-600 font-medium hidden md:table-cell" title={`${(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} unidades ajustadas`}>
                           {(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                         </TableCell>
-                        <TableCell className="text-right text-blue-600 font-medium" title={`${(item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} metros ajustados`}>
+                        <TableCell className="text-right text-blue-600 font-medium hidden md:table-cell" title={`${(item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} metros ajustados`}>
                           {(item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                         </TableCell>
-                        <TableCell className="text-right text-orange-600 font-medium" title={`${(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} kilogramos ajustados`}>
+                        <TableCell className="text-right text-orange-600 font-medium hidden md:table-cell" title={`${(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} kilogramos ajustados`}>
                           {(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-right text-red-600 font-medium">
@@ -780,26 +780,26 @@ export default function ReportesPage() {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead className="hidden sm:table-cell">Artículo</TableHead>
-                  <TableHead className="text-right text-purple-600" title="Unidades (UN)">
+                  <TableHead className="text-right text-purple-600 hidden md:table-cell" title="Unidades (UN)">
                     <div className="flex flex-col items-end">
                       <span>UN</span>
                       <span className="text-[10px] font-normal text-muted-foreground">Unidades</span>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right text-blue-600" title="Metros (MTS)">
+                  <TableHead className="text-right text-blue-600 hidden md:table-cell" title="Metros (MTS)">
                     <div className="flex flex-col items-end">
                       <span>MTS</span>
                       <span className="text-[10px] font-normal text-muted-foreground">Metros</span>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right text-orange-600" title="Kilogramos (KG)">
+                  <TableHead className="text-right text-orange-600 hidden md:table-cell" title="Kilogramos (KG)">
                     <div className="flex flex-col items-end">
                       <span>KG</span>
                       <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right">Pérdida $</TableHead>
-                  <TableHead className="text-right">% Pérdida</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm">Pérdida $</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm">% Pérd.</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -811,13 +811,13 @@ export default function ReportesPage() {
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
-                    <TableCell className="text-right text-purple-600 font-medium">
+                    <TableCell className="text-right text-purple-600 font-medium hidden md:table-cell">
                       {(item.totalUn || 0) > 0 ? (item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right text-blue-600 font-medium">
+                    <TableCell className="text-right text-blue-600 font-medium hidden md:table-cell">
                       {(item.totalMts || 0) > 0 ? (item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right text-orange-600 font-medium">
+                    <TableCell className="text-right text-orange-600 font-medium hidden md:table-cell">
                       {(item.totalKg || 0) > 0 ? (item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
                     </TableCell>
                     <TableCell className="text-right text-red-600 font-medium">

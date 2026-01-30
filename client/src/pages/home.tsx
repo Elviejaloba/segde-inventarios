@@ -636,9 +636,9 @@ export default function Home() {
               {calendarioSemanal && (
                 <div className="space-y-4">
                   {/* Encabezado con título */}
-                  <div className="bg-yellow-300 p-3 rounded-lg" data-testid="header-calendario">
-                    <h3 className="text-lg font-bold text-gray-800">{calendarioSemanal.totalItems} Items sobrestock y sin rotación</h3>
-                    <p className="text-sm text-gray-600">Selecciona los items que vayas completando - {selectedBranch}</p>
+                  <div className="bg-yellow-300 p-2 sm:p-3 rounded-lg" data-testid="header-calendario">
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-800">{calendarioSemanal.totalItems} Items sobrestock y sin rotación</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Selecciona los items que vayas completando - {selectedBranch}</p>
                   </div>
 
                   {/* Objetivos mensuales - el usuario elige cuáles items completar */}
@@ -694,14 +694,14 @@ export default function Home() {
                                     ✓ CUMPLIDO
                                   </div>
                                 )}
-                                <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
-                                <div className={`font-bold text-lg ${mesCompleto ? 'text-green-700' : ''}`}>{mes}</div>
-                                <div className="text-sm flex items-center gap-1">
-                                  <span className={`text-xl font-bold ${mesCompleto ? 'text-green-600' : 'text-gray-700'}`}>
+                                <div className="text-[10px] sm:text-xs text-gray-500">Objetivo: {objetivo} items</div>
+                                <div className={`font-bold text-sm sm:text-lg ${mesCompleto ? 'text-green-700' : ''}`}>{mes}</div>
+                                <div className="text-xs sm:text-sm flex items-center gap-1">
+                                  <span className={`text-base sm:text-xl font-bold ${mesCompleto ? 'text-green-600' : 'text-gray-700'}`}>
                                     {completadosParaEsteMes}
                                   </span>
                                   <span className="text-gray-400">/ {objetivo}</span>
-                                  {mesCompleto && <Trophy className="h-5 w-5 text-yellow-500 ml-1" />}
+                                  {mesCompleto && <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 ml-1" />}
                                 </div>
                                 <Progress 
                                   value={porcentajeMes} 
