@@ -118,9 +118,16 @@ except Exception as e:
   }
 }
 
-function estaEnHorarioBridge(): boolean {
-  const hora = new Date().getHours();
-  return hora >= 23 || hora < 8;
+function debeCorrrerBridge(): boolean {
+  const now = new Date();
+  const dia = now.getDay();
+  const hora = now.getHours();
+  
+  // Miércoles (3) y Domingo (0) a las 23:00
+  const esDiaDeSync = dia === 0 || dia === 3;
+  const esHoraDeSync = hora === 23;
+  
+  return esDiaDeSync && esHoraDeSync;
 }
 
 function getNextMondayAt9AM(): Date {
@@ -184,21 +191,15 @@ function iniciarSchedulerEmail() {
 }
 
 function iniciarSchedulerBridge() {
-  console.log('[Bridge] Scheduler activo - ejecuta cada hora entre 23:00 y 08:00');
+  console.log('[Bridge] Scheduler activo - Miércoles y Domingo a las 23:00');
   
+  // Chequea cada hora si es momento de ejecutar
   bridgeInterval = setInterval(async () => {
-    if (estaEnHorarioBridge()) {
-      console.log(`[Bridge] Hora actual dentro del horario (23:00-08:00), ejecutando...`);
+    if (debeCorrrerBridge()) {
+      console.log(`[Bridge] Ejecutando sincronización programada...`);
       await ejecutarBridge();
-    } else {
-      console.log(`[Bridge] Fuera del horario de sincronización`);
     }
   }, 60 * 60 * 1000);
-  
-  if (estaEnHorarioBridge()) {
-    console.log('[Bridge] Ejecutando sincronización inicial...');
-    ejecutarBridge();
-  }
 }
 
 export function iniciarScheduler() {
@@ -212,7 +213,7 @@ export function iniciarScheduler() {
   console.log(`  Horario: Lunes 9:00 AM`);
   
   console.log('\n[Bridge] Configuración de sincronización:');
-  console.log(`  Horario: 23:00 a 08:00 (cada hora)`);
+  console.log(`  Horario: Miércoles y Domingo a las 23:00`);
   console.log(`  Notificación de errores: ${NOTIFICACION_ERRORES}`);
   
   iniciarSchedulerEmail();
