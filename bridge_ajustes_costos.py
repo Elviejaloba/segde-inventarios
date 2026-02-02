@@ -348,7 +348,8 @@ def main():
         
         ultima_fecha_ventas = sync_info.get('ultima_fecha_ventas')
         if ultima_fecha_ventas:
-            fecha_desde_ventas = (datetime.strptime(ultima_fecha_ventas[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
+            # Tomar desde la última fecha exacta (sin retroceder días)
+            fecha_desde_ventas = datetime.strptime(ultima_fecha_ventas[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
             print(f"    Modo incremental desde: {fecha_desde_ventas}")
         else:
             fecha_desde_ventas = "01/09/2024"
