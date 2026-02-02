@@ -42,11 +42,13 @@ const MAPEO_SUCURSALES: Record<string, string> = {
   "Crisa2": "CRISA2", 
   "T.Mendoza": "T.MZA",
   "T.Luis": "T.SLUIS",
+  "T.SLuis": "T.SLUIS",
   "T.Maipu": "MAIPU",
   "T.Lujan": "LUJAN",
   "T.Tunuyan": "TUNUYAN",
   "T.Srafael": "S.RAFAEL",
   "T.S.Martin": "T.S.MARTIN"
+  // "Ctro. de Distribucion" no tiene email asignado
 };
 
 let emailInterval: NodeJS.Timeout | null = null;
@@ -446,77 +448,45 @@ function generarRanking(rendimientos: RendimientoSucursal[]): string {
 }
 
 async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
+  // Usar REST API de Firebase para obtener datos sin credenciales hardcodeadas
   const pythonCode = `
 import sys
-sys.path.insert(0, '.')
 import json
-import firebase_admin
-from firebase_admin import credentials, db
-from datetime import datetime
+import urllib.request
+from datetime import datetime, timedelta
+import calendar
 
-# Inicializar Firebase si no está inicializado
-if not firebase_admin._apps:
-    try:
-        cred = credentials.Certificate({
-            "type": "service_account",
-            "project_id": "seguimiento-inventario-55765",
-            "private_key": """-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8K9sCvsSjujfA
-K+xBIl9W6jMaZEBKvAj6VYlJtCcMhDnJ0C8qNQxJL1o4YsJ6EBCgW4RKW0WwqI5X
-Y8PEsFuHhNz0JVfBk8Fb3bPMYchB1EYmN6lNT2w8JD0y3zABdUy0qS5k0pBm3oy9
-/rP1L8jQZB2Y8bZ5IXk2gNq8gFpKxGH6VpG5FqS9X4G5CjGqG1C2D4d3JaLVXy+T
-5S0M6iXBq5CXJpC8yCrKhL7FuBfLHsF1p9bVhALj8FBz9A4TqG8jPp0K1T4dZGXz
-JuqrXFHB0k7GnE9dq0J5pK3G1JN3pO5HBbJ3ZqLXpU7rGbXF3S2K0uX3P1sNq8Z9
-b5X9eK3nAgMBAAECggEAFP6G+hLKR7zP+YPv9TjJAZbD+jLY+qPTBxCQ8bS3E7Xk
-L8hF0vQ3bLj3V0G8K3FfH2Z5kJv0CxK3uN2D0bQ9V6dLqJoR5Uv0JxL2sV8iEBYD
-3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hD
-nJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV
-7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9
-qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0QKBgQDqF+g5K8DPz3vA4J
-7qxF5B2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7
-X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3q
-L8pV7X4hDwKBgQDNJ3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL
-8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC
-9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDwKBgCxK3uN2D
-0bQ9V6dLqJoR5Uv0JxL2sV8iEBYD3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8
-K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3
-F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0AoGAVP6G+hLKR7zP+YPv9TjJAZbD
-+jLY+qPTBxCQ8bS3E7XkL8hF0vQ3bLj3V0G8K3FfH2Z5kJv0CxK3uN2D0bQ9V6dL
-qJoR5Uv0JxL2sV8iEBYD3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8K0J3pD4Y
-bP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0ECgYEAqxF5B
-2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ
-0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X
-4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0=
------END PRIVATE KEY-----""",
-            "client_email": "firebase-adminsdk-fbsvc@seguimiento-inventario-55765.iam.gserviceaccount.com"
-        })
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://seguimiento-inventario-55765-default-rtdb.firebaseio.com'
-        })
-    except Exception as e:
-        print(json.dumps([]))
-        sys.exit(0)
+FIREBASE_URL = "https://check-d1753-default-rtdb.firebaseio.com/branches.json"
 
 try:
-    # Obtener datos de Firebase
-    ref = db.reference('branches')
-    data = ref.get() or {}
+    # Obtener datos de Firebase via REST API
+    with urllib.request.urlopen(FIREBASE_URL, timeout=30) as response:
+        data = json.loads(response.read().decode())
+    
+    if not data:
+        print(json.dumps([]))
+        sys.exit(0)
     
     hoy = datetime.now()
-    ultimo_dia = (datetime(hoy.year, hoy.month + 1, 1) - timedelta(days=1)).day if hoy.month < 12 else 31
+    ultimo_dia = calendar.monthrange(hoy.year, hoy.month)[1]
     dias_restantes = ultimo_dia - hoy.day
-    
-    from datetime import timedelta
     
     rendimientos = []
     
-    for sucursal, sucursal_data in data.items():
+    # Data es una lista de sucursales, cada una con 'id' e 'items'
+    branches = data if isinstance(data, list) else [data]
+    
+    for sucursal_data in branches:
+        if not sucursal_data:
+            continue
+        sucursal = sucursal_data.get('id', 'Desconocida')
         items = sucursal_data.get('items', {})
         if not items:
             continue
         
         total = len(items)
-        verificados = sum(1 for item in items.values() if item.get('checked', False))
+        # Campo 'completed' es el que usa la app para marcar items verificados
+        verificados = sum(1 for item in items.values() if item.get('completed', False))
         porcentaje = (verificados / total * 100) if total > 0 else 0
         
         # Códigos por día necesarios (solo días Lun/Mie/Vie restantes)
