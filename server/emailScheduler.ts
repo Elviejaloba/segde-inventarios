@@ -16,6 +16,14 @@ const NOTIFICACION_ERRORES = "lreyes@textilcrisa.com";
 let emailInterval: NodeJS.Timeout | null = null;
 let bridgeInterval: NodeJS.Timeout | null = null;
 
+interface BridgeResultado {
+  exito: boolean;
+  ajustes: number;
+  costos: number;
+  ventas: number;
+  error: string | null;
+}
+
 function ejecutarPython(codigo: string): Promise<{ exito: boolean; salida: string }> {
   return new Promise((resolve) => {
     const proc = spawn('python', ['-c', codigo], {
@@ -91,16 +99,92 @@ except Exception as e:
   await ejecutarPython(pythonCode);
 }
 
-async function ejecutarBridge(): Promise<boolean> {
+async function enviarNotificacionExito(resultado: BridgeResultado): Promise<void> {
+  console.log(`[Bridge] Enviando notificación de éxito a ${NOTIFICACION_ERRORES}...`);
+  
+  const fecha = new Date().toLocaleString('es-AR');
+  const pythonCode = `
+import sys
+sys.path.insert(0, '.')
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+SMTP_SERVER = "smtp.textilcrisa.com"
+SMTP_PORT = 26
+SMTP_USER = "reportes@textilcrisa.com"
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+msg = MIMEMultipart()
+msg['Subject'] = "✅ Sincronización Bridge exitosa - ${fecha}"
+msg['From'] = SMTP_USER
+msg['To'] = "${NOTIFICACION_ERRORES}"
+
+html = """
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<h2 style="color: #28a745;">✅ Sincronización Bridge Exitosa</h2>
+<p><strong>Fecha:</strong> ${fecha}</p>
+
+<table style="border-collapse: collapse; width: 100%; max-width: 400px; margin: 20px 0;">
+  <tr style="background: #f8f9fa;">
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Tipo de Dato</th>
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros Sincronizados</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">📦 Ajustes</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.ajustes.toLocaleString()}</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">💰 Costos</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.costos.toLocaleString()}</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">🛒 Ventas</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.ventas.toLocaleString()}</td>
+  </tr>
+  <tr style="background: #e9ecef;">
+    <td style="border: 1px solid #dee2e6; padding: 12px; font-weight: bold;">Total</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${(resultado.ajustes + resultado.costos + resultado.ventas).toLocaleString()}</td>
+  </tr>
+</table>
+
+<p style="color: #666; font-size: 12px;">Este es un mensaje automático del sistema de sincronización.</p>
+</body>
+</html>
+"""
+
+msg.attach(MIMEText(html, 'html'))
+
+try:
+    if SMTP_PASSWORD:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, ["${NOTIFICACION_ERRORES}"], msg.as_string())
+        server.quit()
+        print("Notificación de éxito enviada")
+    else:
+        print("SMTP_PASSWORD no configurada")
+except Exception as e:
+    print(f"Error: {e}")
+`;
+  
+  await ejecutarPython(pythonCode);
+}
+
+async function ejecutarBridge(): Promise<BridgeResultado> {
   console.log('[Bridge] Iniciando sincronización de datos...');
   
   const pythonCode = `
 import sys
+import json
 sys.path.insert(0, '.')
 from bridge_ajustes_costos import main
 try:
-    main()
-    print("BRIDGE_OK")
+    resultado = main()
+    print("BRIDGE_RESULT:" + json.dumps(resultado))
 except Exception as e:
     print(f"BRIDGE_ERROR: {e}")
     sys.exit(1)
@@ -108,13 +192,32 @@ except Exception as e:
   
   const resultado = await ejecutarPython(pythonCode);
   
-  if (resultado.exito && resultado.salida.includes('BRIDGE_OK')) {
-    console.log('[Bridge] Sincronización completada exitosamente');
-    return true;
+  if (resultado.exito && resultado.salida.includes('BRIDGE_RESULT:')) {
+    try {
+      const jsonStr = resultado.salida.split('BRIDGE_RESULT:')[1].trim().split('\n')[0];
+      const bridgeResult: BridgeResultado = JSON.parse(jsonStr);
+      
+      console.log('[Bridge] Sincronización completada:');
+      console.log(`  - Ajustes: ${bridgeResult.ajustes}`);
+      console.log(`  - Costos: ${bridgeResult.costos}`);
+      console.log(`  - Ventas: ${bridgeResult.ventas}`);
+      
+      if (bridgeResult.exito) {
+        await enviarNotificacionExito(bridgeResult);
+      } else if (bridgeResult.error) {
+        await enviarNotificacionError(bridgeResult.error);
+      }
+      
+      return bridgeResult;
+    } catch (e) {
+      console.error('[Bridge] Error parseando resultado:', e);
+      await enviarNotificacionError(`Error parseando resultado: ${resultado.salida}`);
+      return { exito: false, ajustes: 0, costos: 0, ventas: 0, error: 'Error parseando resultado' };
+    }
   } else {
     console.error('[Bridge] Error en sincronización:', resultado.salida);
     await enviarNotificacionError(resultado.salida);
-    return false;
+    return { exito: false, ajustes: 0, costos: 0, ventas: 0, error: resultado.salida };
   }
 }
 
@@ -215,6 +318,7 @@ export function iniciarScheduler() {
   console.log('\n[Bridge] Configuración de sincronización:');
   console.log(`  Horario: Miércoles y Domingo a las 23:00`);
   console.log(`  Notificación de errores: ${NOTIFICACION_ERRORES}`);
+  console.log(`  Notificación de éxito: ${NOTIFICACION_ERRORES}`);
   
   iniciarSchedulerEmail();
   iniciarSchedulerBridge();

@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/sync', async (req: Request, res: Response) => {
     try {
-      const { ajustes, costos, incremental } = req.body;
+      const { ajustes, costos, ventas, incremental } = req.body;
       const results: any = { success: true, timestamp: new Date().toISOString() };
       
       if (ajustes && Array.isArray(ajustes)) {
@@ -186,6 +186,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (costos && Array.isArray(costos)) {
         const count = await storage.syncCostos(costos, incremental !== false);
         results.costos = { synced: count };
+      }
+      
+      if (ventas && Array.isArray(ventas)) {
+        const count = await storage.syncVentas(ventas, incremental !== false);
+        results.ventas = { synced: count };
       }
       
       res.json(results);

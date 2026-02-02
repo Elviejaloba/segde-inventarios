@@ -775,18 +775,22 @@ export class PostgreSQLStorage implements IStorage {
     try {
       const ajustesCount = await sql`SELECT COUNT(*) as total FROM ajustes_sucursales`;
       const costosCount = await sql`SELECT COUNT(*) as total FROM costos_articulos`;
-      const ultimaFechaAjustes = await sql`SELECT MAX("FechaMovimiento") as fecha FROM ajustes_sucursales`;
+      const ventasCount = await sql`SELECT COUNT(*) as total FROM ventas_sucursales`;
+      const ultimaFechaAjustes = await sql`SELECT MAX("FechaMovimiento") as fecha FROM ajustes_sucursales WHERE "FechaMovimiento" <= CURRENT_DATE`;
+      const ultimaFechaVentas = await sql`SELECT MAX("Fecha") as fecha FROM ventas_sucursales WHERE "Fecha" <= CURRENT_DATE`;
       const ultimaSyncCostos = await sql`SELECT MAX(updated_at) as fecha FROM costos_articulos`;
       
       return {
         total_ajustes: parseInt(ajustesCount[0]?.total || '0'),
         total_costos: parseInt(costosCount[0]?.total || '0'),
+        total_ventas: parseInt(ventasCount[0]?.total || '0'),
         ultima_fecha_ajustes: ultimaFechaAjustes[0]?.fecha || null,
+        ultima_fecha_ventas: ultimaFechaVentas[0]?.fecha || null,
         ultima_sync_costos: ultimaSyncCostos[0]?.fecha || null
       };
     } catch (error) {
       console.error('Error getting sync info:', error);
-      return { total_ajustes: 0, total_costos: 0 };
+      return { total_ajustes: 0, total_costos: 0, total_ventas: 0 };
     }
   }
 
@@ -869,6 +873,50 @@ export class PostgreSQLStorage implements IStorage {
       return synced;
     } catch (error) {
       console.error('Error syncing costos:', error);
+      throw error;
+    }
+  }
+
+  async syncVentas(ventas: any[], incremental: boolean = true): Promise<number> {
+    try {
+      let synced = 0;
+      
+      for (const venta of ventas) {
+        const fecha = venta['Fecha'] || venta['fecha'];
+        const sucursal = venta['Desc. sucursal'] || venta['Sucursal'] || venta['sucursal'];
+        const codigoFamilia = venta['Cod. Familia (Articulo)'] || venta['CodigoFamilia'] || '';
+        const descripcionFamilia = venta['Descripcion Familia (Articulo)'] || venta['DescripcionFamilia'] || '';
+        const codigo = venta['Cod. Articulo'] || venta['Codigo'] || venta['codigo'];
+        const sinonimo = venta['Sinonimo'] || venta['sinonimo'] || '';
+        const descripcion = venta['Descripcion'] || venta['descripcion'] || '';
+        const cantidadVenta = parseFloat(venta['Cantidad venta'] || venta['CantidadVenta'] || 0);
+        const importeConIVA = parseFloat(venta['Imp. prop. c/IVA'] || venta['ImporteConIVA'] || 0);
+        const unidadMedida = venta['U.M. stock'] || venta['UnidadMedida'] || '';
+        
+        if (!codigo || !sucursal || !fecha) continue;
+        
+        const fechaVal = new Date(fecha);
+        const precioConIVA = cantidadVenta !== 0 ? importeConIVA / cantidadVenta : 0;
+        
+        // UPSERT by Fecha + Sucursal + Codigo
+        await sql`
+          INSERT INTO ventas_sucursales ("Fecha", "Sucursal", "CodigoFamilia", "DescripcionFamilia", "Codigo", "Sinonimo", "Descripcion", "CantidadVenta", "PrecioConIVA", "ImporteConIVA")
+          VALUES (${fechaVal}, ${sucursal}, ${codigoFamilia}, ${descripcionFamilia}, ${codigo}, ${sinonimo}, ${descripcion}, ${cantidadVenta}, ${precioConIVA}, ${importeConIVA})
+          ON CONFLICT ("Fecha", "Sucursal", "Codigo") DO UPDATE SET
+            "CodigoFamilia" = EXCLUDED."CodigoFamilia",
+            "DescripcionFamilia" = EXCLUDED."DescripcionFamilia",
+            "Sinonimo" = EXCLUDED."Sinonimo",
+            "Descripcion" = EXCLUDED."Descripcion",
+            "CantidadVenta" = EXCLUDED."CantidadVenta",
+            "PrecioConIVA" = EXCLUDED."PrecioConIVA",
+            "ImporteConIVA" = EXCLUDED."ImporteConIVA"
+        `;
+        synced++;
+      }
+      
+      return synced;
+    } catch (error) {
+      console.error('Error syncing ventas:', error);
       throw error;
     }
   }

@@ -1,6 +1,6 @@
 """
 BRIDGE SQL - Sincronización Tango -> Replit
-Sincroniza: AJUSTES y COSTOS
+Sincroniza: AJUSTES, COSTOS y VENTAS
 """
 import pyodbc
 import pandas as pd
@@ -210,16 +210,183 @@ GROUP BY
 """
 
 
+# ==============================================================
+# QUERY: VENTAS (INCREMENTAL)
+# ==============================================================
+QUERY_VENTAS = """
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+SET DATEFORMAT DMY
+SET DATEFIRST 7
+SET DEADLOCK_PRIORITY -8;
+SELECT
+    CTA03.FECHA_MOV AS [Fecha],
+    CTA02.NRO_SUCURS AS [Nro. Sucursal],
+    SUCURSAL.DESC_SUCURSAL AS [Desc. sucursal],
+    CTA03.Cod_Articu AS [Cod. Articulo],
+    CTA_ARTICULO.DESC_CTA_ARTICULO AS [Descripcion],
+    CTA_ARTICULO.SINONIMO AS [Sinonimo],
+    ISNULL(FAMILIA_ART.COD_AGR,'') AS [Cod. Familia (Articulo)],
+    FAMILIA_ART.NOM_AGR AS [Descripcion Familia (Articulo)],
+    SUM(CASE CTA03.TCOMP_IN_V WHEN 'CC' THEN(-1) ELSE(1) END * CTA03.CANTIDAD / CASE WHEN CAN_EQUI_V = 0 THEN 1 ELSE CAN_EQUI_V END) AS [Cantidad venta],
+    MEDIDA_STOCK.SIGLA_MEDIDA AS [U.M. stock],
+    SUM(CASE CTA03.TCOMP_IN_V WHEN 'CC' THEN (-1) ELSE (1) END *
+        CASE 'BIMONCTE'
+            WHEN 'BIMONCTE' THEN
+                CASE CTA02.MON_CTE
+                    WHEN 1 THEN CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END)
+                    ELSE CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END) * CTA02.COTIZ
+                END
+            WHEN 'BIORIGEN' THEN
+                CASE CTA02.MON_CTE
+                    WHEN 1 THEN CASE CTA02.COTIZ WHEN 0 THEN 0 ELSE CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END) / CTA02.COTIZ END
+                    ELSE CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END)
+                END
+            WHEN 'BICOTIZ' THEN
+                CASE 1 WHEN 0 THEN 0 ELSE
+                    CASE CTA02.MON_CTE
+                        WHEN 1 THEN CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END) / 1
+                        ELSE CTA03.IMP_NETO_P * (CASE WHEN CTA02.IMPORTE_IV = 0 THEN 1 ELSE (1 + (CTA03.PORC_IVA/100)) END) * CTA02.COTIZ / 1
+                    END
+                END
+        END) AS [Imp. prop. c/IVA]
+FROM
+    CTA03 (NOLOCK)
+    INNER JOIN CTA02 (NOLOCK) ON (CTA02.N_COMP = CTA03.N_COMP AND CTA02.T_COMP = CTA03.T_COMP AND CTA03.NRO_SUCURS = CTA02.NRO_SUCURS)
+    INNER JOIN SUCURSAL (NOLOCK) ON CTA02.NRO_SUCURS = SUCURSAL.NRO_SUCURSAL
+    LEFT JOIN CTA_ARTICULO (NOLOCK) ON CTA03.Cod_Articu = CTA_ARTICULO.COD_ARTICULO
+    LEFT JOIN STA16 ON 1=1
+    LEFT JOIN STA29 FAMILIA_ART (NOLOCK) ON SUBSTRING(CTA_ARTICULO.COD_ARTICULO, 1, LONG_FAM_A) = FAMILIA_ART.COD_AGR
+    LEFT JOIN (SELECT * FROM CTA_MEDIDA) AS MEDIDA_STOCK ON CTA03.ID_MEDIDA_STOCK = MEDIDA_STOCK.ID_CTA_MEDIDA
+WHERE
+    CTA03.Cod_Articu NOT IN ('Art. Ajuste')
+    AND (CTA03.Cod_Articu <> '')
+    AND CTA02.T_COMP <> 'REC'
+    AND (CTA03.FECHA_MOV >= '{fecha_desde}')
+    AND ((ISNULL(CTA03.RENGL_PADR,0) = 0) OR (ISNULL(CTA03.INSUMO_KIT_SEPARADO,0) = 1))
+GROUP BY
+    CTA03.FECHA_MOV, CTA02.NRO_SUCURS, SUCURSAL.DESC_SUCURSAL, CTA03.Cod_Articu, CTA_ARTICULO.DESC_CTA_ARTICULO, CTA_ARTICULO.SINONIMO, ISNULL(FAMILIA_ART.COD_AGR,''), FAMILIA_ART.NOM_AGR, MEDIDA_STOCK.SIGLA_MEDIDA
+"""
+
+
+def main():
+    """Ejecutar sincronización una vez y retornar resultado"""
+    resultado = {
+        "exito": False,
+        "ajustes": 0,
+        "costos": 0,
+        "ventas": 0,
+        "error": None
+    }
+    
+    try:
+        print("=" * 60)
+        print("BRIDGE SQL - Sincronización AJUSTES, COSTOS y VENTAS")
+        print("=" * 60)
+        print(f"Servidor: tangoserver")
+        print(f"Base de datos: crisa_real1")
+        print(f"Destino: {REPL_URL}")
+        print("=" * 60)
+        
+        # Obtener info de última sincronización
+        sync_info = get_sync_info()
+        print(f"  Estado actual en Replit:")
+        print(f"    - Ajustes: {sync_info.get('total_ajustes', 0)}")
+        print(f"    - Costos: {sync_info.get('total_costos', 0)}")
+        print(f"    - Ventas: {sync_info.get('total_ventas', 0)}")
+        
+        # Conectar a SQL Server
+        print("\n  Conectando a Tango...")
+        conn = pyodbc.connect(conn_str, timeout=30)
+        conn.timeout = 120
+
+        # ============================================================
+        # SINCRONIZAR AJUSTES
+        # ============================================================
+        print("\n  [AJUSTES] Consultando...")
+        
+        ultima_fecha_ajustes = sync_info.get('ultima_fecha_ajustes')
+        if ultima_fecha_ajustes:
+            fecha_desde_ajustes = (datetime.strptime(ultima_fecha_ajustes[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
+            print(f"    Modo incremental desde: {fecha_desde_ajustes}")
+        else:
+            fecha_desde_ajustes = "01/08/2025"
+            print(f"    Primera sincronización desde: {fecha_desde_ajustes}")
+        
+        query_ajustes = QUERY_AJUSTES.format(fecha_desde=fecha_desde_ajustes)
+        df_ajustes = pd.read_sql(query_ajustes, conn)
+        print(f"    Registros obtenidos: {len(df_ajustes)}")
+        
+        if len(df_ajustes) > 0:
+            registros_ajustes = df_ajustes.to_dict(orient="records")
+            _, enviados = enviar_en_lotes("ajustes", registros_ajustes, BATCH_SIZE)
+            resultado["ajustes"] = enviados
+            print(f"    Sincronizados: {enviados}")
+
+        # ============================================================
+        # SINCRONIZAR COSTOS
+        # ============================================================
+        print("\n  [COSTOS] Consultando...")
+        
+        df_costos = pd.read_sql(QUERY_COSTOS, conn)
+        print(f"    Registros obtenidos: {len(df_costos)}")
+        
+        if len(df_costos) > 0:
+            registros_costos = df_costos.to_dict(orient="records")
+            _, enviados = enviar_en_lotes("costos", registros_costos, BATCH_SIZE)
+            resultado["costos"] = enviados
+            print(f"    Sincronizados: {enviados}")
+
+        # ============================================================
+        # SINCRONIZAR VENTAS (INCREMENTAL)
+        # ============================================================
+        print("\n  [VENTAS] Consultando...")
+        
+        ultima_fecha_ventas = sync_info.get('ultima_fecha_ventas')
+        if ultima_fecha_ventas:
+            fecha_desde_ventas = (datetime.strptime(ultima_fecha_ventas[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
+            print(f"    Modo incremental desde: {fecha_desde_ventas}")
+        else:
+            fecha_desde_ventas = "01/09/2024"
+            print(f"    Primera sincronización desde: {fecha_desde_ventas}")
+        
+        query_ventas = QUERY_VENTAS.format(fecha_desde=fecha_desde_ventas)
+        df_ventas = pd.read_sql(query_ventas, conn)
+        print(f"    Registros obtenidos: {len(df_ventas)}")
+        
+        if len(df_ventas) > 0:
+            registros_ventas = df_ventas.to_dict(orient="records")
+            _, enviados = enviar_en_lotes("ventas", registros_ventas, BATCH_SIZE)
+            resultado["ventas"] = enviados
+            print(f"    Sincronizados: {enviados}")
+
+        conn.close()
+        
+        resultado["exito"] = True
+        print(f"\n[{datetime.now()}] Sincronización completada exitosamente")
+        print(f"  Ajustes: {resultado['ajustes']} registros")
+        print(f"  Costos: {resultado['costos']} registros")
+        print(f"  Ventas: {resultado['ventas']} registros")
+        
+        return resultado
+
+    except pyodbc.Error as e:
+        error_msg = f"Error de conexión SQL: {e}"
+        print(f"\n[ERROR] {error_msg}")
+        resultado["error"] = error_msg
+        return resultado
+    except Exception as e:
+        error_msg = f"Error inesperado: {e}"
+        print(f"\n[ERROR] {error_msg}")
+        resultado["error"] = error_msg
+        return resultado
+
+
 def sincronizar():
-    """Ejecutar sincronización completa"""
+    """Ejecutar sincronización en loop continuo"""
     print("=" * 60)
-    print("BRIDGE SQL - Sincronización AJUSTES y COSTOS")
+    print("BRIDGE SQL - Sincronización Continua")
     print("=" * 60)
-    print(f"Servidor: tangoserver")
-    print(f"Base de datos: crisa_real1")
-    print(f"Destino: {REPL_URL}")
     print(f"Intervalo: {SYNC_INTERVAL} segundos")
-    print(f"Tamaño de lote: {BATCH_SIZE} registros")
     print("=" * 60)
 
     while True:
@@ -230,65 +397,11 @@ def sincronizar():
                 time.sleep(SYNC_INTERVAL)
                 continue
 
-            print(f"\n[{datetime.now()}] Iniciando sincronización...")
+            main()
             
-            # Obtener info de última sincronización
-            sync_info = get_sync_info()
-            print(f"  Estado actual en Replit:")
-            print(f"    - Ajustes: {sync_info.get('total_ajustes', 0)}")
-            print(f"    - Costos: {sync_info.get('total_costos', 0)}")
-            
-            # Conectar a SQL Server
-            print("  Conectando a Tango...")
-            conn = pyodbc.connect(conn_str, timeout=30)
-            conn.timeout = 120
-
-            # ============================================================
-            # SINCRONIZAR AJUSTES
-            # ============================================================
-            print("\n  [AJUSTES] Consultando...")
-            
-            # Fecha desde: última sincronización o inicio
-            ultima_fecha = sync_info.get('ultima_fecha_ajustes')
-            if ultima_fecha:
-                fecha_desde = (datetime.strptime(ultima_fecha[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
-                print(f"    Modo incremental desde: {fecha_desde}")
-            else:
-                fecha_desde = "01/08/2025"
-                print(f"    Primera sincronización desde: {fecha_desde}")
-            
-            query_ajustes = QUERY_AJUSTES.format(fecha_desde=fecha_desde)
-            df_ajustes = pd.read_sql(query_ajustes, conn)
-            print(f"    Registros obtenidos: {len(df_ajustes)}")
-            
-            if len(df_ajustes) > 0:
-                registros_ajustes = df_ajustes.to_dict(orient="records")
-                _, enviados = enviar_en_lotes("ajustes", registros_ajustes, BATCH_SIZE)
-                print(f"    Sincronizados: {enviados}")
-
-            # ============================================================
-            # SINCRONIZAR COSTOS
-            # ============================================================
-            print("\n  [COSTOS] Consultando...")
-            
-            df_costos = pd.read_sql(QUERY_COSTOS, conn)
-            print(f"    Registros obtenidos: {len(df_costos)}")
-            
-            if len(df_costos) > 0:
-                registros_costos = df_costos.to_dict(orient="records")
-                _, enviados = enviar_en_lotes("costos", registros_costos, BATCH_SIZE)
-                print(f"    Sincronizados: {enviados}")
-
-            conn.close()
-            
-            print(f"\n[{datetime.now()}] Sincronización completada")
             print(f"Próxima sincronización en {SYNC_INTERVAL} segundos...")
             time.sleep(SYNC_INTERVAL)
 
-        except pyodbc.Error as e:
-            print(f"\n[ERROR] Error de conexión SQL: {e}")
-            print(f"Reintentando en 60 segundos...")
-            time.sleep(60)
         except Exception as e:
             print(f"\n[ERROR] Error inesperado: {e}")
             print(f"Reintentando en 60 segundos...")
