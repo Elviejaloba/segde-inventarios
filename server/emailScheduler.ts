@@ -13,8 +13,54 @@ const DESTINATARIOS_REPORTE = [
 
 const NOTIFICACION_ERRORES = "lreyes@textilcrisa.com";
 
+// Configuración de emails por sucursal para recordatorios de muestreo
+const EMAILS_SUCURSALES: Record<string, string[]> = {
+  "S.JUAN": ["gerencias@textilcrisa.com", "cajas@textilcrisa.com"],
+  "CRISA2": ["gerenciacrisa@textilcrisa.com"],
+  "T.MZA": ["gerenciatjmza@textilcrisa.com", "vanesaalvarez@textilcrisa.com"],
+  "T.SLUIS": ["gerencias@textilcrisa.com", "cajas@textilcrisa.com"],
+  "MAIPU": ["cajamaipu@textilcrisa.com"],
+  "LUJAN": ["lattijeralujan@textilcrisa.com"],
+  "TUNUYAN": ["tunuyan@textilcrisa.com"],
+  "S.RAFAEL": ["gerenciasr@textilcrisa.com", "cajas@textilcrisa.com"],
+  "T.S.MARTIN": ["cajasmartin@textilcrisa.com", "sebastianbaron87@gmail.com"]
+};
+
+// CC Administración en todos los emails de recordatorio
+const CC_ADMINISTRACION = [
+  "lreyes@textilcrisa.com",
+  "gerencia@textilcrisa.com",
+  "gustavoferrari@textilcrisa.com",
+  "adm@textilcrisa.com",
+  "vaninaprospero@textilcrisa.com",
+  "carolinatripodi@textilcrisa.com"
+];
+
+// Mapeo de nombres de sucursales (Firebase → Email)
+const MAPEO_SUCURSALES: Record<string, string> = {
+  "T.Sjuan": "S.JUAN",
+  "Crisa2": "CRISA2", 
+  "T.Mendoza": "T.MZA",
+  "T.Luis": "T.SLUIS",
+  "T.Maipu": "MAIPU",
+  "T.Lujan": "LUJAN",
+  "T.Tunuyan": "TUNUYAN",
+  "T.Srafael": "S.RAFAEL",
+  "T.S.Martin": "T.S.MARTIN"
+};
+
 let emailInterval: NodeJS.Timeout | null = null;
 let bridgeInterval: NodeJS.Timeout | null = null;
+let muestreoInterval: NodeJS.Timeout | null = null;
+
+interface RendimientoSucursal {
+  sucursal: string;
+  codigosVerificados: number;
+  totalCodigos: number;
+  porcentaje: number;
+  diasRestantes: number;
+  codigosPorDia: number;
+}
 
 interface BridgeResultado {
   exito: boolean;
@@ -329,6 +375,408 @@ function iniciarSchedulerBridge() {
   }, 60 * 60 * 1000);
 }
 
+// ==========================================
+// SISTEMA DE RECORDATORIOS DE MUESTREO
+// ==========================================
+
+function getDiasRestantesMes(): number {
+  const hoy = new Date();
+  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  return ultimoDia.getDate() - hoy.getDate();
+}
+
+function getSemanaDelMes(): number {
+  const hoy = new Date();
+  return Math.ceil(hoy.getDate() / 7);
+}
+
+function getNivelUrgencia(porcentaje: number, semana: number): 'normal' | 'urgente' | 'muy_urgente' | 'critico' {
+  if (semana >= 4) {
+    if (porcentaje < 40) return 'critico';
+    if (porcentaje < 70) return 'muy_urgente';
+    return 'normal';
+  }
+  if (semana >= 3) {
+    if (porcentaje < 40) return 'muy_urgente';
+    if (porcentaje < 70) return 'urgente';
+    return 'normal';
+  }
+  if (semana >= 2) {
+    if (porcentaje < 40) return 'urgente';
+    return 'normal';
+  }
+  return 'normal';
+}
+
+function debeRecibirRecordatorio(porcentaje: number): boolean {
+  const hoy = new Date();
+  const diaSemana = hoy.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab
+  
+  // Lunes: todos reciben
+  if (diaSemana === 1) return true;
+  
+  // Miércoles: solo <70%
+  if (diaSemana === 3) return porcentaje < 70;
+  
+  // Viernes: solo <40%
+  if (diaSemana === 5) return porcentaje < 40;
+  
+  return false;
+}
+
+function generarBarraProgreso(porcentaje: number): string {
+  const bloques = Math.round(porcentaje / 10);
+  const llenos = '█'.repeat(bloques);
+  const vacios = '░'.repeat(10 - bloques);
+  return llenos + vacios;
+}
+
+function generarRanking(rendimientos: RendimientoSucursal[]): string {
+  const ordenados = [...rendimientos].sort((a, b) => b.porcentaje - a.porcentaje);
+  let ranking = '';
+  
+  ordenados.forEach((r, i) => {
+    const posicion = (i + 1).toString().padStart(2, ' ');
+    const barra = generarBarraProgreso(r.porcentaje);
+    const porcentajeStr = r.porcentaje.toFixed(0).padStart(3, ' ');
+    ranking += `  ${posicion}. ${r.sucursal.padEnd(12)} ${barra} ${porcentajeStr}%\n`;
+  });
+  
+  return ranking;
+}
+
+async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
+  const pythonCode = `
+import sys
+sys.path.insert(0, '.')
+import json
+import firebase_admin
+from firebase_admin import credentials, db
+from datetime import datetime
+
+# Inicializar Firebase si no está inicializado
+if not firebase_admin._apps:
+    try:
+        cred = credentials.Certificate({
+            "type": "service_account",
+            "project_id": "seguimiento-inventario-55765",
+            "private_key": """-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8K9sCvsSjujfA
+K+xBIl9W6jMaZEBKvAj6VYlJtCcMhDnJ0C8qNQxJL1o4YsJ6EBCgW4RKW0WwqI5X
+Y8PEsFuHhNz0JVfBk8Fb3bPMYchB1EYmN6lNT2w8JD0y3zABdUy0qS5k0pBm3oy9
+/rP1L8jQZB2Y8bZ5IXk2gNq8gFpKxGH6VpG5FqS9X4G5CjGqG1C2D4d3JaLVXy+T
+5S0M6iXBq5CXJpC8yCrKhL7FuBfLHsF1p9bVhALj8FBz9A4TqG8jPp0K1T4dZGXz
+JuqrXFHB0k7GnE9dq0J5pK3G1JN3pO5HBbJ3ZqLXpU7rGbXF3S2K0uX3P1sNq8Z9
+b5X9eK3nAgMBAAECggEAFP6G+hLKR7zP+YPv9TjJAZbD+jLY+qPTBxCQ8bS3E7Xk
+L8hF0vQ3bLj3V0G8K3FfH2Z5kJv0CxK3uN2D0bQ9V6dLqJoR5Uv0JxL2sV8iEBYD
+3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hD
+nJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV
+7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9
+qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0QKBgQDqF+g5K8DPz3vA4J
+7qxF5B2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7
+X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3q
+L8pV7X4hDwKBgQDNJ3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL
+8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC
+9J3qL8pV7X4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDwKBgCxK3uN2D
+0bQ9V6dLqJoR5Uv0JxL2sV8iEBYD3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8
+K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0qV3
+F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0AoGAVP6G+hLKR7zP+YPv9TjJAZbD
++jLY+qPTBxCQ8bS3E7XkL8hF0vQ3bLj3V0G8K3FfH2Z5kJv0CxK3uN2D0bQ9V6dL
+qJoR5Uv0JxL2sV8iEBYD3E4L0qPx4K9pF+g5K8DPz3vA4J7qxF5B2sL8K0J3pD4Y
+bP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ0ECgYEAqxF5B
+2sL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X4hDnJ
+0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0qV3F2vL8E1K5dC9J3qL8pV7X
+4hDnJ0qV3F2vL8K0J3pD4YbP2E1K5vC9qL8uV7X4hDnJ0=
+-----END PRIVATE KEY-----""",
+            "client_email": "firebase-adminsdk-fbsvc@seguimiento-inventario-55765.iam.gserviceaccount.com"
+        })
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': 'https://seguimiento-inventario-55765-default-rtdb.firebaseio.com'
+        })
+    except Exception as e:
+        print(json.dumps([]))
+        sys.exit(0)
+
+try:
+    # Obtener datos de Firebase
+    ref = db.reference('branches')
+    data = ref.get() or {}
+    
+    hoy = datetime.now()
+    ultimo_dia = (datetime(hoy.year, hoy.month + 1, 1) - timedelta(days=1)).day if hoy.month < 12 else 31
+    dias_restantes = ultimo_dia - hoy.day
+    
+    from datetime import timedelta
+    
+    rendimientos = []
+    
+    for sucursal, sucursal_data in data.items():
+        items = sucursal_data.get('items', {})
+        if not items:
+            continue
+        
+        total = len(items)
+        verificados = sum(1 for item in items.values() if item.get('checked', False))
+        porcentaje = (verificados / total * 100) if total > 0 else 0
+        
+        # Códigos por día necesarios (solo días Lun/Mie/Vie restantes)
+        dias_muestreo_restantes = max(1, dias_restantes // 2)
+        codigos_pendientes = total - verificados
+        codigos_por_dia = round(codigos_pendientes / dias_muestreo_restantes, 1) if dias_muestreo_restantes > 0 else codigos_pendientes
+        
+        rendimientos.append({
+            'sucursal': sucursal,
+            'codigosVerificados': verificados,
+            'totalCodigos': total,
+            'porcentaje': round(porcentaje, 1),
+            'diasRestantes': dias_restantes,
+            'codigosPorDia': codigos_por_dia
+        })
+    
+    print(json.dumps(rendimientos))
+except Exception as e:
+    print(json.dumps([]))
+`;
+
+  const resultado = await ejecutarPython(pythonCode);
+  
+  if (resultado.exito) {
+    try {
+      return JSON.parse(resultado.salida.trim());
+    } catch {
+      console.error('[Muestreo] Error parseando rendimientos:', resultado.salida);
+      return [];
+    }
+  }
+  
+  console.error('[Muestreo] Error obteniendo rendimientos:', resultado.salida);
+  return [];
+}
+
+async function enviarRecordatorioMuestreo(rendimiento: RendimientoSucursal, ranking: string): Promise<void> {
+  const sucursalEmail = MAPEO_SUCURSALES[rendimiento.sucursal];
+  if (!sucursalEmail) {
+    console.log(`[Muestreo] No hay mapeo de email para ${rendimiento.sucursal}`);
+    return;
+  }
+  
+  const destinatarios = EMAILS_SUCURSALES[sucursalEmail];
+  if (!destinatarios || destinatarios.length === 0) {
+    console.log(`[Muestreo] No hay destinatarios para ${sucursalEmail}`);
+    return;
+  }
+  
+  const semana = getSemanaDelMes();
+  const urgencia = getNivelUrgencia(rendimiento.porcentaje, semana);
+  const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  
+  // Determinar emoji y color según urgencia
+  let emoji = '📊';
+  let color = '#17a2b8'; // info blue
+  let titulo = 'Recordatorio de Muestreo';
+  
+  switch (urgencia) {
+    case 'critico':
+      emoji = '🚨';
+      color = '#dc3545';
+      titulo = 'URGENTE: Muestreo Crítico';
+      break;
+    case 'muy_urgente':
+      emoji = '⚠️';
+      color = '#fd7e14';
+      titulo = 'Atención: Muestreo Pendiente';
+      break;
+    case 'urgente':
+      emoji = '📈';
+      color = '#ffc107';
+      titulo = 'Recordatorio de Muestreo';
+      break;
+  }
+  
+  const barra = generarBarraProgreso(rendimiento.porcentaje);
+  
+  const pythonCode = `
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+SMTP_SERVER = "smtp.textilcrisa.com"
+SMTP_PORT = 26
+SMTP_USER = "reportes@textilcrisa.com"
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+msg = MIMEMultipart()
+msg['Subject'] = "${emoji} ${titulo} - ${rendimiento.sucursal} | ${mesActual}"
+msg['From'] = SMTP_USER
+msg['To'] = "${destinatarios.join(', ')}"
+msg['Cc'] = "${CC_ADMINISTRACION.join(', ')}"
+
+html = """
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+  
+  <div style="background: ${color}; color: white; padding: 25px; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px;">${emoji} ${titulo}</h1>
+    <p style="margin: 10px 0 0; opacity: 0.9;">${mesActual} - Sistema de Seguimiento de Inventarios</p>
+  </div>
+  
+  <div style="padding: 30px;">
+    <h2 style="color: #333; margin-top: 0;">Sucursal: ${rendimiento.sucursal}</h2>
+    
+    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <span style="font-size: 48px; font-weight: bold; color: ${color};">${rendimiento.porcentaje.toFixed(0)}%</span>
+        <p style="color: #666; margin: 5px 0;">Avance del mes</p>
+      </div>
+      
+      <div style="background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden;">
+        <div style="background: ${color}; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%;"></div>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; margin-top: 15px; color: #666;">
+        <span>✅ ${rendimiento.codigosVerificados} verificados</span>
+        <span>📦 ${rendimiento.totalCodigos} total</span>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 15px; margin: 20px 0;">
+      <div style="flex: 1; background: #e3f2fd; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #1976d2;">${rendimiento.diasRestantes}</div>
+        <div style="color: #666; font-size: 12px;">Días restantes</div>
+      </div>
+      <div style="flex: 1; background: #fff3e0; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #f57c00;">${rendimiento.codigosPorDia}</div>
+        <div style="color: #666; font-size: 12px;">Códigos por día</div>
+      </div>
+      <div style="flex: 1; background: #fce4ec; border-radius: 8px; padding: 15px; text-align: center;">
+        <div style="font-size: 24px; font-weight: bold; color: #c2185b;">${rendimiento.totalCodigos - rendimiento.codigosVerificados}</div>
+        <div style="color: #666; font-size: 12px;">Pendientes</div>
+      </div>
+    </div>
+    
+    <div style="margin: 25px 0;">
+      <h3 style="color: #333; border-bottom: 2px solid ${color}; padding-bottom: 10px;">🏆 Ranking de Sucursales</h3>
+      <pre style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; overflow-x: auto;">${ranking}</pre>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="https://inventory-crisa.replit.app/" style="display: inline-block; background: ${color}; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        📋 Completar Muestreo
+      </a>
+    </div>
+    
+    <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
+      📅 Recordatorios: Lunes (todos), Miércoles (&lt;70%), Viernes (&lt;40%)<br>
+      Sistema de Seguimiento de Inventarios - Grupo Crisa
+    </p>
+  </div>
+</div>
+</body>
+</html>
+"""
+
+msg.attach(MIMEText(html, 'html'))
+
+try:
+    if SMTP_PASSWORD:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        
+        todos = ${JSON.stringify(destinatarios)} + ${JSON.stringify(CC_ADMINISTRACION)}
+        server.sendmail(SMTP_USER, todos, msg.as_string())
+        server.quit()
+        print("Email enviado a ${rendimiento.sucursal}")
+    else:
+        print("SMTP_PASSWORD no configurada")
+except Exception as e:
+    print(f"Error: {e}")
+`;
+
+  await ejecutarPython(pythonCode);
+}
+
+async function enviarRecordatoriosMuestreo(): Promise<void> {
+  console.log('[Muestreo] Obteniendo rendimiento mensual de sucursales...');
+  
+  const rendimientos = await obtenerRendimientoMensual();
+  
+  if (rendimientos.length === 0) {
+    console.log('[Muestreo] No se obtuvieron datos de rendimiento');
+    return;
+  }
+  
+  const ranking = generarRanking(rendimientos);
+  
+  console.log('[Muestreo] Rendimiento actual:');
+  rendimientos.forEach(r => {
+    console.log(`  ${r.sucursal}: ${r.porcentaje.toFixed(0)}% (${r.codigosVerificados}/${r.totalCodigos})`);
+  });
+  
+  let enviados = 0;
+  
+  for (const r of rendimientos) {
+    if (debeRecibirRecordatorio(r.porcentaje)) {
+      console.log(`[Muestreo] Enviando recordatorio a ${r.sucursal}...`);
+      await enviarRecordatorioMuestreo(r, ranking);
+      enviados++;
+    } else {
+      console.log(`[Muestreo] ${r.sucursal} no necesita recordatorio hoy (${r.porcentaje.toFixed(0)}%)`);
+    }
+  }
+  
+  console.log(`[Muestreo] Enviados ${enviados} recordatorios`);
+}
+
+function getNextMuestreoTime(): Date {
+  const now = new Date();
+  const next = new Date(now);
+  
+  // Buscar próximo Lunes, Miércoles o Viernes a las 9:00
+  const diasMuestreo = [1, 3, 5]; // Lun, Mie, Vie
+  
+  let diasHastaProximo = 1;
+  for (let i = 0; i < 7; i++) {
+    const diaCheck = (now.getDay() + i) % 7;
+    if (diasMuestreo.includes(diaCheck)) {
+      if (i === 0 && now.getHours() >= 9) {
+        continue; // Si ya pasó la hora hoy, buscar el siguiente
+      }
+      diasHastaProximo = i;
+      break;
+    }
+  }
+  
+  if (diasHastaProximo === 0) {
+    next.setHours(9, 0, 0, 0);
+  } else {
+    next.setDate(now.getDate() + diasHastaProximo);
+    next.setHours(9, 0, 0, 0);
+  }
+  
+  return next;
+}
+
+function iniciarSchedulerMuestreo() {
+  const nextRun = getNextMuestreoTime();
+  const msUntilNext = nextRun.getTime() - Date.now();
+  const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  
+  console.log(`[Muestreo] Próximo envío: ${diasSemana[nextRun.getDay()]} ${nextRun.toLocaleString('es-AR')}`);
+  console.log(`[Muestreo] Tiempo restante: ${Math.round(msUntilNext / 1000 / 60 / 60)} horas`);
+  
+  muestreoInterval = setTimeout(async () => {
+    try {
+      await enviarRecordatoriosMuestreo();
+    } catch (error) {
+      console.error('[Muestreo] Error:', error);
+    }
+    iniciarSchedulerMuestreo();
+  }, msUntilNext);
+}
+
 export function iniciarScheduler() {
   console.log('='.repeat(50));
   console.log('[Scheduler] Iniciando schedulers automáticos...');
@@ -344,8 +792,18 @@ export function iniciarScheduler() {
   console.log(`  Notificación de errores: ${NOTIFICACION_ERRORES}`);
   console.log(`  Notificación de éxito: ${NOTIFICACION_ERRORES}`);
   
+  console.log('\n[Muestreo] Configuración de recordatorios:');
+  console.log(`  Horario: Lun/Mié/Vie 9:00 AM`);
+  console.log(`  Sucursales: ${Object.keys(EMAILS_SUCURSALES).length}`);
+  console.log(`  CC Administración: ${CC_ADMINISTRACION.length} destinatarios`);
+  console.log(`  Reglas:`);
+  console.log(`    - Lunes: Todas las sucursales`);
+  console.log(`    - Miércoles: Solo <70% avance`);
+  console.log(`    - Viernes: Solo <40% avance`);
+  
   iniciarSchedulerEmail();
   iniciarSchedulerBridge();
+  iniciarSchedulerMuestreo();
   
   console.log('\n[Scheduler] Todos los schedulers activos');
   console.log('='.repeat(50));
@@ -360,5 +818,12 @@ export function detenerScheduler() {
     clearInterval(bridgeInterval);
     bridgeInterval = null;
   }
+  if (muestreoInterval) {
+    clearTimeout(muestreoInterval);
+    muestreoInterval = null;
+  }
   console.log('[Scheduler] Schedulers detenidos');
 }
+
+// Exportar función para envío manual de recordatorios
+export { enviarRecordatoriosMuestreo };

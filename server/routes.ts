@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertAjusteSchema } from "@shared/schema";
 import * as dropbox from "./dropbox";
 import multer from "multer";
+import { enviarRecordatoriosMuestreo } from "./emailScheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
@@ -197,6 +198,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error syncing data:', error);
       res.status(500).json({ error: 'Failed to sync data' });
+    }
+  });
+
+  // Endpoint para envío manual de recordatorios de muestreo
+  app.post('/api/muestreo/enviar-recordatorios', async (req, res) => {
+    try {
+      console.log('[API] Enviando recordatorios de muestreo manualmente...');
+      await enviarRecordatoriosMuestreo();
+      res.json({ success: true, message: 'Recordatorios enviados' });
+    } catch (error) {
+      console.error('Error enviando recordatorios:', error);
+      res.status(500).json({ error: 'Failed to send reminders' });
     }
   });
 
