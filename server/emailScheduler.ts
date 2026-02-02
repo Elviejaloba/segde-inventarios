@@ -21,6 +21,9 @@ interface BridgeResultado {
   ajustes: number;
   costos: number;
   ventas: number;
+  ultima_fecha_ajustes: string | null;
+  ultima_fecha_costos: string | null;
+  ultima_fecha_ventas: string | null;
   error: string | null;
 }
 
@@ -99,10 +102,24 @@ except Exception as e:
   await ejecutarPython(pythonCode);
 }
 
+function formatearFecha(fecha: string | null): string {
+  if (!fecha) return 'N/A';
+  try {
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return fecha;
+  }
+}
+
 async function enviarNotificacionExito(resultado: BridgeResultado): Promise<void> {
   console.log(`[Bridge] Enviando notificación de éxito a ${NOTIFICACION_ERRORES}...`);
   
   const fecha = new Date().toLocaleString('es-AR');
+  const fechaAjustes = formatearFecha(resultado.ultima_fecha_ajustes);
+  const fechaCostos = formatearFecha(resultado.ultima_fecha_costos);
+  const fechaVentas = formatearFecha(resultado.ultima_fecha_ventas);
+  
   const pythonCode = `
 import sys
 sys.path.insert(0, '.')
@@ -125,28 +142,33 @@ html = """
 <html>
 <body style="font-family: Arial, sans-serif; padding: 20px;">
 <h2 style="color: #28a745;">✅ Sincronización Bridge Exitosa</h2>
-<p><strong>Fecha:</strong> ${fecha}</p>
+<p><strong>Fecha de ejecución:</strong> ${fecha}</p>
 
-<table style="border-collapse: collapse; width: 100%; max-width: 400px; margin: 20px 0;">
+<table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 20px 0;">
   <tr style="background: #f8f9fa;">
     <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Tipo de Dato</th>
-    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros Sincronizados</th>
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros</th>
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Última Fecha</th>
   </tr>
   <tr>
     <td style="border: 1px solid #dee2e6; padding: 12px;">📦 Ajustes</td>
     <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.ajustes.toLocaleString()}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">${fechaAjustes}</td>
   </tr>
   <tr>
     <td style="border: 1px solid #dee2e6; padding: 12px;">💰 Costos</td>
     <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.costos.toLocaleString()}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">${fechaCostos}</td>
   </tr>
   <tr>
     <td style="border: 1px solid #dee2e6; padding: 12px;">🛒 Ventas</td>
     <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${resultado.ventas.toLocaleString()}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">${fechaVentas}</td>
   </tr>
   <tr style="background: #e9ecef;">
     <td style="border: 1px solid #dee2e6; padding: 12px; font-weight: bold;">Total</td>
     <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">${(resultado.ajustes + resultado.costos + resultado.ventas).toLocaleString()}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px;"></td>
   </tr>
 </table>
 
@@ -212,12 +234,12 @@ except Exception as e:
     } catch (e) {
       console.error('[Bridge] Error parseando resultado:', e);
       await enviarNotificacionError(`Error parseando resultado: ${resultado.salida}`);
-      return { exito: false, ajustes: 0, costos: 0, ventas: 0, error: 'Error parseando resultado' };
+      return { exito: false, ajustes: 0, costos: 0, ventas: 0, ultima_fecha_ajustes: null, ultima_fecha_costos: null, ultima_fecha_ventas: null, error: 'Error parseando resultado' };
     }
   } else {
     console.error('[Bridge] Error en sincronización:', resultado.salida);
     await enviarNotificacionError(resultado.salida);
-    return { exito: false, ajustes: 0, costos: 0, ventas: 0, error: resultado.salida };
+    return { exito: false, ajustes: 0, costos: 0, ventas: 0, ultima_fecha_ajustes: null, ultima_fecha_costos: null, ultima_fecha_ventas: null, error: resultado.salida };
   }
 }
 

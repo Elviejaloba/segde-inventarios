@@ -275,6 +275,9 @@ def main():
         "ajustes": 0,
         "costos": 0,
         "ventas": 0,
+        "ultima_fecha_ajustes": None,
+        "ultima_fecha_costos": None,
+        "ultima_fecha_ventas": None,
         "error": None
     }
     
@@ -361,11 +364,20 @@ def main():
 
         conn.close()
         
+        # Obtener fechas actualizadas después de la sincronización
+        try:
+            sync_info_final = get_sync_info()
+            resultado["ultima_fecha_ajustes"] = sync_info_final.get('ultima_fecha_ajustes')
+            resultado["ultima_fecha_costos"] = sync_info_final.get('ultima_sync_costos')
+            resultado["ultima_fecha_ventas"] = sync_info_final.get('ultima_fecha_ventas')
+        except:
+            pass
+        
         resultado["exito"] = True
         print(f"\n[{datetime.now()}] Sincronización completada exitosamente")
-        print(f"  Ajustes: {resultado['ajustes']} registros")
-        print(f"  Costos: {resultado['costos']} registros")
-        print(f"  Ventas: {resultado['ventas']} registros")
+        print(f"  Ajustes: {resultado['ajustes']} registros (última fecha: {resultado['ultima_fecha_ajustes']})")
+        print(f"  Costos: {resultado['costos']} registros (última fecha: {resultado['ultima_fecha_costos']})")
+        print(f"  Ventas: {resultado['ventas']} registros (última fecha: {resultado['ultima_fecha_ventas']})")
         
         return resultado
 
