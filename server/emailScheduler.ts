@@ -587,61 +587,57 @@ msg['Cc'] = "${CC_ADMINISTRACION.join(', ')}"
 
 html = """
 <html>
-<body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
-<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background: #f0f2f5;">
+<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
   
-  <div style="background: ${color}; color: white; padding: 25px; text-align: center;">
-    <h1 style="margin: 0; font-size: 24px;">${emoji} ${titulo}</h1>
-    <p style="margin: 10px 0 0; opacity: 0.9;">${mesActual} - Sistema de Seguimiento de Inventarios</p>
+  <div style="background: #4a5d6a; color: white; padding: 20px; text-align: center;">
+    <div style="margin-bottom: 12px;">
+      <span style="font-size: 14px; letter-spacing: 8px; font-weight: 300; color: #c0c8ce;">G R U P O</span><br>
+      <span style="font-size: 28px; letter-spacing: 4px; font-weight: 700; color: white;">C R I S A</span>
+    </div>
+    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; margin-top: 8px;">
+      <p style="margin: 0; font-size: 14px; opacity: 0.9;">${emoji} ${titulo}</p>
+      <p style="margin: 5px 0 0; opacity: 0.7; font-size: 12px;">${mesActual} - Sistema de Seguimiento de Inventarios</p>
+    </div>
   </div>
   
-  <div style="padding: 30px;">
-    <h2 style="color: #333; margin-top: 0;">Sucursal: ${rendimiento.sucursal}</h2>
+  <div style="padding: 25px 30px;">
+    <h2 style="color: #444; margin: 0 0 20px; font-weight: 500; font-size: 18px;">Sucursal: ${rendimiento.sucursal}</h2>
     
-    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin: 15px 0; border: 1px solid #e9ecef;">
       <div style="text-align: center; margin-bottom: 15px;">
-        <span style="font-size: 48px; font-weight: bold; color: ${color};">${rendimiento.porcentaje.toFixed(0)}%</span>
-        <p style="color: #666; margin: 5px 0;">Avance del mes</p>
+        <span style="font-size: 42px; font-weight: 600; color: #4a5d6a;">${rendimiento.porcentaje.toFixed(0)}%</span>
+        <p style="color: #666; margin: 5px 0; font-size: 14px;">Avance del muestreo mensual</p>
       </div>
       
-      <div style="background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden;">
-        <div style="background: ${color}; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%;"></div>
+      <div style="background: #e0e4e8; border-radius: 6px; height: 12px; overflow: hidden;">
+        <div style="background: #6a8a9a; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
       </div>
       
-      <div style="display: flex; justify-content: space-between; margin-top: 15px; color: #666;">
-        <span>✅ ${rendimiento.codigosVerificados} verificados</span>
-        <span>📦 ${rendimiento.totalCodigos} total</span>
+      <div style="display: flex; justify-content: space-between; margin-top: 12px; color: #666; font-size: 13px;">
+        <span>✓ ${rendimiento.codigosVerificados} códigos verificados</span>
+        <span>${rendimiento.totalCodigos} códigos asignados</span>
       </div>
     </div>
     
-    <div style="display: flex; gap: 15px; margin: 20px 0;">
-      <div style="flex: 1; background: #e3f2fd; border-radius: 8px; padding: 15px; text-align: center;">
-        <div style="font-size: 24px; font-weight: bold; color: #1976d2;">${rendimiento.diasRestantes}</div>
-        <div style="color: #666; font-size: 12px;">Días restantes</div>
-      </div>
-      <div style="flex: 1; background: #fff3e0; border-radius: 8px; padding: 15px; text-align: center;">
-        <div style="font-size: 24px; font-weight: bold; color: #f57c00;">${rendimiento.codigosPorDia}</div>
-        <div style="color: #666; font-size: 12px;">Códigos por día</div>
-      </div>
-      <div style="flex: 1; background: #fce4ec; border-radius: 8px; padding: 15px; text-align: center;">
-        <div style="font-size: 24px; font-weight: bold; color: #c2185b;">${rendimiento.totalCodigos - rendimiento.codigosVerificados}</div>
-        <div style="color: #666; font-size: 12px;">Pendientes</div>
-      </div>
+    <div style="text-align: center; background: #f5f0f2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <div style="font-size: 32px; font-weight: 600; color: #5a5055;">${rendimiento.totalCodigos - rendimiento.codigosVerificados}</div>
+      <div style="color: #666; font-size: 13px; margin-top: 4px;">Códigos pendientes por verificar</div>
     </div>
     
     <div style="margin: 25px 0;">
-      <h3 style="color: #333; border-bottom: 2px solid ${color}; padding-bottom: 10px;">🏆 Ranking de Sucursales</h3>
-      <pre style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; overflow-x: auto;">${ranking}</pre>
+      <h3 style="color: #444; font-size: 15px; font-weight: 500; border-bottom: 2px solid #6a8a9a; padding-bottom: 8px; margin-bottom: 12px;">🏆 Ranking de Sucursales</h3>
+      <pre style="background: #f8f9fa; padding: 12px 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; overflow-x: auto; border: 1px solid #e9ecef; color: #555;">${ranking}</pre>
     </div>
     
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: ${color}; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
-        📋 Completar Muestreo
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
+        📋 Ir al Sistema de Muestreo
       </a>
     </div>
     
-    <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
-      📅 Recordatorios: Lunes (todos), Miércoles (&lt;70%), Viernes (&lt;40%)<br>
+    <p style="color: #888; font-size: 11px; text-align: center; margin-top: 25px;">
+      Recordatorios automáticos: Lunes (todas las sucursales), Miércoles (avance &lt;70%), Viernes (avance &lt;40%)<br>
       Sistema de Seguimiento de Inventarios - Grupo Crisa
     </p>
   </div>
