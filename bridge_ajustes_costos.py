@@ -559,4 +559,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--loop":
         sincronizar()
     else:
-        ejecutar_una_vez()
+        resultado = ejecutar_una_vez()
+        # Terminar el proceso explícitamente
+        sys.exit(0 if resultado.get("exito") else 1)
