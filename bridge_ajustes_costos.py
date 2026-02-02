@@ -328,18 +328,24 @@ def main():
             print(f"    Sincronizados: {enviados}")
 
         # ============================================================
-        # SINCRONIZAR COSTOS
+        # SINCRONIZAR COSTOS (solo los lunes para optimizar)
         # ============================================================
-        print("\n  [COSTOS] Consultando...")
+        dia_semana = datetime.now().weekday()  # 0=Lunes, 1=Martes, etc.
         
-        df_costos = pd.read_sql(QUERY_COSTOS, conn)
-        print(f"    Registros obtenidos: {len(df_costos)}")
-        
-        if len(df_costos) > 0:
-            registros_costos = df_costos.to_dict(orient="records")
-            _, enviados = enviar_en_lotes("costos", registros_costos, BATCH_SIZE)
-            resultado["costos"] = enviados
-            print(f"    Sincronizados: {enviados}")
+        if dia_semana == 0:  # Solo los lunes
+            print("\n  [COSTOS] Consultando (sincronización semanal - Lunes)...")
+            
+            df_costos = pd.read_sql(QUERY_COSTOS, conn)
+            print(f"    Registros obtenidos: {len(df_costos)}")
+            
+            if len(df_costos) > 0:
+                registros_costos = df_costos.to_dict(orient="records")
+                _, enviados = enviar_en_lotes("costos", registros_costos, BATCH_SIZE)
+                resultado["costos"] = enviados
+                print(f"    Sincronizados: {enviados}")
+        else:
+            print("\n  [COSTOS] Omitido (solo se sincroniza los lunes)")
+            resultado["costos"] = 0
 
         # ============================================================
         # SINCRONIZAR VENTAS (INCREMENTAL)
