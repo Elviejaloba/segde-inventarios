@@ -67,14 +67,15 @@ SMTP_USER = "reportes@textilcrisa.com"
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 msg = MIMEMultipart()
-msg['Subject'] = "⚠️ Error en sincronización Bridge - ${fecha}"
+msg['Subject'] = "⚠️ Sistema de Seguimiento de Inventarios - Error en sincronización - ${fecha}"
 msg['From'] = SMTP_USER
 msg['To'] = "${NOTIFICACION_ERRORES}"
 
 html = """
 <html>
 <body style="font-family: Arial, sans-serif; padding: 20px;">
-<h2 style="color: #dc3545;">⚠️ Error en Bridge de Sincronización</h2>
+<h2 style="color: #dc3545;">⚠️ Sistema de Seguimiento de Inventarios</h2>
+<h3 style="color: #666; margin-top: 5px;">Error en Bridge de Sincronización</h3>
 <p><strong>Fecha:</strong> ${fecha}</p>
 <p><strong>Detalle del error:</strong></p>
 <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">${error.replace(/"/g, '\\"').replace(/\n/g, '\\n')}</pre>
@@ -134,14 +135,15 @@ SMTP_USER = "reportes@textilcrisa.com"
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 msg = MIMEMultipart()
-msg['Subject'] = "✅ Sincronización Bridge exitosa - ${fecha}"
+msg['Subject'] = "✅ Sistema de Seguimiento de Inventarios - Sincronización exitosa - ${fecha}"
 msg['From'] = SMTP_USER
 msg['To'] = "${NOTIFICACION_ERRORES}"
 
 html = """
 <html>
 <body style="font-family: Arial, sans-serif; padding: 20px;">
-<h2 style="color: #28a745;">✅ Sincronización Bridge Exitosa</h2>
+<h2 style="color: #28a745;">✅ Sistema de Seguimiento de Inventarios</h2>
+<h3 style="color: #666; margin-top: 5px;">Sincronización Bridge Exitosa</h3>
 <p><strong>Fecha de ejecución:</strong> ${fecha}</p>
 
 <table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 20px 0;">
