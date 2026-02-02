@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 import json
 import time
+import os
 from datetime import datetime, time as dt_time, timedelta
 
 # ==============================================================
@@ -394,8 +395,130 @@ def main():
         return resultado
 
 
+def enviar_notificacion_email(resultado):
+    """Enviar email de notificación al finalizar la sincronización"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    SMTP_SERVER = "smtp.textilcrisa.com"
+    SMTP_PORT = 26
+    SMTP_USER = "reportes@textilcrisa.com"
+    # La contraseña debe estar configurada como variable de entorno
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    
+    if not SMTP_PASSWORD:
+        print("  [AVISO] No se pudo enviar email: SMTP_PASSWORD no configurada")
+        return
+    
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    destinatario = "lreyes@textilcrisa.com"
+    
+    msg = MIMEMultipart()
+    msg['From'] = SMTP_USER
+    msg['To'] = destinatario
+    
+    if resultado.get("exito"):
+        msg['Subject'] = f"✅ Sistema de Seguimiento de Inventarios - Sincronización exitosa - {fecha}"
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #28a745;">✅ Sistema de Seguimiento de Inventarios</h2>
+        <h3 style="color: #666; margin-top: 5px;">Sincronización Bridge Exitosa</h3>
+        <p><strong>Fecha de ejecución:</strong> {fecha}</p>
+        
+        <table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 20px 0;">
+          <tr style="background: #f8f9fa;">
+            <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Tipo de Dato</th>
+            <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros</th>
+            <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Última Fecha</th>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #dee2e6; padding: 12px;">📦 Ajustes</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{resultado.get('ajustes', 0):,}</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">{resultado.get('ultima_fecha_ajustes', 'N/A')}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #dee2e6; padding: 12px;">💰 Costos</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{resultado.get('costos', 0):,}</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">{resultado.get('ultima_fecha_costos', 'N/A')}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #dee2e6; padding: 12px;">🛒 Ventas</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{resultado.get('ventas', 0):,}</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; color: #0066cc;">{resultado.get('ultima_fecha_ventas', 'N/A')}</td>
+          </tr>
+          <tr style="background: #e9ecef;">
+            <td style="border: 1px solid #dee2e6; padding: 12px; font-weight: bold;">Total</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{resultado.get('ajustes', 0) + resultado.get('costos', 0) + resultado.get('ventas', 0):,}</td>
+            <td style="border: 1px solid #dee2e6; padding: 12px;"></td>
+          </tr>
+        </table>
+        
+        <p style="color: #666; font-size: 12px;">Este es un mensaje automático del sistema de sincronización.</p>
+        </body>
+        </html>
+        """
+    else:
+        msg['Subject'] = f"⚠️ Sistema de Seguimiento de Inventarios - Error en sincronización - {fecha}"
+        error = resultado.get("error", "Error desconocido")
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #dc3545;">⚠️ Sistema de Seguimiento de Inventarios</h2>
+        <h3 style="color: #666; margin-top: 5px;">Error en Bridge de Sincronización</h3>
+        <p><strong>Fecha:</strong> {fecha}</p>
+        <p><strong>Detalle del error:</strong></p>
+        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{error}</pre>
+        <p style="color: #666; font-size: 12px;">Este es un mensaje automático del sistema de sincronización.</p>
+        </body>
+        </html>
+        """
+    
+    msg.attach(MIMEText(html, 'html'))
+    
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, [destinatario], msg.as_string())
+        server.quit()
+        print(f"  [EMAIL] Notificación enviada a {destinatario}")
+    except Exception as e:
+        print(f"  [ERROR EMAIL] No se pudo enviar notificación: {e}")
+
+
+def ejecutar_una_vez():
+    """Ejecutar sincronización una sola vez y enviar notificación"""
+    print("=" * 60)
+    print("BRIDGE SQL - Sincronización Única")
+    print("Sistema de Seguimiento de Inventarios")
+    print("=" * 60)
+    print(f"Fecha de ejecución: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print("=" * 60)
+    
+    resultado = main()
+    
+    # Enviar notificación por email
+    print("\n  Enviando notificación por email...")
+    enviar_notificacion_email(resultado)
+    
+    if resultado.get("exito"):
+        print("\n" + "=" * 60)
+        print("SINCRONIZACIÓN COMPLETADA EXITOSAMENTE")
+        print("=" * 60)
+    else:
+        print("\n" + "=" * 60)
+        print("SINCRONIZACIÓN FINALIZADA CON ERRORES")
+        print("=" * 60)
+    
+    return resultado
+
+
 def sincronizar():
-    """Ejecutar sincronización en loop continuo"""
+    """Ejecutar sincronización en loop continuo (modo legacy)"""
     print("=" * 60)
     print("BRIDGE SQL - Sincronización Continua")
     print("=" * 60)
@@ -422,4 +545,11 @@ def sincronizar():
 
 
 if __name__ == "__main__":
-    sincronizar()
+    import sys
+    
+    # Si se pasa --loop, ejecuta en modo continuo (legacy)
+    # Por defecto ejecuta una sola vez para tareas programadas
+    if len(sys.argv) > 1 and sys.argv[1] == "--loop":
+        sincronizar()
+    else:
+        ejecutar_una_vez()
