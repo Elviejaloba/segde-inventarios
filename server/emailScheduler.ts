@@ -480,6 +480,9 @@ try:
         if not sucursal_data:
             continue
         sucursal = sucursal_data.get('id', 'Desconocida')
+        # Omitir Centro de Distribución
+        if 'Ctro' in sucursal or 'Centro' in sucursal or 'Distribucion' in sucursal:
+            continue
         items = sucursal_data.get('items', {})
         if not items:
             continue
@@ -632,7 +635,7 @@ html = """
     </div>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="https://inventory-crisa.replit.app/" style="display: inline-block; background: ${color}; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: ${color}; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
         📋 Completar Muestreo
       </a>
     </div>
