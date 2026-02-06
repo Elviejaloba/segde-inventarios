@@ -39,7 +39,9 @@ import {
   ExternalLink,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Lock,
+  Mail
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
@@ -100,6 +102,8 @@ const SUCURSALES = [
   "T.Maipu",
   "T.Srafael"
 ];
+
+const SUCURSALES_PREMIUM = ["LA TIJERA SAN RAFAEL", "T.Srafael"];
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-AR', {
@@ -410,6 +414,40 @@ export default function ReportesPage() {
           >
             Ver todo
           </Button>
+        </div>
+      )}
+
+      {SUCURSALES_PREMIUM.includes(selectedSucursal) && (
+        <div className="fixed inset-0 z-40 pointer-events-none" style={{ top: '140px' }}>
+          <div className="absolute inset-0 backdrop-blur-md bg-white/30 dark:bg-black/30" />
+          <div className="absolute inset-0 flex items-start justify-center pt-[12vh] pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 sm:p-10 max-w-md mx-4 text-center"
+            >
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                Información Premium
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
+                Para llegar a este nivel de información te pedimos que te comuniques a la administración para llegar a un acuerdo para mostrar la información.
+              </p>
+              <a
+                href="mailto:adm@textilcrisa.com?subject=Solicitud%20acceso%20premium%20-%20Reportes%20de%20Inventario"
+                className="inline-flex items-center gap-2 bg-[#4a5d6a] hover:bg-[#3d4f5a] text-white px-6 py-3 rounded-lg font-medium text-sm transition-colors duration-200"
+              >
+                <Mail className="h-4 w-4" />
+                Contactar Administración
+              </a>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                adm@textilcrisa.com
+              </p>
+            </motion.div>
+          </div>
         </div>
       )}
 
