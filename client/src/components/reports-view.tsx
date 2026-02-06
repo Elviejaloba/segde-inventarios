@@ -168,7 +168,7 @@ const sanitizeCode = (code: string): string => {
 // Sucursales con calendario
 const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'];
 
-const SUCURSALES_PREMIUM: string[] = ['T.Srafael'];
+const SUCURSALES_PREMIUM: string[] = ['T.Srafael', 'T.Maipu', 'T.S.Martin'];
 
 // Mapa de meses
 const MESES_MAP: { [key: string]: string } = {
