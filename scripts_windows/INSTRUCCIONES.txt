@@ -1,0 +1,119 @@
+=====================================================
+  INSTRUCCIONES DE INSTALACIÓN - Grupo Crisa
+  Sistema de Notificaciones por Email
+=====================================================
+
+REQUISITOS:
+  - Python instalado en la PC (ya lo tenés si corre el bridge)
+  - Conexión a internet
+
+=====================================================
+PASO 1: COPIAR ARCHIVOS
+=====================================================
+Copiar toda la carpeta "scripts_windows" a tu PC, 
+por ejemplo en: C:\Crisa\notificaciones\
+
+Los archivos son:
+  - notificacion_muestreo.py   (recordatorios a sucursales)
+  - reporte_ejecutivo.py       (reporte semanal a gerencia)
+  - notificacion_bridge.py     (aviso de sync del bridge)
+  - ejecutar_muestreo.bat      (lanzador para Task Scheduler)
+  - ejecutar_reporte.bat       (lanzador para Task Scheduler)
+  - ejecutar_bridge_notificacion.bat (lanzador para bridge)
+
+=====================================================
+PASO 2: CONFIGURAR LA CONTRASEÑA
+=====================================================
+En cada archivo .py, buscar la línea:
+
+  SMTP_PASSWORD = "TU_PASSWORD_AQUI"
+
+Cambiarla por la contraseña real de reportes@textilcrisa.com
+
+
+=====================================================
+PASO 3: PROBAR QUE FUNCIONE
+=====================================================
+Abrir CMD (Símbolo del Sistema) y ejecutar:
+
+  cd C:\Crisa\notificaciones
+  python notificacion_muestreo.py
+
+Debe decir "Enviado a..." o "Hoy no es día de recordatorios"
+
+
+=====================================================
+PASO 4: PROGRAMAR EN TASK SCHEDULER
+=====================================================
+
+--- TAREA 1: Recordatorios de Muestreo ---
+  1. Abrir "Programador de Tareas" de Windows
+  2. Click "Crear Tarea Básica"
+  3. Nombre: "Crisa - Recordatorios Muestreo"
+  4. Desencadenador: "Semanalmente"
+     - Hora: 09:00
+     - Días: Lunes, Miércoles, Viernes ✓
+  5. Acción: "Iniciar un programa"
+     - Programa: C:\Crisa\notificaciones\ejecutar_muestreo.bat
+  6. Marcar "Ejecutar tanto si el usuario inició sesión como si no"
+  7. Finalizar
+
+--- TAREA 2: Reporte Ejecutivo Semanal ---
+  1. "Crear Tarea Básica"
+  2. Nombre: "Crisa - Reporte Ejecutivo"
+  3. Desencadenador: "Semanalmente"
+     - Hora: 09:00
+     - Días: Lunes ✓
+  4. Acción: "Iniciar un programa"
+     - Programa: C:\Crisa\notificaciones\ejecutar_reporte.bat
+  5. Marcar "Ejecutar tanto si el usuario inició sesión como si no"
+  6. Finalizar
+
+--- TAREA 3: Notificación del Bridge ---
+  Opción A (recomendada): Agregar al final del .bat del bridge:
+    cd C:\Crisa\notificaciones
+    python notificacion_bridge.py exito "Sync completada"
+    
+  Opción B: Si el bridge falla, agregar manejo de error:
+    IF %ERRORLEVEL% EQU 0 (
+      python C:\Crisa\notificaciones\notificacion_bridge.py exito "Sync OK"
+    ) ELSE (
+      python C:\Crisa\notificaciones\notificacion_bridge.py error "Falló el bridge"
+    )
+
+
+=====================================================
+VERIFICAR QUE FUNCIONA
+=====================================================
+- Los logs se guardan automáticamente en:
+  - logs_muestreo.txt
+  - logs_reporte.txt
+  - logs_bridge.txt
+
+- Para probar manualmente, abrir CMD y ejecutar:
+  python notificacion_muestreo.py
+  python reporte_ejecutivo.py
+  python notificacion_bridge.py exito "Prueba manual"
+
+
+=====================================================
+RESUMEN DE HORARIOS
+=====================================================
+  Lunes    9:00 AM  → Recordatorio a TODAS las sucursales
+                    → Reporte ejecutivo a gerencia
+  Miércoles 9:00 AM → Recordatorio a sucursales con <70%
+  Viernes  9:00 AM  → Recordatorio a sucursales con <40%
+  
+  Después del bridge → Notificación de éxito/error
+
+
+=====================================================
+NOTA IMPORTANTE
+=====================================================
+La PC debe estar encendida a las 9:00 AM para que
+los emails salgan. Si la PC está apagada, no se envían.
+
+Si necesitás que funcione sin PC encendida, consultar
+con el desarrollador sobre la opción de publicar en
+la nube (Replit).
+=====================================================
