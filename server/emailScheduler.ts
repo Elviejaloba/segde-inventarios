@@ -15,14 +15,14 @@ const NOTIFICACION_ERRORES = "lreyes@textilcrisa.com";
 
 // Configuración de emails por sucursal para recordatorios de muestreo
 const EMAILS_SUCURSALES: Record<string, string[]> = {
-  "S.JUAN": ["gerencias@textilcrisa.com", "cajas@textilcrisa.com"],
-  "CRISA2": ["gerenciacrisa@textilcrisa.com"],
-  "T.MZA": ["gerenciatjmza@textilcrisa.com", "vanesaalvarez@textilcrisa.com"],
-  "T.SLUIS": ["gerencias@textilcrisa.com", "cajas@textilcrisa.com"],
+  "S.JUAN": ["gerenciasj@textilcrisa.com", "cajasj@textilcrisa.com"],
+  "CRISA2": ["gerenciacrisa@textilcrisa.com", "cajacrisa@textilcrisa.com"],
+  "T.MZA": ["gerenciatijmza@textilcrisa.com", "vanesa.alvarez@textilcrisa.com"],
+  "T.SLUIS": ["gerenciasl@textilcrisa.com", "cajasl@textilcrisa.com"],
   "MAIPU": ["cajamaipu@textilcrisa.com"],
-  "LUJAN": ["lattijeralujan@textilcrisa.com"],
+  "LUJAN": ["latijeralujan@textilcrisa.com"],
   "TUNUYAN": ["tunuyan@textilcrisa.com"],
-  "S.RAFAEL": ["gerenciasr@textilcrisa.com", "cajas@textilcrisa.com"],
+  "S.RAFAEL": ["gerenciasr@textilcrisa.com", "cajasr@textilcrisa.com"],
   "T.S.MARTIN": ["cajasmartin@textilcrisa.com", "sebastianbaron87@gmail.com"]
 };
 
