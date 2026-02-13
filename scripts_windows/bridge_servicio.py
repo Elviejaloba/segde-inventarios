@@ -43,10 +43,15 @@ def normalizar_um(um_tango, articulo_desc, codigo):
     if um in ['kg', 'kgs', 'kg.', 'kilo', 'kilos'] or any(x in desc for x in ['x kg', 'por kg', 'por kilo']):
         return 'KG'
     # Lógica de Unidades (Blanco, Accesorios, etc)
-    if um in ['un', 'und', 'unid', 'unid.', 'unidad', 'unidades'] or any(cod.startswith(p) for p in ['BL', 'ME', 'OT', 'CO', '11RS']):
+    # 11RS (Ripstop) suele ser tela, si Tango dice que es MTS o viene vacío con prefijo T/11, va a MTS
+    if um in ['un', 'und', 'unid', 'unid.', 'unidad', 'unidades'] or any(cod.startswith(p) for p in ['BL', 'ME', 'OT', 'CO']):
         return 'UN'
-    # Por defecto Metros para el resto de telas
-    return 'MTS'
+    
+    # 11RS y otros prefijos de tela
+    if cod.startswith('11RS') or any(cod.startswith(p) for p in ['TA', 'TF', 'TV', 'TD', 'TI', 'T']):
+        return 'MTS'
+    
+    return 'UN'
 
 def ejecutar_sincronizacion():
     try:
