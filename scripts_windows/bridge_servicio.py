@@ -29,9 +29,7 @@ REPL_URL = "https://seguimientodeinv.replit.app"
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bridge_config.ini")
 
-def cargar_configuracion():
-    """Cargar claves sensibles desde bridge_config.ini"""
-    import configparser
+d    import configparser
     config = configparser.ConfigParser()
     if os.path.exists(CONFIG_FILE):
         config.read(CONFIG_FILE, encoding='utf-8')
