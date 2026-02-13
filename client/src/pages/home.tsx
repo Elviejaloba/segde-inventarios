@@ -633,11 +633,24 @@ export default function Home() {
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight">
                 {(() => {
-                  const costoDate = ultimaActualizacion.costos_fecha ? new Date(ultimaActualizacion.costos_fecha) : null;
-                  const ventaDate = ultimaActualizacion.ventas_fecha ? new Date(ultimaActualizacion.ventas_fecha) : null;
-                  const latest = costoDate && ventaDate ? (costoDate > ventaDate ? costoDate : ventaDate) : costoDate || ventaDate;
+                  const parseLocalDate = (str: string) => {
+                    if (!str) return null;
+                    if (str.includes(' ')) {
+                      const [datePart, timePart] = str.split(' ');
+                      const [y, m, d] = datePart.split('-').map(Number);
+                      const [h, min] = timePart.split(':').map(Number);
+                      return { date: new Date(y, m - 1, d, h, min), hasTime: true };
+                    }
+                    const [y, m, d] = str.split('-').map(Number);
+                    return { date: new Date(y, m - 1, d), hasTime: false };
+                  };
+                  const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
+                  const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
+                  const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
                   if (!latest) return 'Sin datos';
-                  return `${latest.getDate()}/${latest.getMonth() + 1}/${String(latest.getFullYear()).slice(2)} ${String(latest.getHours()).padStart(2, '0')}:${String(latest.getMinutes()).padStart(2, '0')}`;
+                  const d = latest.date;
+                  const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+                  return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
                 })()}
               </span>
               <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
