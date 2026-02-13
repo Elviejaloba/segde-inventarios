@@ -56,7 +56,7 @@ def esta_en_horario_sync():
     return SYNC_HORARIO_INICIO <= ahora <= SYNC_HORARIO_FIN
 
 
-BRIDGE_API_KEY = os.environ.get("BRIDGE_API_KEY", "")
+BRIDGE_API_KEY = "6dac374f2929194d8a220fa59dc012bfc6e0d3717b5cb3a7521749e8d2ec7a86"
 
 def get_sync_info():
     """Obtener información de sincronización desde Replit"""
