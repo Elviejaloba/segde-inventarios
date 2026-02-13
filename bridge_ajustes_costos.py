@@ -56,10 +56,12 @@ def esta_en_horario_sync():
     return SYNC_HORARIO_INICIO <= ahora <= SYNC_HORARIO_FIN
 
 
+BRIDGE_API_KEY = os.environ.get("BRIDGE_API_KEY", "")
+
 def get_sync_info():
     """Obtener información de sincronización desde Replit"""
     try:
-        response = requests.get(f"{REPL_URL}/sync-info", timeout=30)
+        response = requests.get(f"{REPL_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
         if response.status_code == 200:
             return response.json()
     except Exception as e:
@@ -96,7 +98,7 @@ def enviar_en_lotes(nombre, registros, batch_size=2000):
                 response = requests.post(
                     f"{REPL_URL}/sync",
                     data=json_data,
-                    headers={'Content-Type': 'application/json'},
+                    headers={'Content-Type': 'application/json', 'X-Bridge-Api-Key': BRIDGE_API_KEY},
                     timeout=300  # 5 minutos para lotes grandes
                 )
                 
