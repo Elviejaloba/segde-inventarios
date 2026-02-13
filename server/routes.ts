@@ -161,10 +161,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ========================================
-  // BRIDGE SYNC ENDPOINTS
+  // BRIDGE SYNC ENDPOINTS (protegidos con API Key)
   // ========================================
+
+  function verificarBridgeApiKey(req: Request, res: Response): boolean {
+    const apiKey = req.headers['x-bridge-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+    const expectedKey = process.env.BRIDGE_API_KEY;
+    if (!expectedKey || apiKey !== expectedKey) {
+      res.status(401).json({ error: 'API key inválida o faltante' });
+      return false;
+    }
+    return true;
+  }
   
   app.get('/sync-info', async (req: Request, res: Response) => {
+    if (!verificarBridgeApiKey(req, res)) return;
     try {
       const syncInfo = await storage.getSyncInfo();
       res.json(syncInfo);
@@ -175,6 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/sync', async (req: Request, res: Response) => {
+    if (!verificarBridgeApiKey(req, res)) return;
     try {
       const { ajustes, costos, ventas, incremental } = req.body;
       const results: any = { success: true, timestamp: new Date().toISOString() };
