@@ -41,7 +41,8 @@ import {
   ChevronDown,
   ChevronUp,
   Lock,
-  Mail
+  Mail,
+  Clock
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
@@ -211,6 +212,16 @@ export default function ReportesPage() {
     enabled: showDocumentos
   });
 
+  const { data: ultimaActualizacion } = useQuery<{ ajustes_fecha: string; costos_fecha: string; ventas_fecha: string; ajustes_total: string; costos_total: string; ventas_total: string }>({
+    queryKey: ['/api/ultima-actualizacion'],
+    queryFn: async () => {
+      const response = await fetch('/api/ultima-actualizacion');
+      if (!response.ok) throw new Error('Error fetching ultima actualizacion');
+      return response.json();
+    },
+    refetchInterval: 300000,
+  });
+
   const { data: analisisCosto } = useQuery<{ resumen: Array<{ sucursal: string; unidadesAjustadas: number; perdidaCosto: number }> }>({
     queryKey: ['/api/ajustes/valorizado-costo', selectedSucursal],
     queryFn: async () => {
@@ -329,11 +340,30 @@ export default function ReportesPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-1 sm:gap-2">
-        <h1 className="text-lg sm:text-2xl font-bold">Reportes Valorizados</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          Análisis de ajustes con valorización económica
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+        <div>
+          <h1 className="text-lg sm:text-2xl font-bold">Reportes Valorizados</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Análisis de ajustes con valorización económica
+          </p>
+        </div>
+        {ultimaActualizacion && (
+          <div className="flex items-center gap-2 text-right bg-muted/50 rounded-lg px-3 py-1.5 border">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold leading-tight">
+                {(() => {
+                  const costoDate = ultimaActualizacion.costos_fecha ? new Date(ultimaActualizacion.costos_fecha) : null;
+                  const ventaDate = ultimaActualizacion.ventas_fecha ? new Date(ultimaActualizacion.ventas_fecha) : null;
+                  const latest = costoDate && ventaDate ? (costoDate > ventaDate ? costoDate : ventaDate) : costoDate || ventaDate;
+                  if (!latest) return 'Sin datos';
+                  return `${latest.getDate()}/${latest.getMonth() + 1}/${String(latest.getFullYear()).slice(2)} ${String(latest.getHours()).padStart(2, '0')}:${String(latest.getMinutes()).padStart(2, '0')}`;
+                })()}
+              </span>
+              <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-3" data-testid="reportes-filtros">
