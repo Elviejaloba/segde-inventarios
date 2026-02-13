@@ -361,6 +361,7 @@ export default function ReportesPage() {
                 })()}
               </span>
               <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
+              <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
             </div>
           </div>
         )}

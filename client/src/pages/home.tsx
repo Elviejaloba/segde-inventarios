@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X } from "lucide-react";
+import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
@@ -204,6 +205,16 @@ export default function Home() {
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
+
+  const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
+    queryKey: ['/api/ultima-actualizacion'],
+    queryFn: async () => {
+      const response = await fetch('/api/ultima-actualizacion');
+      if (!response.ok) throw new Error('Error');
+      return response.json();
+    },
+    refetchInterval: 300000,
+  });
 
   // Sincronizar estado local con datos de Firebase cuando cambian
   useEffect(() => {
@@ -616,6 +627,24 @@ export default function Home() {
             Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
           </p>
         </div>
+        {ultimaActualizacion && (
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5 border w-full md:w-auto">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold leading-tight">
+                {(() => {
+                  const costoDate = ultimaActualizacion.costos_fecha ? new Date(ultimaActualizacion.costos_fecha) : null;
+                  const ventaDate = ultimaActualizacion.ventas_fecha ? new Date(ultimaActualizacion.ventas_fecha) : null;
+                  const latest = costoDate && ventaDate ? (costoDate > ventaDate ? costoDate : ventaDate) : costoDate || ventaDate;
+                  if (!latest) return 'Sin datos';
+                  return `${latest.getDate()}/${latest.getMonth() + 1}/${String(latest.getFullYear()).slice(2)} ${String(latest.getHours()).padStart(2, '0')}:${String(latest.getMinutes()).padStart(2, '0')}`;
+                })()}
+              </span>
+              <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
+              <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (

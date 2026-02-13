@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp, Clock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -76,6 +76,16 @@ export default function MuestreosPage() {
   const [fileStatuses, setFileStatuses] = useState<Record<string, FileStatus>>(getFileStatuses);
   const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
   const [cachedLinks, setCachedLinks] = useState<Record<string, string>>({});
+
+  const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
+    queryKey: ['/api/ultima-actualizacion'],
+    queryFn: async () => {
+      const response = await fetch('/api/ultima-actualizacion');
+      if (!response.ok) throw new Error('Error');
+      return response.json();
+    },
+    refetchInterval: 300000,
+  });
 
   const cycleStatus = (fileId: string) => {
     const currentStatus = fileStatuses[fileId] || "no_visto";
@@ -226,7 +236,27 @@ export default function MuestreosPage() {
     <TooltipProvider>
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-lg sm:text-2xl font-bold">Subir Archivo de Muestreo</h1>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <h1 className="text-lg sm:text-2xl font-bold">Subir Archivo de Muestreo</h1>
+          {ultimaActualizacion && (
+            <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5 border">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold leading-tight">
+                  {(() => {
+                    const costoDate = ultimaActualizacion.costos_fecha ? new Date(ultimaActualizacion.costos_fecha) : null;
+                    const ventaDate = ultimaActualizacion.ventas_fecha ? new Date(ultimaActualizacion.ventas_fecha) : null;
+                    const latest = costoDate && ventaDate ? (costoDate > ventaDate ? costoDate : ventaDate) : costoDate || ventaDate;
+                    if (!latest) return 'Sin datos';
+                    return `${latest.getDate()}/${latest.getMonth() + 1}/${String(latest.getFullYear()).slice(2)} ${String(latest.getHours()).padStart(2, '0')}:${String(latest.getMinutes()).padStart(2, '0')}`;
+                  })()}
+                </span>
+                <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
+                <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2 p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
           <div className="flex-shrink-0 animate-bounce">
             <svg className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
