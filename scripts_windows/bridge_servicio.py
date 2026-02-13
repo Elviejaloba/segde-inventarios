@@ -47,8 +47,10 @@ def normalizar_um(um_tango, articulo_desc, codigo):
     if um in ['un', 'und', 'unid', 'unid.', 'unidad', 'unidades'] or any(cod.startswith(p) for p in ['BL', 'ME', 'OT', 'CO']):
         return 'UN'
     
-    # 11RS y otros prefijos de tela
-    if cod.startswith('11RS') or any(cod.startswith(p) for p in ['TA', 'TF', 'TV', 'TD', 'TI', 'T']):
+    # Prefijos de tela (Metros)
+    # 70MF (Set Poliester Fluo) debe ser MTS
+    telas_prefixes = ['TA', 'TF', 'TV', 'TD', 'TI', 'T', '11RS', '70MF', '70K']
+    if any(cod.startswith(p) or p in cod for p in telas_prefixes):
         return 'MTS'
     
     return 'UN'
