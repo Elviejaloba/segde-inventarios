@@ -423,7 +423,7 @@ export class PostgreSQLStorage implements IStorage {
       `;
       
       const params = sucursal ? [sucursal] : [];
-      const result = await sql(query, params);
+      const resultPromise = sql(query, params);
       
       // Resumen general - agrupando por código base
       const resumenQuery = `
@@ -493,7 +493,7 @@ export class PostgreSQLStorage implements IStorage {
         ORDER BY total_valorizado DESC
       `;
       
-      const resumen = await sql(resumenQuery, params);
+      const resumenPromise = sql(resumenQuery, params);
       
       // Totales globales (sin límite de 500) - agrupando por código base
       const totalesQuery = `
@@ -535,9 +535,6 @@ export class PostgreSQLStorage implements IStorage {
           COUNT(*) FILTER (WHERE porcentaje_perdida > 3) as total_alertas
         FROM con_porcentaje
       `;
-      const totales = await sql(totalesQuery, params);
-      
-      // Artículos únicos por año para comparación interanual
       const articulosPorAnioQuery = `
         SELECT 
           COUNT(DISTINCT TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))) FILTER (WHERE EXTRACT(YEAR FROM "FechaMovimiento") = 2025) as articulos_2025,
@@ -546,9 +543,7 @@ export class PostgreSQLStorage implements IStorage {
         WHERE "FechaMovimiento" IS NOT NULL
         ${sucursal ? 'AND "Sucursal" = $1' : ''}
       `;
-      const articulosPorAnio = await sql(articulosPorAnioQuery, params);
-      
-      // Pérdida valorizada por año
+
       const perdidaPorAnioQuery = `
         WITH ajustes_anio AS (
           SELECT 
@@ -575,9 +570,7 @@ export class PostgreSQLStorage implements IStorage {
         FROM ajustes_anio aa
         LEFT JOIN ventas_base vb ON aa."Sucursal" = vb."Sucursal" AND aa.codigo_base = vb.codigo_base
       `;
-      const perdidaPorAnio = await sql(perdidaPorAnioQuery, params);
-      
-      // Ventas por año (solo de artículos con ajustes)
+
       const ventasPorAnioQuery = `
         WITH codigos_ajustados AS (
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
@@ -592,7 +585,15 @@ export class PostgreSQLStorage implements IStorage {
         INNER JOIN codigos_ajustados ca ON v."Sucursal" = ca."Sucursal" AND TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) = ca.codigo_base
         ${sucursal ? 'WHERE v."Sucursal" = $1' : ''}
       `;
-      const ventasPorAnio = await sql(ventasPorAnioQuery, params);
+
+      const [result, resumen, totales, articulosPorAnio, perdidaPorAnio, ventasPorAnio] = await Promise.all([
+        resultPromise,
+        resumenPromise,
+        sql(totalesQuery, params),
+        sql(articulosPorAnioQuery, params),
+        sql(perdidaPorAnioQuery, params),
+        sql(ventasPorAnioQuery, params)
+      ]);
       
       return {
         detalle: result.map((row: any) => ({
