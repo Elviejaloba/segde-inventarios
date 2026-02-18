@@ -27,14 +27,122 @@ def cargar_configuracion():
 
 _config = cargar_configuracion()
 BRIDGE_API_KEY = _config.get('bridge', 'api_key', fallback='')
+SMTP_PASSWORD = _config.get('bridge', 'smtp_password', fallback='')
 _tango = _config['tango'] if 'tango' in _config else {}
 CONN_STR = f"Driver={{SQL Server}};Server={_tango.get('server', 'tangoserver')};Database={_tango.get('database', 'crisa_real1')};UID={_tango.get('user', 'Axoft')};PWD={_tango.get('password', 'Axoft')};"
+
+SMTP_SERVER = "smtp.textilcrisa.com"
+SMTP_PORT = 26
+SMTP_USER = "reportes@textilcrisa.com"
+NOTIFICACION_ERRORES = "lreyes@textilcrisa.com"
 
 def get_sync_info():
     try:
         r = requests.get(f"{REPL_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
         return r.json() if r.status_code == 200 else {}
     except: return {}
+
+def enviar_notificacion_exito(ajustes_env, costos_env, ventas_env, fecha_aj, fecha_costos, fecha_vtas):
+    """Envía email de notificación cuando la sincronización fue exitosa"""
+    if not SMTP_PASSWORD:
+        logging.warning("[EMAIL] SMTP_PASSWORD no configurada, no se envía notificación")
+        return
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+        total = ajustes_env + costos_env + ventas_env
+
+        msg = MIMEMultipart()
+        msg['Subject'] = f"✅ Bridge Sync Exitosa - {fecha}"
+        msg['From'] = SMTP_USER
+        msg['To'] = NOTIFICACION_ERRORES
+
+        html = f"""
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<h2 style="color: #28a745;">✅ Sincronización Bridge Exitosa</h2>
+<p><strong>Fecha de ejecución:</strong> {fecha}</p>
+<table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 20px 0;">
+  <tr style="background: #f8f9fa;">
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Tipo de Dato</th>
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros</th>
+    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Última Fecha</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">📦 Ajustes</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{ajustes_env:,}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_aj or 'N/A'}</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">💰 Costos</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{costos_env:,}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_costos or 'N/A'}</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #dee2e6; padding: 12px;">🛒 Ventas</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{ventas_env:,}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_vtas or 'N/A'}</td>
+  </tr>
+  <tr style="background: #e9ecef;">
+    <td style="border: 1px solid #dee2e6; padding: 12px; font-weight: bold;">Total</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{total:,}</td>
+    <td style="border: 1px solid #dee2e6; padding: 12px;"></td>
+  </tr>
+</table>
+<p style="color: #666; font-size: 12px;">Mensaje automático del Bridge de Sincronización (Servicio Windows).</p>
+</body>
+</html>"""
+
+        msg.attach(MIMEText(html, 'html'))
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, [NOTIFICACION_ERRORES], msg.as_string())
+        server.quit()
+        logging.info("[EMAIL] Notificación de éxito enviada")
+    except Exception as e:
+        logging.error(f"[EMAIL] Error enviando notificación de éxito: {e}")
+
+def enviar_notificacion_error(error_msg):
+    """Envía email de notificación cuando la sincronización falló"""
+    if not SMTP_PASSWORD:
+        logging.warning("[EMAIL] SMTP_PASSWORD no configurada, no se envía notificación")
+        return
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+        msg = MIMEMultipart()
+        msg['Subject'] = f"⚠️ Bridge Sync ERROR - {fecha}"
+        msg['From'] = SMTP_USER
+        msg['To'] = NOTIFICACION_ERRORES
+
+        html = f"""
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+<h2 style="color: #dc3545;">⚠️ Error en Sincronización Bridge</h2>
+<p><strong>Fecha:</strong> {fecha}</p>
+<p><strong>Detalle del error:</strong></p>
+<pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{error_msg}</pre>
+<p style="color: #666; font-size: 12px;">Mensaje automático del Bridge de Sincronización (Servicio Windows).</p>
+</body>
+</html>"""
+
+        msg.attach(MIMEText(html, 'html'))
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, [NOTIFICACION_ERRORES], msg.as_string())
+        server.quit()
+        logging.info("[EMAIL] Notificación de error enviada")
+    except Exception as e:
+        logging.error(f"[EMAIL] Error enviando notificación de error: {e}")
 
 def normalizar_um(um_tango, articulo_desc, codigo):
     um = str(um_tango).strip().lower()
@@ -253,6 +361,13 @@ GROUP BY
     CTA03.FECHA_MOV, CTA02.NRO_SUCURS, SUCURSAL.DESC_SUCURSAL, CTA03.Cod_Articu, CTA_ARTICULO.DESC_CTA_ARTICULO, CTA_ARTICULO.SINONIMO, ISNULL(FAMILIA_ART.COD_AGR,''), FAMILIA_ART.NOM_AGR, MEDIDA_STOCK.SIGLA_MEDIDA"""
 
 def ejecutar_sincronizacion():
+    total_ajustes = 0
+    total_costos = 0
+    total_ventas = 0
+    fecha_aj_str = None
+    fecha_costos_str = None
+    fecha_vtas_str = None
+
     try:
         sync_info = get_sync_info()
         conn = pyodbc.connect(CONN_STR, timeout=30)
@@ -267,6 +382,7 @@ def ejecutar_sincronizacion():
         if ultima_fecha_aj:
             logging.info("[AJUSTES] Consultando...")
             fecha_desde_aj = (datetime.strptime(ultima_fecha_aj[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
+            fecha_aj_str = ultima_fecha_aj[:10]
             logging.info(f"    Desde: {fecha_desde_aj}")
 
             query_aj = QUERY_AJUSTES.format(fecha_desde=fecha_desde_aj)
@@ -283,6 +399,7 @@ def ejecutar_sincronizacion():
                         "UnidadMedida": normalizar_um(r['U.M. stock'], r['Artículo'], r['Cód. Artículo'])
                     })
                 _, enviados = enviar_en_lotes("ajustes", registros)
+                total_ajustes = enviados
                 logging.info(f"    [OK] Ajustes sincronizados: {enviados}")
         else:
             logging.warning("[AJUSTES] No se pudo obtener la última fecha del servidor. No se sincroniza.")
@@ -298,6 +415,8 @@ def ejecutar_sincronizacion():
             if not df_costos.empty:
                 registros_costos = df_costos.to_dict(orient="records")
                 _, enviados = enviar_en_lotes("costos", registros_costos)
+                total_costos = enviados
+                fecha_costos_str = datetime.now().strftime("%Y-%m-%d")
                 logging.info(f"    [OK] Costos sincronizados: {enviados}")
         else:
             logging.info("[COSTOS] Omitido (solo se sincroniza los lunes)")
@@ -309,6 +428,7 @@ def ejecutar_sincronizacion():
         if ultima_fecha_ventas:
             logging.info("[VENTAS] Consultando...")
             fecha_desde_vtas = datetime.strptime(ultima_fecha_ventas[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+            fecha_vtas_str = ultima_fecha_ventas[:10]
             logging.info(f"    Desde: {fecha_desde_vtas}")
 
             query_vtas = QUERY_VENTAS.format(fecha_desde=fecha_desde_vtas)
@@ -318,16 +438,19 @@ def ejecutar_sincronizacion():
             if not df_ventas.empty:
                 registros_ventas = df_ventas.to_dict(orient="records")
                 _, enviados = enviar_en_lotes("ventas", registros_ventas)
+                total_ventas = enviados
                 logging.info(f"    [OK] Ventas sincronizadas: {enviados}")
         else:
             logging.warning("[VENTAS] No se pudo obtener la última fecha del servidor. No se sincroniza.")
 
         conn.close()
         logging.info("Sincronización completada exitosamente")
+        enviar_notificacion_exito(total_ajustes, total_costos, total_ventas, fecha_aj_str, fecha_costos_str, fecha_vtas_str)
     except Exception as e:
         logging.error(f"Error en sincronización: {e}")
         import traceback
         traceback.print_exc()
+        enviar_notificacion_error(str(e))
 
 if __name__ == "__main__":
     if "--ahora" in sys.argv:
