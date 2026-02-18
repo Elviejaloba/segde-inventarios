@@ -305,23 +305,22 @@ def ejecutar_sincronizacion():
         # ============================================================
         # VENTAS (incremental)
         # ============================================================
-        logging.info("[VENTAS] Consultando...")
         ultima_fecha_ventas = sync_info.get('ultima_fecha_ventas')
         if ultima_fecha_ventas:
+            logging.info("[VENTAS] Consultando...")
             fecha_desde_vtas = datetime.strptime(ultima_fecha_ventas[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
-            logging.info(f"    Modo incremental desde: {fecha_desde_vtas}")
+            logging.info(f"    Desde: {fecha_desde_vtas}")
+
+            query_vtas = QUERY_VENTAS.format(fecha_desde=fecha_desde_vtas)
+            df_ventas = pd.read_sql(query_vtas, conn)
+            logging.info(f"    Registros obtenidos: {len(df_ventas)}")
+
+            if not df_ventas.empty:
+                registros_ventas = df_ventas.to_dict(orient="records")
+                _, enviados = enviar_en_lotes("ventas", registros_ventas)
+                logging.info(f"    [OK] Ventas sincronizadas: {enviados}")
         else:
-            fecha_desde_vtas = "01/09/2024"
-            logging.info(f"    Primera sincronización desde: {fecha_desde_vtas}")
-
-        query_vtas = QUERY_VENTAS.format(fecha_desde=fecha_desde_vtas)
-        df_ventas = pd.read_sql(query_vtas, conn)
-        logging.info(f"    Registros obtenidos: {len(df_ventas)}")
-
-        if not df_ventas.empty:
-            registros_ventas = df_ventas.to_dict(orient="records")
-            _, enviados = enviar_en_lotes("ventas", registros_ventas)
-            logging.info(f"    [OK] Ventas sincronizadas: {enviados}")
+            logging.warning("[VENTAS] No se pudo obtener la última fecha del servidor. No se sincroniza.")
 
         conn.close()
         logging.info("Sincronización completada exitosamente")
