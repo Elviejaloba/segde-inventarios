@@ -14,6 +14,8 @@ import schedule
 import configparser
 from datetime import datetime, timedelta
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+
 REPL_URL = "https://seguimientodeinv.replit.app"
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bridge_config.ini")
 
