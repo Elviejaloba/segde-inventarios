@@ -1,0 +1,27 @@
+C:\Windows\system32>C:\Users\lreyes\AppData\Local\Programs\Python\Python311\python.exe C:\BridgeSync\bridge_servicio.py --ahora
+2026-02-18 10:08:16,840 [INFO] Ejecución manual inmediata
+2026-02-18 10:08:16,840 [INFO] ============================================================
+2026-02-18 10:08:16,840 [INFO] SINCRONIZACIÓN AUTOMÁTICA - Tango -> Replit
+2026-02-18 10:08:16,840 [INFO] Fecha: 18/02/2026 10:08:16
+2026-02-18 10:08:16,840 [INFO] ============================================================
+2026-02-18 10:08:17,225 [ERROR] API Key rechazada. Verificar BRIDGE_API_KEY.
+2026-02-18 10:08:17,226 [INFO] Estado actual - Ajustes: 0, Costos: 0, Ventas: 0
+2026-02-18 10:08:17,227 [INFO] Conectando a Tango SQL Server...
+2026-02-18 10:08:17,260 [INFO] [AJUSTES] Consultando...
+2026-02-18 10:08:17,260 [INFO]   Primera sync desde: 01/08/2025
+C:\BridgeSync\bridge_servicio.py:346: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df_ajustes = pd.read_sql(QUERY_AJUSTES.format(fecha_desde=fecha_desde_ajustes), conn)
+2026-02-18 10:08:17,585 [INFO]   Registros: 3614
+2026-02-18 10:08:17,601 [INFO]   ajustes: Lote 1/1 (3614 registros)...
+2026-02-18 10:08:18,378 [ERROR] API Key rechazada. Verificar BRIDGE_API_KEY.
+2026-02-18 10:08:18,380 [INFO] [COSTOS] Omitido (solo lunes)
+2026-02-18 10:08:18,380 [INFO] [VENTAS] Consultando...
+2026-02-18 10:08:18,381 [INFO]   Primera sync desde: 01/09/2024
+C:\BridgeSync\bridge_servicio.py:374: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df_ventas = pd.read_sql(QUERY_VENTAS.format(fecha_desde=fecha_desde_ventas), conn)
+2026-02-18 10:08:30,171 [INFO]   Registros: 666843
+2026-02-18 10:08:33,683 [INFO]   ventas: Lote 1/134 (5000 registros)...
+2026-02-18 10:08:34,680 [ERROR] API Key rechazada. Verificar BRIDGE_API_KEY.
+2026-02-18 10:08:35,154 [ERROR] API Key rechazada. Verificar BRIDGE_API_KEY.
+2026-02-18 10:08:35,155 [INFO] COMPLETADO - Ajustes: 0, Costos: 0, Ventas: 0
+2026-02-18 10:08:38,016 [INFO] Email enviado a lreyes@textilcrisa.com
