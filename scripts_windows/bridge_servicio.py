@@ -263,26 +263,29 @@ def ejecutar_sincronizacion():
         # ============================================================
         # AJUSTES
         # ============================================================
-        logging.info("[AJUSTES] Consultando...")
-        ultima_fecha = sync_info.get('ultima_fecha_ajustes', '2025-08-01')
-        fecha_desde_aj = (datetime.strptime(ultima_fecha[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
-        logging.info(f"    Desde: {fecha_desde_aj}")
+        ultima_fecha_aj = sync_info.get('ultima_fecha_ajustes')
+        if ultima_fecha_aj:
+            logging.info("[AJUSTES] Consultando...")
+            fecha_desde_aj = (datetime.strptime(ultima_fecha_aj[:10], "%Y-%m-%d") - timedelta(days=7)).strftime("%d/%m/%Y")
+            logging.info(f"    Desde: {fecha_desde_aj}")
 
-        query_aj = QUERY_AJUSTES.format(fecha_desde=fecha_desde_aj)
-        df = pd.read_sql(query_aj, conn)
-        logging.info(f"    Registros obtenidos: {len(df)}")
+            query_aj = QUERY_AJUSTES.format(fecha_desde=fecha_desde_aj)
+            df = pd.read_sql(query_aj, conn)
+            logging.info(f"    Registros obtenidos: {len(df)}")
 
-        if not df.empty:
-            registros = []
-            for _, r in df.iterrows():
-                registros.append({
-                    "Sucursal": r['Sucursal'], "Comprobante": r['Comprobante'], "NroComprobante": str(r['Nro. comprobante']),
-                    "FechaMovimiento": r['Fecha movimiento'].isoformat(), "TipoMovimiento": r['Tipo de Movimiento'],
-                    "Codigo": r['Cód. Artículo'], "Articulo": r['Artículo'], "Diferencia": float(r['Cantidad']),
-                    "UnidadMedida": normalizar_um(r['U.M. stock'], r['Artículo'], r['Cód. Artículo'])
-                })
-            _, enviados = enviar_en_lotes("ajustes", registros)
-            logging.info(f"    [OK] Ajustes sincronizados: {enviados}")
+            if not df.empty:
+                registros = []
+                for _, r in df.iterrows():
+                    registros.append({
+                        "Sucursal": r['Sucursal'], "Comprobante": r['Comprobante'], "NroComprobante": str(r['Nro. comprobante']),
+                        "FechaMovimiento": r['Fecha movimiento'].isoformat(), "TipoMovimiento": r['Tipo de Movimiento'],
+                        "Codigo": r['Cód. Artículo'], "Articulo": r['Artículo'], "Diferencia": float(r['Cantidad']),
+                        "UnidadMedida": normalizar_um(r['U.M. stock'], r['Artículo'], r['Cód. Artículo'])
+                    })
+                _, enviados = enviar_en_lotes("ajustes", registros)
+                logging.info(f"    [OK] Ajustes sincronizados: {enviados}")
+        else:
+            logging.warning("[AJUSTES] No se pudo obtener la última fecha del servidor. No se sincroniza.")
 
         # ============================================================
         # COSTOS (solo los lunes)
