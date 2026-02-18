@@ -1,0 +1,23 @@
+C:\Windows\system32>C:\Users\lreyes\AppData\Local\Programs\Python\Python311\python.exe C:\BridgeSync\bridge_servicio.py --ahora
+2026-02-18 10:16:51,824 [INFO] Ejecución manual inmediata
+2026-02-18 10:16:51,825 [INFO] ============================================================
+2026-02-18 10:16:51,825 [INFO] SINCRONIZACIÓN AUTOMÁTICA - Tango -> Replit
+2026-02-18 10:16:51,825 [INFO] Fecha: 18/02/2026 10:16:51
+2026-02-18 10:16:51,825 [INFO] ============================================================
+2026-02-18 10:16:52,668 [INFO] Estado actual - Ajustes: 3614, Costos: 37570, Ventas: 546893
+2026-02-18 10:16:52,668 [INFO] Conectando a Tango SQL Server...
+2026-02-18 10:16:52,699 [INFO] [AJUSTES] Consultando...
+2026-02-18 10:16:52,699 [INFO]   Incremental desde: 07/02/2026
+C:\BridgeSync\bridge_servicio.py:346: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df_ajustes = pd.read_sql(QUERY_AJUSTES.format(fecha_desde=fecha_desde_ajustes), conn)
+2026-02-18 10:16:52,966 [INFO]   Registros: 51
+2026-02-18 10:16:52,968 [INFO]   ajustes: Lote 1/1 (51 registros)...
+2026-02-18 10:16:54,905 [INFO] [COSTOS] Omitido (solo lunes)
+2026-02-18 10:16:54,906 [INFO] [VENTAS] Consultando...
+2026-02-18 10:16:54,906 [INFO]   Incremental desde: 18/02/2026
+C:\BridgeSync\bridge_servicio.py:374: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df_ventas = pd.read_sql(QUERY_VENTAS.format(fecha_desde=fecha_desde_ventas), conn)
+2026-02-18 10:16:55,110 [INFO]   Registros: 282
+2026-02-18 10:16:55,112 [INFO]   ventas: Lote 1/1 (282 registros)...
+2026-02-18 10:17:05,009 [INFO] COMPLETADO - Ajustes: 51, Costos: 0, Ventas: 282
+2026-02-18 10:17:07,494 [INFO] Email enviado a lreyes@textilcrisa.com
