@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!verificarBridgeApiKey(req, res)) return;
     try {
       console.log('[Bridge API] Reporte semanal solicitado desde servicio Windows');
-      await enviarReporteSemanal();
+      await enviarReporteSemanal(true);
       res.json({ success: true, message: 'Reporte semanal enviado' });
     } catch (error) {
       console.error('[Bridge API] Error enviando reporte semanal:', error);

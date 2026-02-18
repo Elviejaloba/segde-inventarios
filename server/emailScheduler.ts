@@ -320,11 +320,15 @@ function getNextMondayAt9AM(): Date {
   return next;
 }
 
-async function enviarReporteSemanal(): Promise<void> {
+async function enviarReporteSemanal(skipBridge: boolean = false): Promise<void> {
   console.log('[EmailScheduler] Preparando envío de reporte semanal...');
   
-  console.log('[EmailScheduler] Actualizando datos del bridge antes de enviar...');
-  await ejecutarBridge();
+  if (!skipBridge) {
+    console.log('[EmailScheduler] Actualizando datos del bridge antes de enviar...');
+    await ejecutarBridge();
+  } else {
+    console.log('[EmailScheduler] Bridge omitido (datos ya sincronizados desde servicio Windows)');
+  }
   
   console.log(`[EmailScheduler] Enviando reporte a ${DESTINATARIOS_REPORTE.length} destinatarios...`);
   
