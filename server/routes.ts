@@ -165,9 +165,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========================================
 
   function verificarBridgeApiKey(req: Request, res: Response): boolean {
-    const apiKey = req.headers['x-bridge-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+    const apiKey = (req.headers['x-bridge-api-key'] as string) || req.headers['authorization']?.replace('Bearer ', '');
     const expectedKey = process.env.BRIDGE_API_KEY;
-    if (!expectedKey || apiKey !== expectedKey) {
+    
+    if (!expectedKey || !apiKey || apiKey.trim() !== expectedKey.trim()) {
+      console.log(`[Auth] API Key rechazada. Esperada: "${expectedKey?.substring(0, 5)}..."`);
       res.status(401).json({ error: 'API key inválida o faltante' });
       return false;
     }
