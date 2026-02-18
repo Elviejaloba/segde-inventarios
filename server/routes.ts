@@ -168,8 +168,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const apiKey = (req.headers['x-bridge-api-key'] as string) || req.headers['authorization']?.replace('Bearer ', '');
     const expectedKey = process.env.BRIDGE_API_KEY;
     
-    if (!expectedKey || !apiKey || apiKey.trim() !== expectedKey.trim()) {
-      console.log(`[Auth] API Key rechazada. Esperada: "${expectedKey?.substring(0, 5)}..."`);
+    // Log más detallado para ver exactamente qué está llegando
+    console.log(`[Auth] Intento de sync. API Key recibida: "${apiKey ? apiKey.substring(0, 5) + '...' : 'NULA'}"`);
+    
+    if (!expectedKey) {
+      console.error('[Auth] ERROR: BRIDGE_API_KEY no está configurada en los secrets de Replit');
+      res.status(500).json({ error: 'Configuración de servidor incompleta' });
+      return false;
+    }
+
+    if (!apiKey || apiKey.trim() !== expectedKey.trim()) {
+      console.log(`[Auth] API Key rechazada. Comparando: "${apiKey?.trim()}" vs "${expectedKey.trim()}"`);
       res.status(401).json({ error: 'API key inválida o faltante' });
       return false;
     }
