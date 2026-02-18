@@ -40,15 +40,14 @@ def normalizar_um(um_tango, articulo_desc, codigo):
     cod = str(codigo).upper()
     
     # Lógica de Kilos (Prioridad máxima si viene de Tango o está en la descripción)
-    if um in ['kg', 'kgs', 'kg.', 'kilo', 'kilos'] or any(x in desc for x in ['x kg', 'por kg', 'por kilo']):
+    if any(x in um for x in ['kg', 'kilo']) or any(x in desc for x in ['x kg', 'por kg', 'por kilo']):
         return 'KG'
     # Lógica de Unidades (Blanco, Accesorios, etc)
-    # 11RS (Ripstop) suele ser tela, si Tango dice que es MTS o viene vacío con prefijo T/11, va a MTS
-    if um in ['un', 'und', 'unid', 'unid.', 'unidad', 'unidades'] or any(cod.startswith(p) for p in ['BL', 'ME', 'OT', 'CO']):
+    if any(x in um for x in ['un', 'und', 'unidad']) or any(cod.startswith(p) for p in ['BL', 'ME', 'OT', 'CO']):
         return 'UN'
     
     # Prefijos de tela (Metros)
-    # 70MF (Set Poliester Fluo) y TF70M deben ser MTS
+    # 70MF (Set Poliester Fluo), TF70M, TI505 (Polar), 11RS (Ripstop) deben ser MTS
     telas_prefixes = ['TA', 'TF', 'TV', 'TD', 'TI', 'T', '11RS', '70MF', '70K', 'TF70M']
     if any(cod.startswith(p) or p in cod for p in telas_prefixes):
         return 'MTS'
