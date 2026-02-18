@@ -62,37 +62,56 @@ def enviar_notificacion_exito(ajustes_env, costos_env, ventas_env, fecha_aj, fec
 
         html = f"""
 <html>
-<body style="font-family: Arial, sans-serif; padding: 20px;">
-<h2 style="color: #28a745;">✅ Sincronización Bridge Exitosa</h2>
-<p><strong>Fecha de ejecución:</strong> {fecha}</p>
-<table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 20px 0;">
-  <tr style="background: #f8f9fa;">
-    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Tipo de Dato</th>
-    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">Registros</th>
-    <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Última Fecha</th>
-  </tr>
-  <tr>
-    <td style="border: 1px solid #dee2e6; padding: 12px;">📦 Ajustes</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{ajustes_env:,}</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_aj or 'N/A'}</td>
-  </tr>
-  <tr>
-    <td style="border: 1px solid #dee2e6; padding: 12px;">💰 Costos</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{costos_env:,}</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_costos or 'N/A'}</td>
-  </tr>
-  <tr>
-    <td style="border: 1px solid #dee2e6; padding: 12px;">🛒 Ventas</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{ventas_env:,}</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">{fecha_vtas or 'N/A'}</td>
-  </tr>
-  <tr style="background: #e9ecef;">
-    <td style="border: 1px solid #dee2e6; padding: 12px; font-weight: bold;">Total</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px; text-align: right; font-weight: bold;">{total:,}</td>
-    <td style="border: 1px solid #dee2e6; padding: 12px;"></td>
-  </tr>
-</table>
-<p style="color: #666; font-size: 12px;">Mensaje automático del Bridge de Sincronización (Servicio Windows).</p>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 0; margin: 0; background: #f0f2f5;">
+<div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+
+  <div style="background: #4a5d6a; color: white; padding: 20px; text-align: center;">
+    <div style="margin-bottom: 12px;">
+      <span style="font-size: 14px; letter-spacing: 8px; font-weight: 300; color: #c0c8ce;">G R U P O</span><br>
+      <span style="font-size: 28px; letter-spacing: 4px; font-weight: 700; color: white;">C R I S A</span>
+    </div>
+    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; margin-top: 8px;">
+      <p style="margin: 0; font-size: 14px; opacity: 0.9;">✅ Sincronización Bridge Exitosa</p>
+      <p style="margin: 5px 0 0; opacity: 0.7; font-size: 12px;">Sistema de Seguimiento de Inventarios</p>
+    </div>
+  </div>
+
+  <div style="padding: 25px 30px;">
+    <p style="color: #555; font-size: 14px; margin: 0 0 20px;"><strong>Fecha de ejecución:</strong> {fecha}</p>
+
+    <table style="border-collapse: collapse; width: 100%; margin: 0 0 20px;">
+      <tr style="background: #4a5d6a; color: white;">
+        <th style="padding: 12px 15px; text-align: left; font-size: 13px; font-weight: 500;">Tipo de Dato</th>
+        <th style="padding: 12px 15px; text-align: right; font-size: 13px; font-weight: 500;">Registros</th>
+        <th style="padding: 12px 15px; text-align: center; font-size: 13px; font-weight: 500;">Última Fecha</th>
+      </tr>
+      <tr style="background: #f8f9fa;">
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; font-size: 14px;">📦 Ajustes</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: right; font-weight: 600; font-size: 16px; color: #4a5d6a;">{ajustes_env:,}</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: center; color: #0066cc; font-size: 13px;">{fecha_aj or 'N/A'}</td>
+      </tr>
+      <tr>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; font-size: 14px;">💰 Costos</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: right; font-weight: 600; font-size: 16px; color: #4a5d6a;">{costos_env:,}</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: center; color: #0066cc; font-size: 13px;">{fecha_costos or 'N/A'}</td>
+      </tr>
+      <tr style="background: #f8f9fa;">
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; font-size: 14px;">🛒 Ventas</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: right; font-weight: 600; font-size: 16px; color: #4a5d6a;">{ventas_env:,}</td>
+        <td style="border-bottom: 1px solid #e9ecef; padding: 14px 15px; text-align: center; color: #0066cc; font-size: 13px;">{fecha_vtas or 'N/A'}</td>
+      </tr>
+      <tr style="background: #e8edf1;">
+        <td style="padding: 14px 15px; font-weight: 700; font-size: 14px; color: #4a5d6a;">Total</td>
+        <td style="padding: 14px 15px; text-align: right; font-weight: 700; font-size: 18px; color: #28a745;">{total:,}</td>
+        <td style="padding: 14px 15px;"></td>
+      </tr>
+    </table>
+
+    <p style="color: #999; font-size: 11px; text-align: center; margin: 20px 0 0; border-top: 1px solid #eee; padding-top: 15px;">
+      Mensaje automático del Bridge de Sincronización (Servicio Windows)
+    </p>
+  </div>
+</div>
 </body>
 </html>"""
 
@@ -125,12 +144,33 @@ def enviar_notificacion_error(error_msg):
 
         html = f"""
 <html>
-<body style="font-family: Arial, sans-serif; padding: 20px;">
-<h2 style="color: #dc3545;">⚠️ Error en Sincronización Bridge</h2>
-<p><strong>Fecha:</strong> {fecha}</p>
-<p><strong>Detalle del error:</strong></p>
-<pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">{error_msg}</pre>
-<p style="color: #666; font-size: 12px;">Mensaje automático del Bridge de Sincronización (Servicio Windows).</p>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 0; margin: 0; background: #f0f2f5;">
+<div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+
+  <div style="background: #8b3a3a; color: white; padding: 20px; text-align: center;">
+    <div style="margin-bottom: 12px;">
+      <span style="font-size: 14px; letter-spacing: 8px; font-weight: 300; color: #dbb8b8;">G R U P O</span><br>
+      <span style="font-size: 28px; letter-spacing: 4px; font-weight: 700; color: white;">C R I S A</span>
+    </div>
+    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; margin-top: 8px;">
+      <p style="margin: 0; font-size: 14px; opacity: 0.9;">⚠️ Error en Sincronización Bridge</p>
+      <p style="margin: 5px 0 0; opacity: 0.7; font-size: 12px;">Sistema de Seguimiento de Inventarios</p>
+    </div>
+  </div>
+
+  <div style="padding: 25px 30px;">
+    <p style="color: #555; font-size: 14px; margin: 0 0 20px;"><strong>Fecha:</strong> {fecha}</p>
+
+    <div style="background: #fff5f5; border-left: 4px solid #dc3545; border-radius: 6px; padding: 15px 20px; margin: 0 0 20px;">
+      <p style="color: #8b3a3a; font-weight: 600; font-size: 13px; margin: 0 0 8px;">Detalle del error:</p>
+      <pre style="background: #f8f0f0; padding: 12px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 12px; overflow-x: auto; margin: 0; color: #555; white-space: pre-wrap;">{error_msg}</pre>
+    </div>
+
+    <p style="color: #999; font-size: 11px; text-align: center; margin: 20px 0 0; border-top: 1px solid #eee; padding-top: 15px;">
+      Mensaje automático del Bridge de Sincronización (Servicio Windows)
+    </p>
+  </div>
+</div>
 </body>
 </html>"""
 
