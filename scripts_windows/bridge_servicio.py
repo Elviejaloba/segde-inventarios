@@ -258,6 +258,8 @@ def ejecutar_sincronizacion():
         conn = pyodbc.connect(CONN_STR, timeout=30)
         conn.timeout = 120
 
+        logging.info(f"[SYNC-INFO] Respuesta del servidor: {json.dumps(sync_info, default=str)}")
+
         # ============================================================
         # AJUSTES
         # ============================================================
