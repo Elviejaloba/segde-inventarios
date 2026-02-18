@@ -81,8 +81,11 @@ if __name__ == "__main__":
     if "--ahora" in sys.argv: ejecutar_sincronizacion()
     else:
         schedule.every().monday.at("07:00").do(ejecutar_sincronizacion)
+        schedule.every().tuesday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().wednesday.at("07:00").do(ejecutar_sincronizacion)
+        schedule.every().thursday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().friday.at("07:00").do(ejecutar_sincronizacion)
+        schedule.every().saturday.at("07:00").do(ejecutar_sincronizacion)
         while True:
             schedule.run_pending()
             time.sleep(60)

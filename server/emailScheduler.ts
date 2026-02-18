@@ -298,9 +298,9 @@ function debeCorrrerBridge(): boolean {
   const dia = now.getDay();
   const hora = now.getHours();
   
-  // Miércoles (3) y Domingo (0) a las 23:00
-  const esDiaDeSync = dia === 0 || dia === 3;
-  const esHoraDeSync = hora === 23;
+  // Lunes(1) a Sábado(6) a las 7:00
+  const esDiaDeSync = dia >= 1 && dia <= 6;
+  const esHoraDeSync = hora === 7;
   
   return esDiaDeSync && esHoraDeSync;
 }
@@ -366,7 +366,7 @@ function iniciarSchedulerEmail() {
 }
 
 function iniciarSchedulerBridge() {
-  console.log('[Bridge] Scheduler activo - Miércoles y Domingo a las 23:00');
+  console.log('[Bridge] Scheduler activo - Lunes a Sábado a las 07:00');
   
   // Chequea cada hora si es momento de ejecutar
   bridgeInterval = setInterval(async () => {
@@ -757,7 +757,7 @@ export function iniciarScheduler() {
   console.log(`  Horario: Lunes 9:00 AM`);
   
   console.log('\n[Bridge] Configuración de sincronización:');
-  console.log(`  Horario: Miércoles y Domingo a las 23:00`);
+  console.log(`  Horario: Lunes a Sábado a las 07:00`);
   console.log(`  Notificación de errores: ${NOTIFICACION_ERRORES}`);
   console.log(`  Notificación de éxito: ${NOTIFICACION_ERRORES}`);
   
