@@ -794,5 +794,4 @@ export function detenerScheduler() {
   console.log('[Scheduler] Schedulers detenidos');
 }
 
-// Exportar función para envío manual de recordatorios
-export { enviarRecordatoriosMuestreo };
+export { enviarRecordatoriosMuestreo, enviarReporteSemanal };

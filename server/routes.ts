@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertAjusteSchema } from "@shared/schema";
 import * as dropbox from "./dropbox";
 import multer from "multer";
-import { enviarRecordatoriosMuestreo } from "./emailScheduler";
+import { enviarRecordatoriosMuestreo, enviarReporteSemanal } from "./emailScheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
@@ -233,6 +233,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error enviando recordatorios:', error);
       res.status(500).json({ error: 'Failed to send reminders' });
+    }
+  });
+
+  // ========================================
+  // BRIDGE-TRIGGERED EMAIL ENDPOINTS
+  // (llamados desde el servicio Windows)
+  // ========================================
+
+  app.post('/api/bridge/reporte-semanal', async (req, res) => {
+    if (!verificarBridgeApiKey(req, res)) return;
+    try {
+      console.log('[Bridge API] Reporte semanal solicitado desde servicio Windows');
+      await enviarReporteSemanal();
+      res.json({ success: true, message: 'Reporte semanal enviado' });
+    } catch (error) {
+      console.error('[Bridge API] Error enviando reporte semanal:', error);
+      res.status(500).json({ error: 'Error al enviar reporte semanal' });
+    }
+  });
+
+  app.post('/api/bridge/recordatorios-muestreo', async (req, res) => {
+    if (!verificarBridgeApiKey(req, res)) return;
+    try {
+      console.log('[Bridge API] Recordatorios de muestreo solicitados desde servicio Windows');
+      await enviarRecordatoriosMuestreo();
+      res.json({ success: true, message: 'Recordatorios de muestreo enviados' });
+    } catch (error) {
+      console.error('[Bridge API] Error enviando recordatorios:', error);
+      res.status(500).json({ error: 'Error al enviar recordatorios de muestreo' });
     }
   });
 

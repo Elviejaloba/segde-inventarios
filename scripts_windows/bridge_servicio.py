@@ -54,6 +54,34 @@ def normalizar_um(um_tango, articulo_desc, codigo):
     
     return 'UN'
 
+def enviar_reporte_semanal():
+    """Llama al endpoint del servidor para enviar el reporte semanal de ajustes"""
+    try:
+        logging.info("[REPORTE] Enviando reporte semanal...")
+        r = requests.post(f"{REPL_URL}/api/bridge/reporte-semanal",
+                          headers={'X-Bridge-Api-Key': BRIDGE_API_KEY, 'Content-Type': 'application/json'},
+                          timeout=120)
+        if r.status_code == 200:
+            logging.info("[REPORTE] Reporte semanal enviado exitosamente")
+        else:
+            logging.error(f"[REPORTE] Error al enviar reporte: {r.status_code} - {r.text}")
+    except Exception as e:
+        logging.error(f"[REPORTE] Error: {e}")
+
+def enviar_recordatorios_muestreo():
+    """Llama al endpoint del servidor para enviar recordatorios de muestreo a sucursales"""
+    try:
+        logging.info("[MUESTREO] Enviando recordatorios de muestreo...")
+        r = requests.post(f"{REPL_URL}/api/bridge/recordatorios-muestreo",
+                          headers={'X-Bridge-Api-Key': BRIDGE_API_KEY, 'Content-Type': 'application/json'},
+                          timeout=120)
+        if r.status_code == 200:
+            logging.info("[MUESTREO] Recordatorios enviados exitosamente")
+        else:
+            logging.error(f"[MUESTREO] Error al enviar recordatorios: {r.status_code} - {r.text}")
+    except Exception as e:
+        logging.error(f"[MUESTREO] Error: {e}")
+
 def ejecutar_sincronizacion():
     try:
         sync_info = get_sync_info()
@@ -78,14 +106,31 @@ def ejecutar_sincronizacion():
     except Exception as e: print(f"Error: {e}")
 
 if __name__ == "__main__":
-    if "--ahora" in sys.argv: ejecutar_sincronizacion()
+    if "--ahora" in sys.argv:
+        ejecutar_sincronizacion()
+        if "--reporte" in sys.argv: enviar_reporte_semanal()
+        if "--muestreo" in sys.argv: enviar_recordatorios_muestreo()
     else:
+        # Sincronización de datos: Lunes a Sábado 7:00 AM
         schedule.every().monday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().tuesday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().wednesday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().thursday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().friday.at("07:00").do(ejecutar_sincronizacion)
         schedule.every().saturday.at("07:00").do(ejecutar_sincronizacion)
+
+        # Reporte semanal: Lunes 9:00 AM
+        schedule.every().monday.at("09:00").do(enviar_reporte_semanal)
+
+        # Recordatorios de muestreo: Lunes/Miércoles/Viernes 9:00 AM
+        schedule.every().monday.at("09:00").do(enviar_recordatorios_muestreo)
+        schedule.every().wednesday.at("09:00").do(enviar_recordatorios_muestreo)
+        schedule.every().friday.at("09:00").do(enviar_recordatorios_muestreo)
+
+        logging.info("Servicio iniciado - Horarios programados:")
+        logging.info("  Sync datos: Lun-Sáb 07:00")
+        logging.info("  Reporte semanal: Lunes 09:00")
+        logging.info("  Recordatorios muestreo: Lun/Mié/Vie 09:00")
         while True:
             schedule.run_pending()
             time.sleep(60)
