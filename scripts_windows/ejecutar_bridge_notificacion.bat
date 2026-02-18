@@ -1,10 +1,9 @@
 @echo off
 REM =============================================
-REM NOTIFICACIÓN DE BRIDGE - Grupo Crisa
-REM Agregar al final del .bat del bridge existente
+REM EJECUTAR BRIDGE - Grupo Crisa
 REM =============================================
 cd /d "%~dp0"
-echo [%date% %time%] Enviando notificacion de bridge...
-python notificacion_bridge.py exito "Sincronización completada" >> logs_bridge.txt 2>&1
-echo [%date% %time%] Finalizado >> logs_bridge.txt
-echo Listo.
+echo [%date% %time%] Iniciando sincronización manual...
+C:\Users\lreyes\AppData\Local\Programs\Python\Python311\python.exe bridge_servicio.py --ahora
+echo [%date% %time%] Sincronización finalizada.
+pause
