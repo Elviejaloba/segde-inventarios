@@ -122,15 +122,13 @@ if __name__ == "__main__":
         # Reporte semanal: Lunes 9:00 AM
         schedule.every().monday.at("09:00").do(enviar_reporte_semanal)
 
-        # Recordatorios de muestreo: Lunes/Miércoles/Viernes 9:00 AM
+        # Recordatorios de muestreo: Lunes 9:00 AM
         schedule.every().monday.at("09:00").do(enviar_recordatorios_muestreo)
-        schedule.every().wednesday.at("09:00").do(enviar_recordatorios_muestreo)
-        schedule.every().friday.at("09:00").do(enviar_recordatorios_muestreo)
 
         logging.info("Servicio iniciado - Horarios programados:")
         logging.info("  Sync datos: Lun-Sáb 07:00")
         logging.info("  Reporte semanal: Lunes 09:00")
-        logging.info("  Recordatorios muestreo: Lun/Mié/Vie 09:00")
+        logging.info("  Recordatorios muestreo: Lunes 09:00")
         while True:
             schedule.run_pending()
             time.sleep(60)
