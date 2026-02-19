@@ -1,4 +1,4 @@
-import { users, type User, type InsertUser, type Ajuste, type InsertAjuste } from "@shared/schema";
+import { type Ajuste, type InsertAjuste } from "@shared/schema";
 import { neon } from "@neondatabase/serverless";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -12,10 +12,6 @@ const sql = neon(databaseUrl);
 // you might need
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
   // Ajustes methods
   getAjustes(sucursal?: string): Promise<Ajuste[]>;
   getAjustesBySucursal(sucursal: string): Promise<Ajuste[]>;
@@ -34,31 +30,6 @@ export interface IStorage {
 }
 
 export class PostgreSQLStorage implements IStorage {
-  private users: Map<number, User>;
-  private currentUserId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.currentUserId = 1;
-  }
-
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => (user as any).username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-
   async getAjustes(sucursal?: string): Promise<Ajuste[]> {
     try {
       let query = 'SELECT * FROM ajustes_sucursales';
