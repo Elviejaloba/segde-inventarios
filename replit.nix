@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.libwebp
     pkgs.postgresql
     pkgs.tk
     pkgs.tcl

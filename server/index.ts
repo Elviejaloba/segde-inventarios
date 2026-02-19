@@ -3,15 +3,29 @@ import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
 import { iniciarScheduler } from "./emailScheduler";
 import cors from 'cors';
+import compression from 'compression';
 
 const app = express();
 
-// Configuración básica - Aumentar límite para sincronización
+app.use(compression());
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cors());
 
-// Logging middleware simplificado
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/assets/') && (req.path.endsWith('.js') || req.path.endsWith('.css') || req.path.endsWith('.woff2') || req.path.endsWith('.woff'))) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (req.path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (req.path.match(/\.(jpeg|jpg|png|webp|svg|ico|gif)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+    next();
+  });
+}
+
 app.use((req, res, next) => {
   log(`${req.method} ${req.url}`);
   next();

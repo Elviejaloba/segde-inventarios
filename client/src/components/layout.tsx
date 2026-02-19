@@ -23,9 +23,11 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
         <div className="container flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-4">
             <img 
-              src="/assets/GRUPO CRISA.jpeg" 
+              src="/assets/GRUPO CRISA.webp" 
               alt="GRUPO CRISA" 
               className="h-7 sm:h-10 w-auto"
+              width="109"
+              height="48"
             />
             <h1 className="text-sm sm:text-xl font-bold hidden xs:block">
               Seguimiento de Muestreos

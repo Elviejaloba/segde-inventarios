@@ -90,9 +90,12 @@ export function Auth() {
         <CardHeader className="space-y-2">
           <div className="flex justify-center mb-6">
             <img 
-              src="/assets/GRUPO CRISA.jpeg" 
+              src="/assets/GRUPO CRISA.webp" 
               alt="GRUPO CRISA" 
               className="h-16 w-auto"
+              width="145"
+              height="64"
+              loading="lazy"
             />
           </div>
           <CardTitle className="text-2xl text-center">Acceder al Sistema</CardTitle>
