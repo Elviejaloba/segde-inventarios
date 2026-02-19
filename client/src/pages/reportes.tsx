@@ -684,47 +684,47 @@ export default function ReportesPage() {
                     className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border cursor-help transition-transform hover:scale-[1.02]`}
                     title={tooltipText}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <Package className={`h-4 w-4 ${iconColor}`} />
-                        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    <div className="flex flex-col gap-0.5 mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <Package className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${iconColor} shrink-0`} />
+                        <span className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">{label}</span>
                       </div>
                       {data && !isNeutral && (
                         <div 
-                          className={`flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded ${isUp ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-green-600 bg-green-100 dark:bg-green-900/30'}`}
+                          className={`flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded w-fit ${isUp ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-green-600 bg-green-100 dark:bg-green-900/30'}`}
                           title={isUp ? 'Aumentó respecto a 2025 (más pérdidas)' : 'Disminuyó respecto a 2025 (menos pérdidas)'}
                         >
                           {isUp ? (
-                            <TrendingUp className="h-3 w-3" />
+                            <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           ) : (
-                            <TrendingDown className="h-3 w-3" />
+                            <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           )}
                           <span>{Math.abs(variacion).toFixed(1)}%</span>
                         </div>
                       )}
                       {data && isNeutral && (
                         <div 
-                          className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800"
+                          className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium text-gray-500 px-1 sm:px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 w-fit"
                           title="Sin variación significativa respecto a 2025"
                         >
-                          <Minus className="h-3 w-3" />
+                          <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span>0%</span>
                         </div>
                       )}
                     </div>
-                    <div className={`text-lg sm:text-xl font-bold ${iconColor}`}>
-                      {data ? data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '0'}
+                    <div className={`text-base sm:text-xl font-bold ${iconColor} truncate`}>
+                      {data ? data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
                     </div>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] text-muted-foreground">
-                        {data ? `${data.articulos} artículos` : 'Sin datos'}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1 gap-0.5">
+                      <span className="text-[9px] sm:text-[10px] text-muted-foreground">
+                        {data ? `${data.articulos} art.` : 'Sin datos'}
                       </span>
                       {data && data.total2025 > 0 && (
                         <span 
-                          className="text-[9px] text-muted-foreground cursor-help"
+                          className="text-[8px] sm:text-[9px] text-muted-foreground cursor-help"
                           title={`Total ajustado en el año 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}`}
                         >
-                          2025: {data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                          '25: {data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                         </span>
                       )}
                     </div>
