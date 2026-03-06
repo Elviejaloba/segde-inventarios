@@ -170,6 +170,14 @@ const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'];
 
 const SUCURSALES_PREMIUM: string[] = ['T.Srafael', 'T.Maipu', 'T.S.Martin', 'T.Lujan', 'T.Tunuyan'];
 
+const CODIGOS_PREMIUM: Record<string, string> = {
+  'T.Srafael': '0401',
+  'T.Tunuyan': '1501',
+  'T.S.Martin': '1201',
+  'T.Maipu': '1301',
+  'T.Lujan': '1401',
+};
+
 // Mapa de meses
 const MESES_MAP: { [key: string]: string } = {
   'DICIEMBRE': 'Dic',
@@ -185,6 +193,9 @@ export function ReportsView() {
   const [selectedSeason, setSelectedSeason] = useState<Temporada>("todas");
   const [visibleArticulos, setVisibleArticulos] = useState(5);
   const [visibleComprobantes, setVisibleComprobantes] = useState(5);
+  const [premiumCode, setPremiumCode] = useState("");
+  const [premiumCodeError, setPremiumCodeError] = useState(false);
+  const [unlockedBranches, setUnlockedBranches] = useState<string[]>([]);
   const { metrics, loading } = useAjustesData(
     selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch,
     selectedSeason
@@ -355,7 +366,7 @@ export function ReportsView() {
         </div>
       </div>
 
-      {SUCURSALES_PREMIUM.includes(selectedBranch) && (
+      {SUCURSALES_PREMIUM.includes(selectedBranch) && !unlockedBranches.includes(selectedBranch) && (
         <div className="fixed inset-0 z-40 pointer-events-none" style={{ top: '180px' }}>
           <div className="absolute inset-0 backdrop-blur-md bg-white/30 dark:bg-black/30" />
           <div className="absolute inset-0 flex items-start justify-center pt-[15vh] pointer-events-auto">
@@ -371,9 +382,50 @@ export function ReportsView() {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
                 Información Premium
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
-                Para llegar a este nivel de información te pedimos que te comuniques a la administración para llegar a un acuerdo para mostrar la información.
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                Para acceder a este nivel de información, comunicate con la administración para llegar a un acuerdo.
               </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                Si ya tenés el código enviado por administración, ingresalo a continuación:
+              </p>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={premiumCode}
+                  onChange={(e) => { setPremiumCode(e.target.value); setPremiumCodeError(false); }}
+                  placeholder="Código de 4 dígitos"
+                  className={`flex-1 px-4 py-3 rounded-lg border text-center text-lg tracking-widest font-mono ${premiumCodeError ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && premiumCode.length === 4) {
+                      if (CODIGOS_PREMIUM[selectedBranch] === premiumCode) {
+                        setUnlockedBranches(prev => [...prev, selectedBranch]);
+                        setPremiumCode("");
+                        setPremiumCodeError(false);
+                      } else {
+                        setPremiumCodeError(true);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (CODIGOS_PREMIUM[selectedBranch] === premiumCode) {
+                      setUnlockedBranches(prev => [...prev, selectedBranch]);
+                      setPremiumCode("");
+                      setPremiumCodeError(false);
+                    } else {
+                      setPremiumCodeError(true);
+                    }
+                  }}
+                  className="px-5 py-3 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors duration-200"
+                >
+                  Verificar
+                </button>
+              </div>
+              {premiumCodeError && (
+                <p className="text-xs text-red-500 mb-4">Código incorrecto. Verificá e intentá de nuevo.</p>
+              )}
               <div className="flex items-center gap-3">
                 <a
                   href="https://wa.me/542615195614?text=Hola%2C%20me%20gustar%C3%ADa%20consultar%20sobre%20el%20acceso%20premium%20a%20los%20reportes%20de%20inventario."
@@ -385,7 +437,7 @@ export function ReportsView() {
                   Contactar Administración
                 </a>
                 <button
-                  onClick={() => setSelectedBranch("Todas las Sucursales")}
+                  onClick={() => { setSelectedBranch("Todas las Sucursales"); setPremiumCode(""); setPremiumCodeError(false); }}
                   className="px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 transition-colors duration-200"
                 >
                   Cerrar
