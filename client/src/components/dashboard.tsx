@@ -194,6 +194,29 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
+                    <div className="flex items-center justify-end gap-2 mt-1">
+                      <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap">Sin Stock</span>
+                      <div className="relative w-20 sm:w-24 h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${branch.noStockPercentage}%` }}
+                          transition={{ 
+                            duration: 1,
+                            ease: "easeOut",
+                            delay: index * 0.1 + 0.2
+                          }}
+                        />
+                      </div>
+                      <motion.span 
+                        className="text-[9px] sm:text-[10px] min-w-[35px] font-medium text-orange-500"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.1 + 0.7 }}
+                      >
+                        {Math.round(branch.noStockPercentage)}%
+                      </motion.span>
+                    </div>
                     {/* Indicadores de objetivos mensuales para sucursales con calendario */}
                     {['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'].includes(branch.id) && (() => {
                       const calendario = getCalendarioSucursal(branch.id);
