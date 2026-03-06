@@ -104,7 +104,7 @@ const SUCURSALES = [
   "T.Srafael"
 ];
 
-const SUCURSALES_PREMIUM = ["LA TIJERA SAN RAFAEL", "T.Srafael", "LA TIJERA MAIPU", "T.Maipu", "LA TIJERA SAN MARTIN", "LA TIJERA SMARTIN", "T.S.Martin"];
+const SUCURSALES_PREMIUM = ["LA TIJERA SAN RAFAEL", "T.Srafael", "LA TIJERA MAIPU", "T.Maipu", "LA TIJERA SAN MARTIN", "LA TIJERA SMARTIN", "T.S.Martin", "T.Lujan", "LA TIJERA LUJAN", "T.Tunuyan", "LA TIJERA TUNUYAN"];
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-AR', {
