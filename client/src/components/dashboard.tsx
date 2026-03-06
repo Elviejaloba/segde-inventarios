@@ -194,9 +194,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
-                    <div className="flex items-center justify-end gap-2 mt-1">
-                      <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap">Sin Stock</span>
-                      <div className="relative w-20 sm:w-24 h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                    <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1">
+                      <span className="text-[8px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Sin Stock</span>
+                      <span className="text-[8px] text-gray-400 whitespace-nowrap sm:hidden">S/S</span>
+                      <div className="relative w-16 sm:w-24 h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
                         <motion.div 
                           className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full"
                           initial={{ width: 0 }}
