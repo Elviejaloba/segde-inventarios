@@ -29,11 +29,11 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               width="109"
               height="48"
             />
-            <h1 className="text-sm sm:text-xl font-bold hidden xs:block">
+            <h1 className="text-sm sm:text-xl font-bold hidden sm:block">
               Seguimiento de Muestreos
             </h1>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -42,10 +42,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-home"
-                      className="px-2 sm:px-3"
+                      className="px-3"
                     >
-                      <Home className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Dashboard</span>
+                      <Home className="h-4 w-4 mr-2" />
+                      Dashboard
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -61,10 +61,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/reportes" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-reportes"
-                      className={`px-2 sm:px-3 ${location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}`}
+                      className={`px-3 ${location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}`}
                     >
-                      <FileText className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Reportes</span>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Reportes
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -80,10 +80,10 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/muestreos" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-muestreos"
-                      className="px-2 sm:px-3"
+                      className="px-3"
                     >
-                      <FileUp className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Muestreos</span>
+                      <FileUp className="h-4 w-4 mr-2" />
+                      Muestreos
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -102,7 +102,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       startTour(page);
                     }}
                     data-testid="button-tour"
-                    className="relative h-8 w-8 sm:h-9 sm:w-9"
+                    className="relative h-9 w-9"
                   >
                     <HelpCircle className="h-4 w-4 animate-pulse" />
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
@@ -119,7 +119,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                     variant="ghost"
                     size="icon"
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="h-8 w-8 sm:h-9 sm:w-9"
+                    className="h-9 w-9"
                   >
                     {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   </Button>
@@ -132,7 +132,62 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
           </div>
         </div>
       </header>
-      <main className="container py-4 sm:py-8 mt-16 px-2 sm:px-4">
+
+      {/* Mobile bottom navigation */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50 safe-area-bottom">
+        <div className="flex items-center justify-around h-14">
+          <Link href="/">
+            <button
+              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+                location === "/" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Home className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Inicio</span>
+            </button>
+          </Link>
+          <Link href="/reportes">
+            <button
+              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+                location === "/reportes" ? "text-primary" : "text-blue-600"
+              }`}
+            >
+              <FileText className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Reportes</span>
+            </button>
+          </Link>
+          <Link href="/muestreos">
+            <button
+              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+                location === "/muestreos" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <FileUp className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Muestreos</span>
+            </button>
+          </Link>
+          <button
+            onClick={() => {
+              const page = location === "/muestreos" ? "muestreos" : location === "/reportes" ? "reportes" : "home";
+              startTour(page);
+            }}
+            className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground relative"
+          >
+            <HelpCircle className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Ayuda</span>
+            <span className="absolute top-1.5 right-3 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+          </button>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground"
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <span className="text-[10px] font-medium">{theme === "dark" ? "Claro" : "Oscuro"}</span>
+          </button>
+        </div>
+      </nav>
+
+      <main className="container py-4 sm:py-8 mt-14 sm:mt-16 pb-20 sm:pb-8 px-2 sm:px-4">
         {children}
       </main>
       <ImportExcel isHidden={hideImport} />
