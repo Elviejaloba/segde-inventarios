@@ -256,6 +256,9 @@ export class PostgreSQLStorage implements IStorage {
       const periodoFilter = fechaInicio && fechaFin 
         ? `AND a."FechaMovimiento" >= '${fechaInicio}' AND a."FechaMovimiento" <= '${fechaFin}'`
         : '';
+      const periodoFilterNoAlias = fechaInicio && fechaFin
+        ? `AND "FechaMovimiento" >= '${fechaInicio}' AND "FechaMovimiento" <= '${fechaFin}'`
+        : '';
 
       // Análisis valorizado agrupando por código base (sin sufijo de color 01-32)
       // Lógica: TI400I 01 al TI400I 32 son el mismo producto, se consolidan
@@ -428,6 +431,7 @@ export class PostgreSQLStorage implements IStorage {
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
         ),
         costos_base_r AS (
@@ -446,6 +450,7 @@ export class PostgreSQLStorage implements IStorage {
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          ${periodoFilter}
           GROUP BY a."Sucursal"
         ),
         ajustes_por_sucursal AS (
@@ -462,6 +467,7 @@ export class PostgreSQLStorage implements IStorage {
         codigos_con_ajuste AS (
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
           FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "Sucursal" != 'CRISA 3'
+          ${periodoFilterNoAlias}
         ),
         ventas_por_sucursal AS (
           SELECT vb."Sucursal", SUM(vb.total_importe) as total_ventas
@@ -507,6 +513,7 @@ export class PostgreSQLStorage implements IStorage {
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
         ),
         costos_base_t AS (
@@ -542,6 +549,7 @@ export class PostgreSQLStorage implements IStorage {
         WHERE "FechaMovimiento" IS NOT NULL
         AND "Sucursal" != 'CRISA 3'
         ${sucursal ? 'AND "Sucursal" = $1' : ''}
+        ${periodoFilterNoAlias}
       `;
 
       const perdidaPorAnioQuery = `
@@ -555,6 +563,7 @@ export class PostgreSQLStorage implements IStorage {
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+          ${periodoFilter}
           GROUP BY EXTRACT(YEAR FROM a."FechaMovimiento"), TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), a."Sucursal"
         ),
         ventas_base AS (
@@ -585,6 +594,7 @@ export class PostgreSQLStorage implements IStorage {
           WHERE "FechaMovimiento" IS NOT NULL
           AND "Sucursal" != 'CRISA 3'
           ${sucursal ? 'AND "Sucursal" = $1' : ''}
+          ${periodoFilterNoAlias}
         )
         SELECT 
           SUM(CASE WHEN EXTRACT(YEAR FROM v."Fecha") = 2025 THEN v."ImporteConIVA" ELSE 0 END) as ventas_2025,
