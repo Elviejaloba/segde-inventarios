@@ -366,18 +366,13 @@ export default function ReportesPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-bold">Reportes Valorizados</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Análisis de ajustes con valorización económica
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-base sm:text-2xl font-bold">Reportes Valorizados</h1>
         {ultimaActualizacion && (
-          <div className="flex items-center gap-2 text-right bg-muted/50 rounded-lg px-3 py-1.5 border">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <div className="flex items-center gap-1.5 text-right bg-muted/50 rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border shrink-0">
+            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">
+              <span className="text-xs sm:text-sm font-semibold leading-tight">
                 {(() => {
                   const parseLocalDate = (str: string) => {
                     if (!str) return null;
@@ -399,22 +394,21 @@ export default function ReportesPage() {
                   return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
                 })()}
               </span>
-              <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
-              <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">Últ. actualización</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-3" data-testid="reportes-filtros">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="flex flex-col gap-2" data-testid="reportes-filtros">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
           <Select value={selectedSucursal || "todas"} onValueChange={(v) => setSelectedSucursal(v === "todas" ? "" : v)}>
-            <SelectTrigger className="w-full" data-testid="select-sucursal">
-              <Building2 className="h-4 w-4 mr-2 text-purple-600 shrink-0" />
+            <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm" data-testid="select-sucursal">
+              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-purple-600 shrink-0" />
               <SelectValue placeholder="Sucursal" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todas">Todas las sucursales</SelectItem>
+              <SelectItem value="todas">Todas</SelectItem>
               {analisis?.resumen?.map((item: any) => (
                 <SelectItem key={item.sucursal} value={item.sucursal}>{item.sucursal}</SelectItem>
               ))}
@@ -422,8 +416,8 @@ export default function ReportesPage() {
           </Select>
 
           <Select value={selectedPeriodo} onValueChange={(v) => { setSelectedPeriodo(v); if (v !== 'custom') { setFechaDesde(''); setFechaHasta(''); } }}>
-            <SelectTrigger className="w-full">
-              <Calendar className="h-4 w-4 mr-2 text-blue-600 shrink-0" />
+            <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-600 shrink-0" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
@@ -445,8 +439,8 @@ export default function ReportesPage() {
           </Select>
 
           <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-            <SelectTrigger className="w-full">
-              <ArrowUpDown className="h-4 w-4 mr-2 text-gray-600 shrink-0" />
+            <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm">
+              <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-gray-600 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -456,18 +450,18 @@ export default function ReportesPage() {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm"
               />
             </div>
-            <Button variant="outline" size="icon" onClick={() => refetch()} className="shrink-0">
-              <RefreshCw className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={() => refetch()} className="shrink-0 h-9 w-9 sm:h-10 sm:w-10">
+              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
@@ -756,17 +750,17 @@ export default function ReportesPage() {
 
       {ajustesPorUnidad && ajustesPorUnidad.length > 0 && (
         <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/30 dark:to-slate-800/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-slate-600" />
+          <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600" />
               Ajustes por Unidad de Medida
             </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Total ajustado consolidado por tipo de unidad (comparado vs 2025)
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              Total ajustado por tipo de unidad (vs 2025)
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+          <CardContent className="p-2 sm:p-6 pt-0 sm:pt-0">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
               {(['UN', 'MTS', 'KG'] as const).map((unidad) => {
                 const data = ajustesPorUnidad.find(u => u.unidadMedida === unidad);
                 const iconColor = unidad === 'UN' ? 'text-purple-600' : unidad === 'MTS' ? 'text-blue-600' : 'text-orange-600';
@@ -789,7 +783,7 @@ export default function ReportesPage() {
                 return (
                   <div 
                     key={unidad} 
-                    className={`bg-gradient-to-br ${bgColor} rounded-lg p-3 border cursor-help transition-transform hover:scale-[1.02]`}
+                    className={`bg-gradient-to-br ${bgColor} rounded-lg p-2 sm:p-3 border cursor-help transition-transform hover:scale-[1.02]`}
                     title={tooltipText}
                   >
                     <div className="flex flex-col gap-0.5 mb-1">
@@ -846,36 +840,38 @@ export default function ReportesPage() {
 
       {analisis?.resumen && analisis.resumen.length > 0 && (
         <Card data-testid="tabla-resumen">
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+          <CardHeader className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+                <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
                 Resumen por Sucursal
               </CardTitle>
               {showCostoReposicion ? (
-                <Button variant="outline" size="sm" onClick={handleCloseCostoMode} className="text-green-600 border-green-600">
-                  <Eye className="h-4 w-4 mr-1" />
-                  Ocultar Costo
+                <Button variant="outline" size="sm" onClick={handleCloseCostoMode} className="text-green-600 border-green-600 h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                  <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                  <span className="hidden sm:inline">Ocultar Costo</span>
+                  <span className="sm:hidden">Ocultar</span>
                 </Button>
               ) : (
-                <Button variant="outline" size="sm" onClick={() => setShowPasswordDialog(true)} data-testid="btn-ver-costo">
-                  <DollarSign className="h-4 w-4 mr-1" />
-                  Ver con Costo
+                <Button variant="outline" size="sm" onClick={() => setShowPasswordDialog(true)} data-testid="btn-ver-costo" className="h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                  <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                  <span className="hidden sm:inline">Ver con Costo</span>
+                  <span className="sm:hidden">Costo</span>
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
               {showCostoReposicion 
-                ? "* Los valores están calculados a COSTO DE REPOSICIÓN"
-                : "* Los valores están calculados a precio público"}
+                ? "* Valores a COSTO DE REPOSICIÓN"
+                : "* Valores a precio público"}
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2 sm:p-6">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Sucursal</TableHead>
+                    <TableHead className="text-xs sm:text-sm p-2 sm:p-4">Sucursal</TableHead>
                     <TableHead className="text-right hidden sm:table-cell" title="Cantidad de artículos diferentes con ajustes">
                       <div className="flex flex-col items-end">
                         <span>Artículos</span>
@@ -900,8 +896,8 @@ export default function ReportesPage() {
                         <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right text-xs sm:text-sm">Pérdida $</TableHead>
-                    <TableHead className="text-right text-xs sm:text-sm">% Pérd.</TableHead>
+                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">Pérdida $</TableHead>
+                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% Pérd.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -909,7 +905,7 @@ export default function ReportesPage() {
                     const costData = analisisCosto?.resumen?.find(c => c.sucursal === item.sucursal);
                     return (
                       <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
-                        <TableCell className="font-medium">{item.sucursal}</TableCell>
+                        <TableCell className="font-medium text-xs sm:text-sm p-2 sm:p-4">{item.sucursal}</TableCell>
                         <TableCell className="text-right hidden sm:table-cell">{item.articulosConAjuste}</TableCell>
                         <TableCell className="text-right text-purple-600 font-medium hidden md:table-cell" title={`${(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} unidades ajustadas`}>
                           {(item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
@@ -920,11 +916,11 @@ export default function ReportesPage() {
                         <TableCell className="text-right text-orange-600 font-medium hidden md:table-cell" title={`${(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })} kilogramos ajustados`}>
                           {(item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell className="text-right text-red-600 font-medium">
+                        <TableCell className="text-right text-red-600 font-medium text-xs sm:text-sm p-2 sm:p-4">
                           {formatCurrency(item.totalValorizado)}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"}>
+                        <TableCell className="text-right p-2 sm:p-4">
+                          <Badge variant={item.porcentajePerdida > 3 ? "destructive" : item.porcentajePerdida > 1 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
                             {item.porcentajePerdida.toFixed(2)}%
                           </Badge>
                         </TableCell>
@@ -944,42 +940,43 @@ export default function ReportesPage() {
 
       <Card data-testid="tabla-detalle">
         <CardHeader 
-          className="cursor-pointer select-none hover:bg-muted/30 transition-colors"
+          className="cursor-pointer select-none hover:bg-muted/30 transition-colors p-3 sm:p-6"
           onClick={() => setDetalleExpanded(!detalleExpanded)}
         >
-          <CardTitle className="flex items-center gap-3">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-3 text-sm sm:text-lg">
             {detalleExpanded ? (
-              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
             )}
-            <TrendingDown className="h-5 w-5" />
-            Detalle de Ajustes Valorizados
+            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            <span className="hidden sm:inline">Detalle de Ajustes Valorizados</span>
+            <span className="sm:hidden">Detalle Ajustes</span>
             {selectedSucursal && (
-              <span className="bg-gradient-to-r from-primary to-primary/80 text-white px-4 py-1 rounded-full text-lg font-bold shadow-md">
+              <span className="bg-gradient-to-r from-primary to-primary/80 text-white px-2 sm:px-4 py-0.5 sm:py-1 rounded-full text-xs sm:text-lg font-bold shadow-md">
                 {selectedSucursal}
               </span>
             )}
             {!detalleExpanded && (
-              <span className="text-xs font-normal text-muted-foreground ml-auto">
-                Clic para expandir
+              <span className="text-[10px] sm:text-xs font-normal text-muted-foreground ml-auto shrink-0">
+                Expandir
               </span>
             )}
           </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
             {selectedSucursal 
               ? `Datos de la sucursal ${selectedSucursal}. Valores a precio público.`
-              : "Datos consolidados de todas las sucursales. Valores a precio público. Haga clic en una sucursal del resumen para filtrar."
+              : "Datos consolidados de todas las sucursales. Valores a precio público."
             }
           </p>
         </CardHeader>
         {detalleExpanded && (
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Código</TableHead>
+                  <TableHead className="text-xs sm:text-sm p-2 sm:p-4">Código</TableHead>
                   <TableHead className="hidden sm:table-cell">Artículo</TableHead>
                   <TableHead className="text-right text-purple-600 hidden md:table-cell" title="Unidades (UN)">
                     <div className="flex flex-col items-end">
@@ -999,16 +996,16 @@ export default function ReportesPage() {
                       <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">Pérdida $</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">% Pérd.</TableHead>
+                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">Pérdida $</TableHead>
+                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% Pérd.</TableHead>
                   <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="p-1 sm:p-4"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedData.slice(0, 100).map((item, idx) => (
                   <TableRow key={`${item.sucursal}-${item.codigo}-${idx}`} className={item.alertaPerdida ? "bg-red-50 dark:bg-red-900/10" : ""}>
-                    <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
+                    <TableCell className="font-mono text-xs sm:text-sm p-2 sm:p-4">{item.codigo}</TableCell>
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
@@ -1021,17 +1018,17 @@ export default function ReportesPage() {
                     <TableCell className="text-right text-orange-600 font-medium hidden md:table-cell">
                       {(item.totalKg || 0) > 0 ? (item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right text-red-600 font-medium">
+                    <TableCell className="text-right text-red-600 font-medium text-xs sm:text-sm p-2 sm:p-4">
                       {formatCurrency(item.totalValorizado)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right p-2 sm:p-4">
                       {item.alertaPerdida ? (
-                        <Badge variant="destructive" className="animate-pulse">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
+                        <Badge variant="destructive" className="animate-pulse text-[10px] sm:text-xs">
+                          <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                           {item.porcentajePerdida.toFixed(1)}%
                         </Badge>
                       ) : (
-                        <Badge variant={item.porcentajePerdida > 1 ? "secondary" : "outline"}>
+                        <Badge variant={item.porcentajePerdida > 1 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
                           {item.porcentajePerdida.toFixed(1)}%
                         </Badge>
                       )}
@@ -1046,13 +1043,13 @@ export default function ReportesPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(item.codigo)} title="Ver historial">
-                          <Eye className="h-4 w-4" />
+                    <TableCell className="p-1 sm:p-4">
+                      <div className="flex items-center gap-0">
+                        <Button variant="ghost" size="sm" onClick={() => handleVerHistorial(item.codigo)} title="Ver historial" className="h-7 w-7 sm:h-9 sm:w-9 p-0">
+                          <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleVerDocumentos(item)} title="Buscar en documentos">
-                          <FileText className="h-4 w-4 text-blue-600" />
+                        <Button variant="ghost" size="sm" onClick={() => handleVerDocumentos(item)} title="Buscar en documentos" className="h-7 w-7 sm:h-9 sm:w-9 p-0">
+                          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                         </Button>
                       </div>
                     </TableCell>
@@ -1378,7 +1375,7 @@ export default function ReportesPage() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors z-50"
+          className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 bg-primary text-white p-2.5 sm:p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors z-50"
           title="Volver arriba"
         >
           <ArrowUp className="h-6 w-6" />
