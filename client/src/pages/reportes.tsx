@@ -160,6 +160,8 @@ const PERIODOS = [
 export default function ReportesPage() {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("");
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>("todo");
+  const [fechaDesde, setFechaDesde] = useState<string>("");
+  const [fechaHasta, setFechaHasta] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'valorizado' | 'perdida' | 'unidades'>('valorizado');
   const [selectedCodigo, setSelectedCodigo] = useState<string | null>(null);
@@ -195,11 +197,16 @@ export default function ReportesPage() {
   };
 
   const { data: analisis, isLoading, refetch } = useQuery<{ detalle: AnalisisItem[]; resumen: ResumenSucursal[] }>({
-    queryKey: ['/api/ajustes/valorizado', selectedSucursal, selectedPeriodo],
+    queryKey: ['/api/ajustes/valorizado', selectedSucursal, selectedPeriodo, fechaDesde, fechaHasta],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedSucursal) params.append('sucursal', selectedSucursal);
-      if (selectedPeriodo && selectedPeriodo !== 'todo') params.append('periodo', selectedPeriodo);
+      if (fechaDesde && fechaHasta) {
+        params.append('fechaDesde', fechaDesde);
+        params.append('fechaHasta', fechaHasta);
+      } else if (selectedPeriodo && selectedPeriodo !== 'todo') {
+        params.append('periodo', selectedPeriodo);
+      }
       const url = `/api/ajustes/valorizado${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Error fetching data');
@@ -414,7 +421,7 @@ export default function ReportesPage() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedPeriodo} onValueChange={setSelectedPeriodo}>
+          <Select value={selectedPeriodo} onValueChange={(v) => { setSelectedPeriodo(v); if (v !== 'custom') { setFechaDesde(''); setFechaHasta(''); } }}>
             <SelectTrigger className="w-full">
               <Calendar className="h-4 w-4 mr-2 text-blue-600 shrink-0" />
               <SelectValue placeholder="Período" />
@@ -428,6 +435,12 @@ export default function ReportesPage() {
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex flex-col">
+                  <span className="font-medium">Rango personalizado</span>
+                  <span className="text-xs text-muted-foreground">Elegir fechas</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -460,7 +473,42 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      {selectedPeriodo && selectedPeriodo !== 'todo' && (
+      {selectedPeriodo === 'custom' && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2.5">
+          <Calendar className="h-4 w-4 text-blue-600 shrink-0 hidden sm:block" />
+          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium shrink-0">Rango:</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => setFechaDesde(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+            />
+            <span className="text-sm text-blue-600">a</span>
+            <Input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => setFechaHasta(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+            />
+          </div>
+          {fechaDesde && fechaHasta && (
+            <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
+              {new Date(fechaDesde + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(fechaHasta + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </Badge>
+          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => { setSelectedPeriodo('todo'); setFechaDesde(''); setFechaHasta(''); }}
+            className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 shrink-0"
+          >
+            Ver todo
+          </Button>
+        </div>
+      )}
+
+      {selectedPeriodo && selectedPeriodo !== 'todo' && selectedPeriodo !== 'custom' && (
         <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
           <Calendar className="h-4 w-4 text-blue-600" />
           <span className="text-sm text-blue-700 dark:text-blue-300">

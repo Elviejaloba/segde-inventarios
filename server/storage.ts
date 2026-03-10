@@ -24,7 +24,7 @@ export interface IStorage {
   }>;
   
   // Análisis valorizado
-  getAnalisisValorizado(sucursal?: string): Promise<any>;
+  getAnalisisValorizado(sucursal?: string, periodo?: string, fechaDesde?: string, fechaHasta?: string): Promise<any>;
   getAnalisisValorizadoConCosto(sucursal?: string): Promise<any>;
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
   getPuntoEquilibrio(sucursal?: string): Promise<any>;
@@ -217,37 +217,40 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getAnalisisValorizado(sucursal?: string, periodo?: string): Promise<any> {
+  async getAnalisisValorizado(sucursal?: string, periodo?: string, fechaDesde?: string, fechaHasta?: string): Promise<any> {
     try {
-      // Calcular filtro de fechas basado en período
       let fechaInicio = '';
       let fechaFin = '';
       const now = new Date();
       
-      switch (periodo) {
-        case '2025':
-          fechaInicio = '2025-01-01';
-          fechaFin = '2025-12-31';
-          break;
-        case '2026':
-          fechaInicio = '2026-01-01';
-          fechaFin = '2099-12-31';
-          break;
-        case 'ultimo-trimestre':
-          const trimestre = new Date(now);
-          trimestre.setMonth(trimestre.getMonth() - 3);
-          fechaInicio = trimestre.toISOString().split('T')[0];
-          fechaFin = now.toISOString().split('T')[0];
-          break;
-        case 'ultimo-semestre':
-          const semestre = new Date(now);
-          semestre.setMonth(semestre.getMonth() - 6);
-          fechaInicio = semestre.toISOString().split('T')[0];
-          fechaFin = now.toISOString().split('T')[0];
-          break;
-        default:
-          // 'todo' - sin filtro de fecha
-          break;
+      if (fechaDesde && fechaHasta) {
+        fechaInicio = fechaDesde;
+        fechaFin = fechaHasta;
+      } else {
+        switch (periodo) {
+          case '2025':
+            fechaInicio = '2025-01-01';
+            fechaFin = '2025-12-31';
+            break;
+          case '2026':
+            fechaInicio = '2026-01-01';
+            fechaFin = '2099-12-31';
+            break;
+          case 'ultimo-trimestre':
+            const trimestre = new Date(now);
+            trimestre.setMonth(trimestre.getMonth() - 3);
+            fechaInicio = trimestre.toISOString().split('T')[0];
+            fechaFin = now.toISOString().split('T')[0];
+            break;
+          case 'ultimo-semestre':
+            const semestre = new Date(now);
+            semestre.setMonth(semestre.getMonth() - 6);
+            fechaInicio = semestre.toISOString().split('T')[0];
+            fechaFin = now.toISOString().split('T')[0];
+            break;
+          default:
+            break;
+        }
       }
 
       const periodoFilter = fechaInicio && fechaFin 
