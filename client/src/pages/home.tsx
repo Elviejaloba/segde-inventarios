@@ -887,39 +887,39 @@ export default function Home() {
 
               {/* Sección Items Agregados */}
               <div className="border-2 border-dashed border-blue-300 rounded-lg overflow-hidden">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-blue-600" />
-                    <span className="font-semibold text-blue-800 dark:text-blue-200">Items Agregados</span>
+                <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-2 sm:p-3 flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Plus className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span className="font-semibold text-sm sm:text-base text-blue-800 dark:text-blue-200 truncate">Items Agregados</span>
                   </div>
-                  <span className="text-sm font-bold text-blue-600">{Object.keys(currentMonthAddedItems).length} items ({new Date().toLocaleString('es-AR', { month: 'long' })})</span>
+                  <span className="text-xs sm:text-sm font-bold text-blue-600 whitespace-nowrap">{Object.keys(currentMonthAddedItems).length} ({new Date().toLocaleString('es-AR', { month: 'short' })})</span>
                 </div>
-                <div className="p-3 space-y-3">
-                  <div className="flex gap-2">
+                <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <input
                       type="text"
-                      placeholder="Código del artículo..."
+                      placeholder="Código artículo..."
                       value={newItemCode}
                       onChange={(e) => setNewItemCode(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleAddItem(); }}
-                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="flex-1 min-w-0 px-2 sm:px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
-                    <Button size="sm" onClick={handleAddItem} disabled={!newItemCode.trim()} className="gap-1 bg-blue-600 hover:bg-blue-700">
+                    <Button size="sm" onClick={handleAddItem} disabled={!newItemCode.trim()} className="shrink-0 gap-1 bg-blue-600 hover:bg-blue-700 px-2 sm:px-3">
                       <Plus className="h-4 w-4" />
-                      Agregar
+                      <span className="hidden sm:inline">Agregar</span>
                     </Button>
                   </div>
                   {Object.keys(currentMonthAddedItems).length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
                       {Object.entries(currentMonthAddedItems).map(([key, item]) => (
                         <div
                           key={key}
-                          className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                          className="flex items-center justify-between p-1.5 sm:p-2 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
                         >
-                          <span className="font-mono text-sm text-blue-800 dark:text-blue-200">{item.code}</span>
+                          <span className="font-mono text-xs sm:text-sm text-blue-800 dark:text-blue-200 truncate mr-1">{item.code}</span>
                           <button
                             onClick={() => handleRemoveAddedItem(key)}
-                            className="text-red-400 hover:text-red-600 transition-colors p-1"
+                            className="text-red-400 hover:text-red-600 transition-colors p-0.5 sm:p-1 shrink-0"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
