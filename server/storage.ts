@@ -286,9 +286,9 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             "Sucursal",
             codigo_base,
-            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'UN' THEN ABS("Diferencia") ELSE 0 END) as total_un,
-            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'MTS' THEN ABS("Diferencia") ELSE 0 END) as total_mts,
-            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'KG' THEN ABS("Diferencia") ELSE 0 END) as total_kg
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'UN' THEN "Diferencia" ELSE 0 END) as total_un,
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'MTS' THEN "Diferencia" ELSE 0 END) as total_mts,
+            SUM(CASE WHEN COALESCE("UnidadMedida", 'UN') = 'KG' THEN "Diferencia" ELSE 0 END) as total_kg
           FROM codigo_base
           GROUP BY "Sucursal", codigo_base
         ),
@@ -297,7 +297,7 @@ export class PostgreSQLStorage implements IStorage {
             "Sucursal",
             codigo_base,
             MAX("FechaMovimiento") as fecha_ajuste_2025,
-            SUM(ABS("Diferencia")) as diferencia_2025,
+            SUM("Diferencia") as diferencia_2025,
             COUNT(*) as cant_ajustes_2025
           FROM codigo_base
           WHERE anio = 2025
@@ -308,7 +308,7 @@ export class PostgreSQLStorage implements IStorage {
             "Sucursal",
             codigo_base,
             MAX("FechaMovimiento") as fecha_ajuste_2026,
-            SUM(ABS("Diferencia")) as diferencia_2026,
+            SUM("Diferencia") as diferencia_2026,
             COUNT(*) as cant_ajustes_2026
           FROM codigo_base
           WHERE anio = 2026
@@ -375,35 +375,35 @@ export class PostgreSQLStorage implements IStorage {
           c.codigo_base as "Codigo",
           COALESCE(ad."Articulo", c.codigo_base) as "Articulo",
           c.total_ajustes,
-          c.diferencia_consolidada as total_unidades,
+          ABS(c.diferencia_consolidada) as total_unidades,
           COALESCE(vp.precio_promedio, ph.precio_promedio, cb.costo_promedio, 0) as precio_unitario,
-          c.diferencia_consolidada * COALESCE(vp.precio_promedio, ph.precio_promedio, cb.costo_promedio, 0) as total_valorizado,
-          c.diferencia_consolidada * COALESCE(cb.costo_promedio, 0) as total_costo_reposicion,
+          ABS(c.diferencia_consolidada) * COALESCE(vp.precio_promedio, ph.precio_promedio, cb.costo_promedio, 0) as total_valorizado,
+          ABS(c.diferencia_consolidada) * COALESCE(cb.costo_promedio, 0) as total_costo_reposicion,
           c.fecha_ajuste_2025 as primer_ajuste,
           c.fecha_ultimo_ajuste as ultimo_ajuste,
           COALESCE(vp.total_vendido, 0) as total_vendido,
           COALESCE(vp.total_venta_valorizada, 0) as total_venta_valorizada,
           CASE 
             WHEN COALESCE(vp.total_venta_valorizada, 0) > 0 
-            THEN LEAST(ROUND((c.diferencia_consolidada * COALESCE(vp.precio_promedio, 0) / vp.total_venta_valorizada * 100)::numeric, 2), 100)
+            THEN LEAST(ROUND((ABS(c.diferencia_consolidada) * COALESCE(vp.precio_promedio, 0) / vp.total_venta_valorizada * 100)::numeric, 2), 100)
             ELSE 0 
           END as porcentaje_perdida,
           CASE 
             WHEN c.fecha_ajuste_2026 IS NULL THEN true
             ELSE false
           END as sin_ajuste_anual,
-          c.diferencia_2025,
-          c.diferencia_2026,
-          COALESCE(uc.total_un, 0) as total_un,
-          COALESCE(uc.total_mts, 0) as total_mts,
-          COALESCE(uc.total_kg, 0) as total_kg
+          ABS(c.diferencia_2025) as diferencia_2025,
+          ABS(c.diferencia_2026) as diferencia_2026,
+          ABS(COALESCE(uc.total_un, 0)) as total_un,
+          ABS(COALESCE(uc.total_mts, 0)) as total_mts,
+          ABS(COALESCE(uc.total_kg, 0)) as total_kg
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN precios_historicos ph ON c."Sucursal" = ph."Sucursal" AND c.codigo_base = ph.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
         LEFT JOIN costos_base cb ON c.codigo_base = cb."Codigo"
         LEFT JOIN unidades_por_codigo uc ON c."Sucursal" = uc."Sucursal" AND c.codigo_base = uc.codigo_base
-        WHERE c.diferencia_consolidada > 0
+        WHERE c.diferencia_consolidada < 0
         ORDER BY total_valorizado DESC
         LIMIT 500
       `;
@@ -426,7 +426,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             a."Sucursal",
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
-            SUM(ABS(a."Diferencia")) as total_diferencia
+            SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
@@ -442,23 +442,31 @@ export class PostgreSQLStorage implements IStorage {
         ),
         unidades_por_sucursal AS (
           SELECT 
-            a."Sucursal",
-            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'UN' THEN ABS(a."Diferencia") ELSE 0 END) as total_un,
-            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'MTS' THEN ABS(a."Diferencia") ELSE 0 END) as total_mts,
-            SUM(CASE WHEN COALESCE(a."UnidadMedida", 'UN') = 'KG' THEN ABS(a."Diferencia") ELSE 0 END) as total_kg
-          FROM ajustes_sucursales a
-          WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
-          ${sucursal ? 'AND a."Sucursal" = $1' : ''}
-          ${periodoFilter}
-          GROUP BY a."Sucursal"
+            sub."Sucursal",
+            SUM(CASE WHEN sub.unidad = 'UN' THEN ABS(sub.net_diff) ELSE 0 END) as total_un,
+            SUM(CASE WHEN sub.unidad = 'MTS' THEN ABS(sub.net_diff) ELSE 0 END) as total_mts,
+            SUM(CASE WHEN sub.unidad = 'KG' THEN ABS(sub.net_diff) ELSE 0 END) as total_kg
+          FROM (
+            SELECT 
+              a."Sucursal",
+              TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+              COALESCE(a."UnidadMedida", 'UN') as unidad,
+              SUM(a."Diferencia") as net_diff
+            FROM ajustes_sucursales a
+            WHERE a."FechaMovimiento" IS NOT NULL
+            AND a."Sucursal" != 'CRISA 3'
+            ${sucursal ? 'AND a."Sucursal" = $1' : ''}
+            ${periodoFilter}
+            GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), COALESCE(a."UnidadMedida", 'UN')
+          ) sub
+          GROUP BY sub."Sucursal"
         ),
         ajustes_por_sucursal AS (
           SELECT 
             ab."Sucursal",
             COUNT(DISTINCT ab.codigo_base) as articulos_con_ajuste,
-            SUM(ab.total_diferencia) as total_unidades_ajustadas,
-            SUM(ab.total_diferencia * COALESCE(vb.precio_promedio, cbr.costo_promedio, 0)) as total_valorizado
+            SUM(ABS(ab.total_diferencia)) as total_unidades_ajustadas,
+            SUM(ABS(ab.total_diferencia) * COALESCE(vb.precio_promedio, cbr.costo_promedio, 0)) as total_valorizado
           FROM ajustes_base ab
           LEFT JOIN ventas_base vb ON ab."Sucursal" = vb."Sucursal" AND ab.codigo_base = vb.codigo_base
           LEFT JOIN costos_base_r cbr ON ab.codigo_base = cbr."Codigo"
@@ -508,7 +516,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             a."Sucursal",
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
-            SUM(ABS(a."Diferencia")) as total_diferencia
+            SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
@@ -525,11 +533,11 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             ab."Sucursal",
             ab.codigo_base,
-            ab.total_diferencia * COALESCE(vb.precio_promedio, cbt.costo_promedio, 0) as total_valorizado,
+            ABS(ab.total_diferencia) * COALESCE(vb.precio_promedio, cbt.costo_promedio, 0) as total_valorizado,
             COALESCE(vb.total_importe, 0) as total_venta_valorizada,
             CASE 
               WHEN COALESCE(vb.total_importe, 0) > 0 
-              THEN (ab.total_diferencia * COALESCE(vb.precio_promedio, 0) / vb.total_importe * 100)
+              THEN (ABS(ab.total_diferencia) * COALESCE(vb.precio_promedio, 0) / vb.total_importe * 100)
               ELSE 0 
             END as porcentaje_perdida
           FROM ajustes_base ab
@@ -558,7 +566,7 @@ export class PostgreSQLStorage implements IStorage {
             EXTRACT(YEAR FROM a."FechaMovimiento") as anio,
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             a."Sucursal",
-            SUM(ABS(a."Diferencia")) as total_diferencia
+            SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" != 'CRISA 3'
@@ -580,8 +588,8 @@ export class PostgreSQLStorage implements IStorage {
           GROUP BY "Codigo"
         )
         SELECT 
-          SUM(CASE WHEN aa.anio = 2025 THEN aa.total_diferencia * COALESCE(vb.precio_promedio, cbp.costo_promedio, 0) ELSE 0 END) as perdida_2025,
-          SUM(CASE WHEN aa.anio = 2026 THEN aa.total_diferencia * COALESCE(vb.precio_promedio, cbp.costo_promedio, 0) ELSE 0 END) as perdida_2026
+          SUM(CASE WHEN aa.anio = 2025 THEN ABS(aa.total_diferencia) * COALESCE(vb.precio_promedio, cbp.costo_promedio, 0) ELSE 0 END) as perdida_2025,
+          SUM(CASE WHEN aa.anio = 2026 THEN ABS(aa.total_diferencia) * COALESCE(vb.precio_promedio, cbp.costo_promedio, 0) ELSE 0 END) as perdida_2026
         FROM ajustes_anio aa
         LEFT JOIN ventas_base vb ON aa."Sucursal" = vb."Sucursal" AND aa.codigo_base = vb.codigo_base
         LEFT JOIN costos_base_p cbp ON aa.codigo_base = cbp."Codigo"
@@ -673,7 +681,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             a."Sucursal",
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
-            SUM(ABS(a."Diferencia")) as total_diferencia
+            SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
@@ -690,8 +698,8 @@ export class PostgreSQLStorage implements IStorage {
         ajustes_valorizado AS (
           SELECT 
             ab."Sucursal",
-            SUM(ab.total_diferencia) as total_unidades,
-            SUM(ab.total_diferencia * COALESCE(cb.costo_promedio, 0)) as total_costo_reposicion
+            SUM(ABS(ab.total_diferencia)) as total_unidades,
+            SUM(ABS(ab.total_diferencia) * COALESCE(cb.costo_promedio, 0)) as total_costo_reposicion
           FROM ajustes_base ab
           LEFT JOIN costos_base cb ON ab.codigo_base = cb."CodArticulo"
           GROUP BY ab."Sucursal"
@@ -952,13 +960,14 @@ export class PostgreSQLStorage implements IStorage {
             a."Sucursal",
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
             MAX(a."Articulo") as articulo,
-            SUM(ABS(a."Diferencia")) as unidades_perdidas,
+            ABS(SUM(a."Diferencia")) as unidades_perdidas,
             MAX(a."FechaMovimiento") as ultimo_ajuste
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" IN ('LA TIJERA TUNUYAN', 'LA TIJERA SAN RAFAEL', 'LA TIJERA SAN MARTIN', 'LA TIJERA SMARTIN', 'LA TIJERA MAIPU', 'LA TIJERA LUJAN', 'LA TIJERA MENDOZA', 'LA TIJERA SAN LUIS', 'LA TIJERA SAN JUAN', 'CRISA 2')
           ${sucursalFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+          HAVING SUM(a."Diferencia") < 0
         ),
         precios_venta AS (
           SELECT 
@@ -1023,12 +1032,13 @@ export class PostgreSQLStorage implements IStorage {
           SELECT 
             a."Sucursal",
             TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
-            SUM(ABS(a."Diferencia")) as unidades_perdidas
+            ABS(SUM(a."Diferencia")) as unidades_perdidas
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
           AND a."Sucursal" IN ('LA TIJERA TUNUYAN', 'LA TIJERA SAN RAFAEL', 'LA TIJERA SAN MARTIN', 'LA TIJERA SMARTIN', 'LA TIJERA MAIPU', 'LA TIJERA LUJAN', 'LA TIJERA MENDOZA', 'LA TIJERA SAN LUIS', 'LA TIJERA SAN JUAN', 'CRISA 2')
           ${sucursalFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+          HAVING SUM(a."Diferencia") < 0
         ),
         precios_venta AS (
           SELECT 
