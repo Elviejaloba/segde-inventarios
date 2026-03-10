@@ -47,6 +47,7 @@ import {
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
 import PuntoEquilibrio from "@/components/punto-equilibrio";
+import PuntoEquilibrioResumen from "@/components/punto-equilibrio-resumen";
 
 interface AnalisisItem {
   sucursal: string;
@@ -887,6 +888,10 @@ export default function ReportesPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {showCostoReposicion && !selectedSucursal && (
+        <PuntoEquilibrioResumen />
       )}
 
       <Card data-testid="tabla-detalle">
