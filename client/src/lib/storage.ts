@@ -32,11 +32,9 @@ class FirebaseStorage {
 
   async initializeData() {
     try {
-      console.log('Checking Firebase data...');
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
-        console.log('Creating initial data structure with summer season codes...');
         const initialData = AVAILABLE_BRANCHES.map(branch => {
           const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
           
@@ -58,9 +56,7 @@ class FirebaseStorage {
           };
         });
         await set(this.dbRef, initialData);
-        console.log('Initial data created successfully with summer season codes');
       } else {
-        console.log('Data structure already exists');
         
         let currentData = snapshot.val();
         let needsUpdate = false;
@@ -70,7 +66,6 @@ class FirebaseStorage {
         const missingBranches = AVAILABLE_BRANCHES.filter(branch => !existingBranches.includes(branch));
         
         if (missingBranches.length > 0) {
-          console.log('🏢 Agregando nuevas sucursales:', missingBranches);
           
           const newBranches = missingBranches.map(branch => {
             const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
@@ -94,11 +89,9 @@ class FirebaseStorage {
           
           currentData = [...currentData, ...newBranches];
           needsUpdate = true;
-          console.log('✅ Nuevas sucursales preparadas');
         }
         
-        // AGREGAR CÓDIGOS FALTANTES A SUCURSALES EXISTENTES (sin perder progreso)
-        console.log('🔍 Verificando códigos faltantes en sucursales existentes...');
+        
         let totalCodesAdded = 0;
         
         currentData = currentData.map((branch: any) => {
@@ -106,7 +99,6 @@ class FirebaseStorage {
           const missingCodes = SEASON_CODES_TEMPORADA_VERANO.filter(code => !existingCodes.includes(code));
           
           if (missingCodes.length > 0) {
-            console.log(`📝 ${branch.id}: Agregando ${missingCodes.length} códigos faltantes`);
             totalCodesAdded += missingCodes.length;
             
             const updatedItems = { ...branch.items };
@@ -128,22 +120,14 @@ class FirebaseStorage {
           return branch;
         });
         
-        if (totalCodesAdded > 0) {
-          console.log(`✅ Total de códigos agregados: ${totalCodesAdded}`);
-        }
-        
         if (needsUpdate) {
           await set(this.dbRef, currentData);
-          console.log('✅ Datos actualizados en Firebase');
-        } else {
-          console.log('✅ Todos los códigos ya están presentes');
         }
       }
 
       // Inicializar datos de ajustes si no existen
       const ajustesSnapshot = await get(this.ajustesRef);
       if (!ajustesSnapshot.exists()) {
-        console.log('Initializing ajustes data structure...');
         await set(this.ajustesRef, []);
       }
     } catch (error: any) {
@@ -153,13 +137,12 @@ class FirebaseStorage {
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
-    console.log('Estableciendo suscripción a Firebase...');
+    
 
     const unsubscribe = onValue(this.dbRef,
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          console.log('Datos recibidos de Firebase:', data);
           if (Array.isArray(data)) {
             callback(data);
           } else {
@@ -181,7 +164,7 @@ class FirebaseStorage {
   }
 
   subscribeToAjustes(callback: (data: AjusteData[]) => void) {
-    console.log('Estableciendo suscripción a ajustes...');
+    
     return onValue(this.ajustesRef,
       (snapshot) => {
         if (snapshot.exists()) {
@@ -202,12 +185,6 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
-      console.log(`🔄 [MULTI-USER] Actualizando sucursal ${branchId}...`, {
-        userId: `user_${Date.now() % 10000}`,
-        timestamp: new Date().toISOString(),
-        changes: Object.keys(data)
-      });
-      
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
@@ -241,7 +218,6 @@ class FirebaseStorage {
                 ...newState,
                 lastUpdated: timestamp
               };
-              console.log(`📝 [CAMBIO] ${branchId}/${code}: completed=${newState.completed}, hasStock=${newState.hasStock}`);
             }
           });
         }
@@ -258,7 +234,7 @@ class FirebaseStorage {
           lastUpdated: timestamp
         };
         
-        console.log(`✅ [MULTI-USER] Sucursal ${branchId} actualizada por usuario`);
+        
       } else {
         updatedData = [
           ...currentData,
@@ -271,7 +247,7 @@ class FirebaseStorage {
             lastUpdated: timestamp
           }
         ];
-        console.log(`🆕 [MULTI-USER] Nueva sucursal ${branchId} creada`);
+        
       }
 
       await set(this.dbRef, updatedData);
@@ -526,7 +502,7 @@ class FirebaseStorage {
   }
 
   subscribeToSeasonData(season: Season, callback: (data: BranchData[]) => void) {
-    console.log(`Estableciendo suscripción a temporada ${season}...`);
+    
     const seasonRef = this.getSeasonRef(season);
 
     const unsubscribe = onValue(seasonRef,

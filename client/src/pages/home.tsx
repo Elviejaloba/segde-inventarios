@@ -73,7 +73,7 @@ const MOTIVATION_MESSAGES = {
 };
 
 const celebrateProgress = (progress: number) => {
-  console.log(`🎆 Iniciando celebración para ${progress}%`);
+  
   
   const defaults = {
     spread: 360,
@@ -278,7 +278,7 @@ export default function Home() {
     });
     
     if (hasChanges && Object.keys(items).length > 0) {
-      console.log('🔄 Sincronizando estado local con Firebase...');
+      
       setItems(newItems);
     }
   }, [branchesData, selectedBranch]);
@@ -380,23 +380,11 @@ export default function Home() {
     analytics.logPageView('home');
     const startTime = Date.now();
     
-    // Migración automática deshabilitada para evitar bucles
-    console.log('Sistema iniciado con códigos de temporada de verano');
-    
-    // Verificación única sin migración automática
-    setTimeout(() => {
-      if (branchesData && branchesData.length > 0) {
-        storage.verifyAllCodes().catch(error => {
-          console.error('Error en verificación:', error);
-        });
-      }
-    }, 3000);
-    
     return () => {
       const duration = (Date.now() - startTime) / 1000;
       analytics.logSessionDuration(duration);
     };
-  }, [branchesData]);
+  }, []);
 
   const loadBranchData = async (branch: Branch) => {
     if (loading) return;
@@ -406,52 +394,29 @@ export default function Home() {
 
     try {
       const branchData = branchesData?.find(b => b.id === branch);
-      console.log('Cargando datos de sucursal:', branch, branchData);
+      
       
       // Verificar qué códigos hay en los datos de la sucursal
-      if (branchData?.items) {
-        console.log('Códigos encontrados en Firebase:', Object.keys(branchData.items).slice(0, 10));
-        console.log('Total de códigos en Firebase:', Object.keys(branchData.items).length);
-      }
-      
-      // DEBUG: Verificar items con completed=true en Firebase
-      const itemsConCompleted = Object.entries(branchData?.items || {}).filter(([_, item]) => (item as any)?.completed === true);
-      console.log(`🔍 Items con completed=true en Firebase (${itemsConCompleted.length}):`, itemsConCompleted.slice(0, 10).map(([k]) => k));
-      
-      // IMPORTANTE: Si la sucursal tiene calendario, usar los códigos del calendario
+      // Si la sucursal tiene calendario, usar los códigos del calendario
       // Si no, usar CODES de store.ts
       const calendario = getCalendarioSucursal(branch);
       const codesToUse = calendario 
         ? calendario.semanas.flatMap(s => s.items) 
         : CODES;
       
-      console.log(`📋 Usando ${codesToUse.length} códigos de ${calendario ? 'calendario' : 'CODES'}`);
-      
       const initializedItems = codesToUse.reduce((acc, code) => {
         const sanitizedCode = sanitizeCode(code);
-        // Buscar el item en Firebase: PRIMERO el código sanitizado, luego el original
-        // Esto debe coincidir con la lógica del Dashboard
         const fromSanitized = branchData?.items?.[sanitizedCode];
         const fromOriginal = branchData?.items?.[code];
         const existingItem = fromSanitized || fromOriginal;
         
         if (existingItem) {
           acc[sanitizedCode] = existingItem;
-          // Debug: si encontramos algo con completed=true, loguearlo
-          if ((existingItem as any)?.completed) {
-            console.log(`✅ Encontrado completed=true: ${code} -> ${sanitizedCode}, fuente: ${fromSanitized ? 'sanitizado' : 'original'}`);
-          }
         } else {
           acc[sanitizedCode] = { completed: false, hasStock: true };
         }
         return acc;
       }, {} as Record<string, ItemState>);
-
-      // Contar completados
-      const completedCount = Object.values(initializedItems).filter(i => i.completed).length;
-      console.log(`📊 Total items completados después de inicializar: ${completedCount}`);
-      console.log('Items inicializados con CODES:', Object.keys(initializedItems).slice(0, 10));
-      console.log('Ejemplo de items inicializados:', Object.entries(initializedItems).slice(0, 3));
       setItems(initializedItems);
       setAddedItems(branchData?.addedItems || {});
       analytics.logAction('branch_select', { branch });
@@ -512,16 +477,10 @@ export default function Home() {
         return acc;
       }, {} as Record<string, any>);
 
-      console.log(`🔄 USUARIO ACTUALIZA: ${sanitizedCode} -> ${field} = ${!items[sanitizedCode]?.[field]}`);
-      console.log(`📊 Progreso actual: ${completedPercentage}% (${Object.values(newItems).filter(i => i.completed).length}/${CODES.length})`);
-      console.log(`🎯 Verificando animaciones: ${completedPercentage}% vs último: ${lastToastProgress}%`);
-      
       for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
-        console.log(`Verificando umbral ${thresholdNum}: ${completedPercentage >= thresholdNum} && ${lastToastProgress < thresholdNum}`);
         
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
-          console.log(`🎉 ACTIVANDO ANIMACIÓN para ${thresholdNum}%!`);
           
           // Mostrar toast de celebración
           toast({
@@ -535,7 +494,6 @@ export default function Home() {
           setLastToastProgress(thresholdNum);
           
           // Ejecutar animación de confetti inmediatamente
-          console.log(`🎊 Ejecutando confetti para ${thresholdNum}%`);
           celebrateProgress(thresholdNum);
           
           // Ejecutar confetti adicional después de un delay
@@ -547,12 +505,6 @@ export default function Home() {
           break;
         }
       }
-
-      console.log('💾 Guardando en Firebase:', {
-        branch: selectedBranch,
-        itemsCount: Object.keys(firebaseItems).length,
-        completed: completedPercentage
-      });
 
       await storage.updateBranch(selectedBranch, {
         items: firebaseItems,
@@ -638,7 +590,7 @@ export default function Home() {
     const completedPercentage = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
     const noStockPercentage = totalItems > 0 ? (noStockCount / totalItems) * 100 : 0;
     
-    console.log(`Progreso calculado: ${completedCount}/${totalItems} = ${completedPercentage.toFixed(1)}%`);
+    
     
     return {
       completed: completedPercentage,
