@@ -246,16 +246,15 @@ class FirebaseStorage {
           });
         }
         
-        const mergedAddedItems = {
-          ...existingBranch.addedItems,
-          ...data.addedItems
-        };
+        const finalAddedItems = data.addedItems !== undefined
+          ? data.addedItems
+          : existingBranch.addedItems;
 
         updatedData[branchIndex] = {
           ...existingBranch,
           ...data,
           items: mergedItems,
-          addedItems: mergedAddedItems,
+          ...(finalAddedItems !== undefined && { addedItems: finalAddedItems }),
           lastUpdated: timestamp
         };
         
