@@ -132,18 +132,18 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="text-center mb-4 sm:mb-6">
-        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-primary mb-1">Articulos sin rotacion y sobre stock</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
+      <div className="hidden sm:block text-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos sin rotacion y sobre stock</h1>
+        <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
       {selectedView === 'ranking' && (
-        <div className="mb-3 sm:mb-4">
-          <h2 className="text-lg sm:text-2xl font-bold mb-2 flex items-center gap-2">
-            <LineChart className="h-5 w-5 sm:h-6 sm:w-6" />
-            Ranking de Sucursales
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+        <div className="mb-2 sm:mb-4">
+          <div className="flex items-center gap-2 mb-0.5 sm:mb-2">
+            <LineChart className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
+            <h2 className="text-base sm:text-2xl font-bold">Ranking de Sucursales</h2>
+          </div>
+          <p className="text-[11px] sm:text-sm text-muted-foreground">
             Seleccione su sucursal para ver los articulos solicitados:
           </p>
         </div>
