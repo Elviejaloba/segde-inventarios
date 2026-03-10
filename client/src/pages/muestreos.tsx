@@ -222,82 +222,59 @@ export default function MuestreosPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <TooltipProvider>
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-          <h1 className="text-lg sm:text-2xl font-bold">Subir Archivo de Muestreo</h1>
-          {ultimaActualizacion && (
-            <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5 border">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold leading-tight">
-                  {(() => {
-                    const parseLocalDate = (str: string) => {
-                      if (!str) return null;
-                      if (str.includes(' ')) {
-                        const [datePart, timePart] = str.split(' ');
-                        const [y, m, d] = datePart.split('-').map(Number);
-                        const [h, min] = timePart.split(':').map(Number);
-                        return { date: new Date(y, m - 1, d, h, min), hasTime: true };
-                      }
-                      const [y, m, d] = str.split('-').map(Number);
-                      return { date: new Date(y, m - 1, d), hasTime: false };
-                    };
-                    const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
-                    const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
-                    const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
-                    if (!latest) return 'Sin datos';
-                    const d = latest.date;
-                    const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
-                    return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
-                  })()}
-                </span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
-                <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
-              </div>
+    <div className="space-y-3 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-base sm:text-2xl font-bold">Muestreos</h1>
+        {ultimaActualizacion && (
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border shrink-0">
+            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-xs sm:text-sm font-semibold leading-tight">
+                {(() => {
+                  const parseLocalDate = (str: string) => {
+                    if (!str) return null;
+                    if (str.includes(' ')) {
+                      const [datePart, timePart] = str.split(' ');
+                      const [y, m, d] = datePart.split('-').map(Number);
+                      const [h, min] = timePart.split(':').map(Number);
+                      return { date: new Date(y, m - 1, d, h, min), hasTime: true };
+                    }
+                    const [y, m, d] = str.split('-').map(Number);
+                    return { date: new Date(y, m - 1, d), hasTime: false };
+                  };
+                  const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
+                  const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
+                  const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
+                  if (!latest) return 'Sin datos';
+                  const d = latest.date;
+                  const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+                  return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
+                })()}
+              </span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">Últ. actualización</span>
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <div className="flex-shrink-0 animate-bounce">
-            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
           </div>
-          <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
-            Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
-          </p>
-        </div>
+        )}
       </div>
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-6 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+          <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+              <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
               Subir Archivo
             </CardTitle>
-            <CardDescription>
-              Selecciona la sucursal y el archivo de muestreo para subir
+            <CardDescription className="text-[11px] sm:text-sm">
+              Selecciona la sucursal y el archivo de muestreo
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="branch-select">Sucursal *</Label>
+          <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4 space-y-3 sm:space-y-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="branch-select" className="text-xs sm:text-sm">Sucursal *</Label>
               <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                <SelectTrigger id="branch-select" data-testid="select-branch-muestreo">
+                <SelectTrigger id="branch-select" data-testid="select-branch-muestreo" className="h-9 sm:h-10 text-xs sm:text-sm">
                   <SelectValue placeholder="Seleccionar sucursal..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,8 +287,8 @@ export default function MuestreosPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="file-input">Archivo *</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="file-input" className="text-xs sm:text-sm">Archivo *</Label>
               <div className="flex items-center gap-2">
                 <input
                   id="file-input"
@@ -325,30 +302,32 @@ export default function MuestreosPage() {
                 <Button
                   variant="outline"
                   onClick={() => document.getElementById('file-input')?.click()}
-                  className="flex-1"
+                  className="flex-1 h-9 sm:h-10 text-xs sm:text-sm"
                   disabled={!selectedBranch}
                   data-testid="button-select-file"
                 >
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  {!selectedBranch ? "Primero selecciona una sucursal" : selectedFile ? selectedFile.name : "Seleccionar archivo..."}
+                  <FolderOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                  <span className="truncate">
+                    {!selectedBranch ? "Primero selecciona sucursal" : selectedFile ? selectedFile.name : "Seleccionar archivo..."}
+                  </span>
                 </Button>
               </div>
               {!selectedBranch && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Debes seleccionar una sucursal antes de elegir el archivo
+                <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400">
+                  Selecciona una sucursal antes de elegir el archivo
                 </p>
               )}
               {selectedFile && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[11px] sm:text-sm text-muted-foreground">
                   Tamaño: {formatFileSize(selectedFile.size)}
                 </p>
               )}
             </div>
 
             {uploadProgress > 0 && (
-              <div className="space-y-2">
-                <Progress value={uploadProgress} className="h-2" />
-                <p className="text-sm text-muted-foreground text-center">
+              <div className="space-y-1.5">
+                <Progress value={uploadProgress} className="h-1.5 sm:h-2" />
+                <p className="text-[11px] sm:text-sm text-muted-foreground text-center">
                   {uploadProgress < 100 ? 'Subiendo...' : 'Completado'}
                 </p>
               </div>
@@ -357,17 +336,17 @@ export default function MuestreosPage() {
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || !selectedBranch || uploadMutation.isPending}
-              className="w-full"
+              className="w-full h-9 sm:h-10 text-xs sm:text-sm"
               data-testid="button-upload-muestreo"
             >
               {uploadMutation.isPending ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
                   Subiendo...
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Adjunta Muestreo
                 </>
               )}
@@ -376,19 +355,19 @@ export default function MuestreosPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+          <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               Archivos Subidos
             </CardTitle>
-            <CardDescription>
-              Puedes visualizar y descargar cada muestreo enviado
+            <CardDescription className="text-[11px] sm:text-sm">
+              Visualiza y descarga cada muestreo
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-4">
+          <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
               <Select value={filterBranch || "all"} onValueChange={(v) => setFilterBranch(v === "all" ? "" : v)}>
-                <SelectTrigger className="flex-1" data-testid="select-filter-branch">
+                <SelectTrigger className="flex-1 h-9 sm:h-10 text-xs sm:text-sm" data-testid="select-filter-branch">
                   <SelectValue placeholder="Filtrar por sucursal..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -408,27 +387,28 @@ export default function MuestreosPage() {
                     onClick={() => refetchFiles()}
                     disabled={filesLoading}
                     data-testid="button-refresh-files"
+                    className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
                   >
-                    <RefreshCw className={`h-4 w-4 ${filesLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${filesLoading ? 'animate-spin' : ''}`} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Actualizar lista de archivos</p>
+                  <p>Actualizar lista</p>
                 </TooltipContent>
               </Tooltip>
             </div>
 
             {filesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-6 sm:py-8">
+                <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-muted-foreground" />
               </div>
             ) : filteredFiles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{filterBranch ? 'No hay archivos de esta sucursal' : 'No hay archivos subidos'}</p>
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <FileText className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
+                <p className="text-xs sm:text-sm">{filterBranch ? 'No hay archivos de esta sucursal' : 'No hay archivos subidos'}</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-1.5 sm:space-y-2 max-h-96 overflow-y-auto">
                 {filteredFiles.map((file) => {
                   const status = fileStatuses[file.id] || "no_visto";
                   const statusConfig = STATUS_CONFIG[status];
@@ -436,38 +416,36 @@ export default function MuestreosPage() {
                   return (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                       data-testid={`file-item-${file.id}`}
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            {file.sucursal && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                                {file.sucursal}
-                              </span>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(file.modified).toLocaleDateString('es-AR')}
+                      <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                          {file.sucursal && (
+                            <span className="inline-flex items-center px-1 sm:px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] sm:text-xs font-medium">
+                              {file.sucursal}
                             </span>
-                          </div>
+                          )}
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">
+                            {new Date(file.modified).toLocaleDateString('es-AR')}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => cycleStatus(file.id)}
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 hover:scale-105 ${statusConfig.bgColor} ${statusConfig.color}`}
+                              className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 active:scale-95 ${statusConfig.bgColor} ${statusConfig.color}`}
                               data-testid={`button-status-${file.id}`}
                             >
-                              <StatusIcon className="h-3 w-3 animate-pulse" />
-                              {statusConfig.label}
+                              <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <span className="hidden sm:inline">{statusConfig.label}</span>
                             </button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Clic para cambiar estado del archivo</p>
+                            <p>{statusConfig.label} — Clic para cambiar</p>
                           </TooltipContent>
                         </Tooltip>
                         <Tooltip>
@@ -478,6 +456,7 @@ export default function MuestreosPage() {
                               onClick={() => openFileLink(file, 'view')}
                               disabled={loadingLinks[file.id]}
                               data-testid={`button-view-${file.id}`}
+                              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                             >
                               {loadingLinks[file.id] ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -498,6 +477,7 @@ export default function MuestreosPage() {
                               onClick={() => openFileLink(file, 'download')}
                               disabled={loadingLinks[file.id]}
                               data-testid={`button-download-${file.id}`}
+                              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                             >
                               {loadingLinks[file.id] ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -507,7 +487,7 @@ export default function MuestreosPage() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Descargar archivo</p>
+                            <p>Descargar</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
