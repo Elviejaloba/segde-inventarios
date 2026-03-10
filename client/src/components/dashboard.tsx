@@ -102,7 +102,16 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     const noStockItems = Object.values(items).filter(item => !item.hasStock).length;
     const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
     
-    const addedItemsCount = Object.keys(branchData?.addedItems || {}).length;
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthAddedItems = Object.values(branchData?.addedItems || {}).filter(item => {
+      if (!item.month) {
+        const d = new Date(item.addedAt);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === curMonth;
+      }
+      return item.month === curMonth;
+    });
+    const addedItemsCount = monthAddedItems.length;
     const addedItemsPercentage = totalItems > 0 ? (addedItemsCount / totalItems) * 100 : 0;
 
     return {

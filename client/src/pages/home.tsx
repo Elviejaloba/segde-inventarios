@@ -200,8 +200,25 @@ export default function Home() {
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
   const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
-  const [addedItems, setAddedItems] = useState<Record<string, { code: string; addedAt: number }>>({});
+  const [addedItems, setAddedItems] = useState<Record<string, { code: string; addedAt: number; month?: string }>>({});
   const [newItemCode, setNewItemCode] = useState('');
+
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  const currentMonthAddedItems = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(addedItems).filter(([_, item]) => {
+        if (!item.month) {
+          const d = new Date(item.addedAt);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === currentMonth;
+        }
+        return item.month === currentMonth;
+      })
+    );
+  }, [addedItems, currentMonth]);
 
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
@@ -565,11 +582,13 @@ export default function Home() {
     if (!selectedBranch || !newItemCode.trim()) return;
     const code = newItemCode.trim().toUpperCase();
     const key = sanitizeCode(code);
-    if (addedItems[key]) {
-      toast({ title: "Ya existe", description: `El item ${code} ya fue agregado.`, variant: "destructive" });
+    if (currentMonthAddedItems[key]) {
+      toast({ title: "Ya existe", description: `El item ${code} ya fue agregado este mes.`, variant: "destructive" });
       return;
     }
-    const newAddedItems = { ...addedItems, [key]: { code, addedAt: Date.now() } };
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const newAddedItems = { ...addedItems, [key]: { code, addedAt: Date.now(), month: currentMonth } };
     setAddedItems(newAddedItems);
     setNewItemCode('');
     try {
@@ -889,7 +908,7 @@ export default function Home() {
                     <Plus className="h-4 w-4 text-blue-600" />
                     <span className="font-semibold text-blue-800 dark:text-blue-200">Items Agregados</span>
                   </div>
-                  <span className="text-sm font-bold text-blue-600">{Object.keys(addedItems).length} items</span>
+                  <span className="text-sm font-bold text-blue-600">{Object.keys(currentMonthAddedItems).length} items ({new Date().toLocaleString('es-AR', { month: 'long' })})</span>
                 </div>
                 <div className="p-3 space-y-3">
                   <div className="flex gap-2">
@@ -906,9 +925,9 @@ export default function Home() {
                       Agregar
                     </Button>
                   </div>
-                  {Object.keys(addedItems).length > 0 && (
+                  {Object.keys(currentMonthAddedItems).length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
-                      {Object.entries(addedItems).map(([key, item]) => (
+                      {Object.entries(currentMonthAddedItems).map(([key, item]) => (
                         <div
                           key={key}
                           className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
@@ -924,8 +943,8 @@ export default function Home() {
                       ))}
                     </div>
                   )}
-                  {Object.keys(addedItems).length === 0 && (
-                    <p className="text-xs text-gray-500 text-center py-2">No hay items agregados. Usá el campo de arriba para agregar artículos que encuentres de más.</p>
+                  {Object.keys(currentMonthAddedItems).length === 0 && (
+                    <p className="text-xs text-gray-500 text-center py-2">No hay items agregados este mes. Usá el campo de arriba para agregar artículos que encuentres de más.</p>
                   )}
                 </div>
               </div>
