@@ -8,63 +8,73 @@ declare global {
   }
 }
 
+const isMobile = () => window.innerWidth < 640;
+
 export function startTour(page: 'home' | 'muestreos' | 'reportes') {
   if (typeof window.driver === 'undefined' || !window.driver.js) {
     console.error('Driver.js not loaded');
     return;
   }
 
+  const navSide = isMobile() ? 'top' : 'bottom';
+  const mobile = isMobile();
+
   const homeSteps = [
-    {
-      element: '[data-testid="nav-home"]',
-      popover: {
-        title: 'Dashboard Principal',
-        description: 'Aquí puedes ver el ranking de sucursales y su progreso en los muestreos.',
-        side: 'bottom',
-        align: 'center'
-      }
-    },
-    {
-      element: '[data-testid="nav-reportes"]',
-      popover: {
-        title: 'Reportes Valorizados',
-        description: 'Aquí puedes ver el análisis económico de los ajustes de inventario por sucursal.',
-        side: 'bottom',
-        align: 'center'
-      }
-    },
-    {
-      element: '[data-testid="nav-muestreos"]',
-      popover: {
-        title: 'Subir Muestreos',
-        description: 'En esta sección puedes subir los archivos de muestreo de cada sucursal.',
-        side: 'bottom',
-        align: 'center'
-      }
-    },
-    {
-      element: '[data-testid="button-ranking"]',
-      popover: {
-        title: 'Ranking de Sucursales',
-        description: 'Muestra la tabla de posiciones con el progreso de cada sucursal ordenado por avance.',
-        side: 'bottom',
-        align: 'start'
-      }
-    },
+    ...(mobile ? [] : [
+      {
+        element: '[data-testid="nav-home"]',
+        popover: {
+          title: 'Dashboard Principal',
+          description: 'Aquí puedes ver el ranking de sucursales y su progreso en los muestreos.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '[data-testid="nav-reportes"]',
+        popover: {
+          title: 'Reportes Valorizados',
+          description: 'Aquí puedes ver el análisis económico de los ajustes de inventario por sucursal.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '[data-testid="nav-muestreos"]',
+        popover: {
+          title: 'Subir Muestreos',
+          description: 'En esta sección puedes subir los archivos de muestreo de cada sucursal.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+    ]),
+    ...(mobile ? [
+      {
+        popover: {
+          title: 'Bienvenido al Sistema',
+          description: 'Este tour te guiará por las funciones principales. Usa la barra inferior para navegar entre Inicio, Reportes, Muestreos y más.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+    ] : []),
     {
       element: '[data-testid="indicadores-meses-ranking"]',
       popover: {
         title: 'Indicadores Mensuales',
-        description: 'Estos badges muestran el progreso por mes de cada sucursal. Verde = meta cumplida, azul = en progreso.',
+        description: 'Estos badges muestran el progreso por mes. Verde = meta cumplida, azul = en progreso, gris = pendiente.',
         side: 'top',
         align: 'end'
       }
     },
     {
-      element: '[data-testid="select-branch"]',
+      element: mobile ? '[data-testid="select-branch-mobile"]' : '[data-testid="select-branch"]',
       popover: {
         title: 'Selector de Sucursal',
-        description: 'Selecciona una sucursal para ver su checklist de artículos y marcar los que ya fueron revisados.',
+        description: mobile
+          ? 'Toca aquí para elegir tu sucursal. Se abrirá una pantalla con todas las opciones para que selecciones fácilmente.'
+          : 'Selecciona una sucursal para ver su checklist de artículos y marcar los que ya fueron revisados.',
         side: 'bottom',
         align: 'start'
       }
@@ -82,7 +92,7 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="objetivos-mensuales"]',
       popover: {
         title: 'Objetivos Mensuales',
-        description: 'Cada tarjeta representa un mes con su objetivo de items a completar. Cuando llegas al objetivo, aparece confetti de celebración.',
+        description: 'Cada tarjeta representa un mes con su objetivo de items a completar. Al llegar al objetivo, aparece confetti de celebración.',
         side: 'bottom',
         align: 'center'
       }
@@ -100,8 +110,8 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="buscador-items"]',
       popover: {
         title: 'Buscador Rápido',
-        description: 'Escribe el código del artículo para encontrarlo rápidamente.',
-        side: 'top',
+        description: 'Escribe el código del artículo para encontrarlo rápidamente en la lista.',
+        side: mobile ? 'bottom' : 'top',
         align: 'start'
       }
     },
@@ -109,7 +119,7 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="items-lista"]',
       popover: {
         title: 'Lista de Items',
-        description: 'Haz clic en cualquier item para marcarlo como completado.',
+        description: 'Toca cualquier item para marcarlo como completado. Si no hay stock, marca la casilla correspondiente.',
         side: 'top',
         align: 'center'
       }
@@ -118,19 +128,18 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
 
   const reportesSteps = [
     {
-      element: '[data-testid="nav-reportes"]',
       popover: {
-        title: 'Bienvenido a Reportes Valorizados',
-        description: 'Aquí analizamos cuánto dinero representa cada ajuste de inventario. Te guiaremos paso a paso para que entiendas cómo interpretar esta información.',
-        side: 'bottom',
+        title: 'Bienvenido a Reportes',
+        description: 'Aquí analizamos cuánto dinero representan los ajustes de inventario. Te guiaremos paso a paso.',
+        side: 'top',
         align: 'center'
       }
     },
     {
       element: '[data-testid="reportes-filtros"]',
       popover: {
-        title: 'Filtros de Búsqueda',
-        description: 'Selecciona una sucursal específica o déjalo en "Todas" para ver el consolidado. Puedes ordenar por mayor valor de pérdida, mayor porcentaje o más unidades. El buscador te ayuda a encontrar un artículo específico por código.',
+        title: 'Filtros',
+        description: 'Filtra por sucursal, período, y ordena por valor de pérdida o porcentaje. Usa el buscador para encontrar un artículo.',
         side: 'bottom',
         align: 'start'
       }
@@ -138,52 +147,44 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     {
       element: '[data-testid="kpi-perdida"]',
       popover: {
-        title: 'Pérdida Total Valorizada',
-        description: 'Este es el monto total en pesos de mercadería faltante. Se calcula multiplicando las unidades faltantes por su precio de venta. Un número alto aquí indica que hay mucho dinero "perdido" en ajustes.',
-        side: 'bottom',
+        title: 'Pérdida Total',
+        description: 'Monto total en pesos de mercadería faltante. Se calcula multiplicando unidades faltantes por precio de venta.',
+        side: mobile ? 'bottom' : 'bottom',
         align: 'start'
       }
     },
     {
       element: '[data-testid="kpi-ventas"]',
       popover: {
-        title: 'Total Ventas del Período',
-        description: 'Este monto representa lo que se vendió de estos mismos artículos desde su último ajuste. Lo usamos para calcular el porcentaje de pérdida: dividimos la pérdida entre las ventas.',
+        title: 'Ventas del Período',
+        description: 'Lo que se vendió de estos artículos desde su último ajuste. Sirve para calcular el porcentaje de pérdida.',
         side: 'bottom',
-        align: 'center'
+        align: mobile ? 'start' : 'center'
       }
     },
     {
       element: '[data-testid="kpi-alertas"]',
       popover: {
-        title: 'Alertas Críticas (más del 3%)',
-        description: 'Estos son los artículos con pérdida superior al 3% de sus ventas. Son los que necesitan atención urgente porque representan un problema significativo. Aparecen resaltados en rojo en la tabla.',
+        title: 'Alertas Críticas',
+        description: 'Artículos con pérdida superior al 3% de sus ventas. Son los que necesitan atención urgente.',
         side: 'bottom',
-        align: 'center'
+        align: mobile ? 'end' : 'center'
       }
     },
     {
       element: '[data-testid="kpi-articulos"]',
       popover: {
         title: 'Artículos Analizados',
-        description: 'El total de códigos de productos que tienen algún ajuste registrado. Este número te da una idea de la magnitud del análisis.',
+        description: 'Total de productos con algún ajuste registrado.',
         side: 'bottom',
-        align: 'end'
+        align: mobile ? 'end' : 'end'
       }
     },
     {
       element: '[data-testid="tabla-resumen"]',
       popover: {
         title: 'Resumen por Sucursal',
-        description: 'Esta tabla compara el rendimiento de cada sucursal. Las columnas UN (violeta), MTS (azul) y KG (naranja) muestran el desglose de unidades ajustadas por tipo de medida. Haz clic en una fila para filtrar y ver solo esa sucursal.',
-        side: 'top',
-        align: 'center'
-      }
-    },
-    {
-      popover: {
-        title: 'Columnas UN, MTS, KG',
-        description: 'UN = Unidades (productos que se cuentan por pieza). MTS = Metros (telas que se miden en longitud). KG = Kilogramos (productos que se pesan). Cada sucursal muestra el total ajustado en cada tipo de medida.',
+        description: 'Compara el rendimiento de cada sucursal. Toca una fila para filtrar y ver solo esa sucursal.',
         side: 'top',
         align: 'center'
       }
@@ -192,40 +193,32 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
       element: '[data-testid="btn-ver-costo"]',
       popover: {
         title: 'Ver a Costo de Reposición',
-        description: 'Este botón permite ver los valores a costo de reposición en lugar de precio público. Requiere contraseña ya que es información exclusiva para el Directorio. Muestra cuánto costaría reponer la mercadería faltante.',
-        side: 'left',
+        description: 'Permite ver valores a costo de reposición. Requiere contraseña (uso exclusivo del Directorio).',
+        side: mobile ? 'bottom' : 'left',
         align: 'center'
       }
     },
     {
       element: '[data-testid="tabla-detalle"]',
       popover: {
-        title: 'Detalle de Cada Artículo',
-        description: 'Aquí ves cada producto con ajustes. Las columnas UN, MTS y KG muestran cuántas unidades de cada tipo se ajustaron. "Pérdida $" es el valor en pesos. "% Pérdida" es la fórmula: (Pérdida ÷ Ventas del período) × 100.',
+        title: 'Detalle de Ajustes',
+        description: 'Toca para expandir y ver cada producto con sus ajustes. El botón del ojo muestra el historial completo.',
         side: 'top',
         align: 'center'
       }
     },
     {
       popover: {
-        title: 'Cómo Interpretar los Datos',
-        description: 'Un % de pérdida alto (rojo parpadeante) significa que de lo que se vende, un porcentaje importante se pierde. Por ejemplo: 5% significa que de cada $100 vendidos, $5 se pierden en ajustes. Prioriza investigar los de mayor valor y mayor porcentaje.',
+        title: 'Cómo Interpretar',
+        description: 'Un % de pérdida alto (rojo) significa que un porcentaje importante se pierde. Ejemplo: 5% = de cada $100 vendidos, $5 se pierden. Priorizá los de mayor valor y mayor porcentaje.',
         side: 'top',
         align: 'center'
       }
     },
     {
       popover: {
-        title: 'Acciones Disponibles',
-        description: 'El botón del ojo te muestra el historial completo de ajustes de ese artículo para ver su evolución. El botón de documento busca los muestreos relacionados para que puedas revisar la evidencia física.',
-        side: 'left',
-        align: 'center'
-      }
-    },
-    {
-      popover: {
-        title: '¡Listo para Analizar!',
-        description: 'Ya conoces todas las herramientas. Recuerda: enfócate primero en los artículos con alertas rojas (>3%) y con mayor valor de pérdida. Estos son los que más impactan al negocio.',
+        title: '¡Listo!',
+        description: 'Enfocate primero en los artículos con alertas rojas (>3%) y con mayor valor de pérdida. Son los que más impactan al negocio.',
         side: 'top',
         align: 'center'
       }
@@ -234,10 +227,18 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
 
   const muestreosSteps = [
     {
+      popover: {
+        title: 'Subir Muestreos',
+        description: 'Desde aquí puedes subir los archivos de muestreo de cada sucursal y ver los ya enviados.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
       element: '[data-testid="select-branch-muestreo"]',
       popover: {
-        title: 'Seleccionar Sucursal',
-        description: 'Primero selecciona la sucursal a la que corresponde el archivo de muestreo.',
+        title: '1. Seleccionar Sucursal',
+        description: 'Primero elegí la sucursal a la que corresponde el archivo de muestreo.',
         side: 'bottom',
         align: 'start'
       }
@@ -245,8 +246,8 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     {
       element: '[data-testid="button-select-file"]',
       popover: {
-        title: 'Seleccionar Archivo',
-        description: 'Haz clic aquí para elegir el archivo de muestreo (Word, Excel, PDF o imagen).',
+        title: '2. Elegir Archivo',
+        description: 'Tocá aquí para seleccionar el archivo (Word, Excel, PDF o imagen).',
         side: 'bottom',
         align: 'start'
       }
@@ -254,8 +255,8 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     {
       element: '[data-testid="button-upload-muestreo"]',
       popover: {
-        title: 'Subir Archivo',
-        description: 'Una vez seleccionado el archivo y la sucursal, haz clic aquí para subirlo a Dropbox.',
+        title: '3. Subir',
+        description: 'Una vez seleccionados la sucursal y el archivo, tocá aquí para subirlo a Dropbox.',
         side: 'top',
         align: 'start'
       }
@@ -263,16 +264,24 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     {
       element: '[data-testid="select-filter-branch"]',
       popover: {
-        title: 'Filtrar por Sucursal',
-        description: 'Puedes filtrar la lista de archivos por sucursal para encontrar más fácilmente lo que buscas.',
+        title: 'Filtrar Archivos',
+        description: 'Filtrá la lista de archivos por sucursal para encontrar lo que buscás.',
         side: 'bottom',
         align: 'start'
+      }
+    },
+    {
+      popover: {
+        title: 'Estados de Archivos',
+        description: 'Cada archivo tiene un estado (No visto, Visto, Analizado, Sin diferencias, Revisar). Tocá el badge de estado para cambiarlo.',
+        side: 'top',
+        align: 'center'
       }
     }
   ];
 
   const steps = page === 'home' ? homeSteps : page === 'reportes' ? reportesSteps : muestreosSteps;
-  const validSteps = steps.filter(step => !step.element || document.querySelector(step.element));
+  const validSteps = steps.filter(step => !(step as any).element || document.querySelector((step as any).element));
   
   if (validSteps.length === 0) {
     console.warn('No tour elements found on this page');
@@ -284,10 +293,11 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     animate: true,
     allowClose: true,
     overlayClickNext: false,
-    stagePadding: 4,
+    stagePadding: mobile ? 2 : 4,
+    stageRadius: 8,
     popoverClass: 'driverjs-theme',
-    nextBtnText: 'Siguiente',
-    prevBtnText: 'Anterior',
+    nextBtnText: mobile ? 'Siguiente ›' : 'Siguiente',
+    prevBtnText: mobile ? '‹ Anterior' : 'Anterior',
     doneBtnText: 'Finalizar',
     progressText: '{{current}} de {{total}}',
     steps: validSteps
