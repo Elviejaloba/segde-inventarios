@@ -290,30 +290,28 @@ export class PostgreSQLStorage implements IStorage {
           GROUP BY "Sucursal", codigo_base
         ),
         ajustes_2025 AS (
-          -- Último ajuste de 2025 por código base
-          SELECT DISTINCT ON ("Sucursal", codigo_base)
+          SELECT 
             "Sucursal",
             codigo_base,
-            "FechaMovimiento" as fecha_ajuste_2025,
-            SUM("Diferencia") OVER (PARTITION BY "Sucursal", codigo_base) as diferencia_2025
+            MAX("FechaMovimiento") as fecha_ajuste_2025,
+            SUM(ABS("Diferencia")) as diferencia_2025,
+            COUNT(*) as cant_ajustes_2025
           FROM codigo_base
           WHERE anio = 2025
-          ORDER BY "Sucursal", codigo_base, "FechaMovimiento" DESC
+          GROUP BY "Sucursal", codigo_base
         ),
         ajustes_2026 AS (
-          -- Ajustes de 2026 (vigente) por código base
           SELECT 
             "Sucursal",
             codigo_base,
             MAX("FechaMovimiento") as fecha_ajuste_2026,
-            SUM("Diferencia") as diferencia_2026,
+            SUM(ABS("Diferencia")) as diferencia_2026,
             COUNT(*) as cant_ajustes_2026
           FROM codigo_base
           WHERE anio = 2026
           GROUP BY "Sucursal", codigo_base
         ),
         consolidado AS (
-          -- Consolidar ajustes históricos + vigentes
           SELECT 
             COALESCE(a25."Sucursal", a26."Sucursal") as "Sucursal",
             COALESCE(a25.codigo_base, a26.codigo_base) as codigo_base,
@@ -321,9 +319,8 @@ export class PostgreSQLStorage implements IStorage {
             COALESCE(a25.diferencia_2025, 0) as diferencia_2025,
             a26.fecha_ajuste_2026,
             COALESCE(a26.diferencia_2026, 0) as diferencia_2026,
-            COALESCE(a26.cant_ajustes_2026, 0) as total_ajustes,
-            ABS(COALESCE(a25.diferencia_2025, 0)) + ABS(COALESCE(a26.diferencia_2026, 0)) as diferencia_consolidada,
-            -- Fecha desde la cual contar ventas (último ajuste)
+            COALESCE(a25.cant_ajustes_2025, 0) + COALESCE(a26.cant_ajustes_2026, 0) as total_ajustes,
+            COALESCE(a25.diferencia_2025, 0) + COALESCE(a26.diferencia_2026, 0) as diferencia_consolidada,
             COALESCE(a26.fecha_ajuste_2026, a25.fecha_ajuste_2025) as fecha_ultimo_ajuste
           FROM ajustes_2025 a25
           FULL OUTER JOIN ajustes_2026 a26 
@@ -355,6 +352,15 @@ export class PostgreSQLStorage implements IStorage {
           GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
         )
         ,
+        precios_historicos AS (
+          SELECT 
+            v."Sucursal",
+            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            AVG(v."PrecioConIVA") as precio_promedio
+          FROM ventas_sucursales v
+          ${sucursal ? 'WHERE v."Sucursal" = $1' : ''}
+          GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
+        ),
         costos_base AS (
           SELECT "Codigo", AVG("Costo") as costo_promedio
           FROM costos_articulos
@@ -367,8 +373,8 @@ export class PostgreSQLStorage implements IStorage {
           COALESCE(ad."Articulo", c.codigo_base) as "Articulo",
           c.total_ajustes,
           c.diferencia_consolidada as total_unidades,
-          COALESCE(vp.precio_promedio, cb.costo_promedio, 0) as precio_unitario,
-          c.diferencia_consolidada * COALESCE(vp.precio_promedio, cb.costo_promedio, 0) as total_valorizado,
+          COALESCE(vp.precio_promedio, ph.precio_promedio, cb.costo_promedio, 0) as precio_unitario,
+          c.diferencia_consolidada * COALESCE(vp.precio_promedio, ph.precio_promedio, cb.costo_promedio, 0) as total_valorizado,
           c.diferencia_consolidada * COALESCE(cb.costo_promedio, 0) as total_costo_reposicion,
           c.fecha_ajuste_2025 as primer_ajuste,
           c.fecha_ultimo_ajuste as ultimo_ajuste,
@@ -390,6 +396,7 @@ export class PostgreSQLStorage implements IStorage {
           COALESCE(uc.total_kg, 0) as total_kg
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
+        LEFT JOIN precios_historicos ph ON c."Sucursal" = ph."Sucursal" AND c.codigo_base = ph.codigo_base
         LEFT JOIN articulo_desc ad ON c."Sucursal" = ad."Sucursal" AND c.codigo_base = ad.codigo_base
         LEFT JOIN costos_base cb ON c.codigo_base = cb."Codigo"
         LEFT JOIN unidades_por_codigo uc ON c."Sucursal" = uc."Sucursal" AND c.codigo_base = uc.codigo_base
