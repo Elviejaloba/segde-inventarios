@@ -27,6 +27,7 @@ export interface IStorage {
   getAnalisisValorizado(sucursal?: string): Promise<any>;
   getAnalisisValorizadoConCosto(sucursal?: string): Promise<any>;
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
+  getPuntoEquilibrio(sucursal?: string): Promise<any>;
 }
 
 export class PostgreSQLStorage implements IStorage {
@@ -916,6 +917,157 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Error syncing ventas:', error);
       throw error;
+    }
+  }
+
+  async getPuntoEquilibrio(sucursal?: string): Promise<any> {
+    try {
+      const sucursalFilter = sucursal ? `AND a."Sucursal" = $1` : '';
+      const ventasSucursalFilter = sucursal ? `AND v."Sucursal" = $1` : '';
+      const params = sucursal ? [sucursal] : [];
+
+      const query = `
+        WITH ajustes_base AS (
+          SELECT 
+            a."Sucursal",
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            MAX(a."Articulo") as articulo,
+            SUM(ABS(a."Diferencia")) as unidades_perdidas,
+            MAX(a."FechaMovimiento") as ultimo_ajuste
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          AND a."Sucursal" IN ('LA TIJERA TUNUYAN', 'LA TIJERA SAN RAFAEL', 'LA TIJERA SAN MARTIN', 'LA TIJERA SMARTIN', 'LA TIJERA MAIPU', 'LA TIJERA LUJAN', 'LA TIJERA MENDOZA', 'LA TIJERA SAN LUIS', 'LA TIJERA SAN JUAN', 'CRISA 2')
+          ${sucursalFilter}
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        precios_venta AS (
+          SELECT 
+            v."Sucursal",
+            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            AVG(v."PrecioConIVA") as precio_venta,
+            SUM(v."ImporteConIVA") as total_vendido
+          FROM ventas_sucursales v
+          WHERE 1=1 ${ventasSucursalFilter}
+          GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        costos AS (
+          SELECT "Codigo", "Costo" FROM costos_articulos WHERE "Costo" > 0
+        ),
+        detalle AS (
+          SELECT 
+            a."Sucursal",
+            a.codigo_base,
+            a.articulo,
+            a.unidades_perdidas,
+            COALESCE(p.precio_venta, 0) as precio_venta,
+            COALESCE(c."Costo", 0) as costo,
+            a.unidades_perdidas * COALESCE(p.precio_venta, c."Costo", 0) as perdida_valorizada,
+            a.unidades_perdidas * COALESCE(c."Costo", 0) as perdida_costo,
+            CASE WHEN p.precio_venta > 0 AND c."Costo" > 0 
+              THEN ROUND(((p.precio_venta - c."Costo") / p.precio_venta * 100)::numeric, 1)
+              ELSE 0 
+            END as margen_porcentual,
+            CASE WHEN p.precio_venta > 0 AND c."Costo" > 0 AND (p.precio_venta - c."Costo") > 0
+              THEN ROUND((a.unidades_perdidas * COALESCE(p.precio_venta, c."Costo", 0) / ((p.precio_venta - c."Costo") / p.precio_venta))::numeric, 2)
+              ELSE 0 
+            END as punto_equilibrio,
+            COALESCE(p.total_vendido, 0) as ventas_acumuladas
+          FROM ajustes_base a
+          LEFT JOIN precios_venta p ON a."Sucursal" = p."Sucursal" AND a.codigo_base = p.codigo_base
+          LEFT JOIN costos c ON a.codigo_base = c."Codigo"
+          WHERE a.unidades_perdidas > 0
+        )
+        SELECT 
+          "Sucursal" as sucursal,
+          codigo_base as codigo,
+          articulo,
+          ROUND(unidades_perdidas::numeric, 2) as unidades_perdidas,
+          ROUND(precio_venta::numeric, 2) as precio_venta,
+          ROUND(costo::numeric, 2) as costo,
+          ROUND(perdida_valorizada::numeric, 2) as perdida_valorizada,
+          ROUND(perdida_costo::numeric, 2) as perdida_costo,
+          margen_porcentual,
+          ROUND(punto_equilibrio::numeric, 2) as punto_equilibrio,
+          ROUND(ventas_acumuladas::numeric, 2) as ventas_acumuladas,
+          CASE WHEN punto_equilibrio > 0 
+            THEN LEAST(ROUND((ventas_acumuladas / punto_equilibrio * 100)::numeric, 1), 100)
+            ELSE 0 
+          END as porcentaje_alcanzado
+        FROM detalle
+        ORDER BY perdida_valorizada DESC
+        LIMIT 500
+      `;
+
+      const resumenQuery = `
+        WITH ajustes_base AS (
+          SELECT 
+            a."Sucursal",
+            TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            SUM(ABS(a."Diferencia")) as unidades_perdidas
+          FROM ajustes_sucursales a
+          WHERE a."FechaMovimiento" IS NOT NULL
+          AND a."Sucursal" IN ('LA TIJERA TUNUYAN', 'LA TIJERA SAN RAFAEL', 'LA TIJERA SAN MARTIN', 'LA TIJERA SMARTIN', 'LA TIJERA MAIPU', 'LA TIJERA LUJAN', 'LA TIJERA MENDOZA', 'LA TIJERA SAN LUIS', 'LA TIJERA SAN JUAN', 'CRISA 2')
+          ${sucursalFilter}
+          GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        precios_venta AS (
+          SELECT 
+            v."Sucursal",
+            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            AVG(v."PrecioConIVA") as precio_venta,
+            SUM(v."ImporteConIVA") as total_vendido
+          FROM ventas_sucursales v
+          WHERE 1=1 ${ventasSucursalFilter}
+          GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
+        ),
+        costos AS (
+          SELECT "Codigo", "Costo" FROM costos_articulos WHERE "Costo" > 0
+        ),
+        por_sucursal AS (
+          SELECT 
+            a."Sucursal",
+            COUNT(DISTINCT a.codigo_base) as total_articulos,
+            SUM(a.unidades_perdidas) as total_unidades,
+            SUM(a.unidades_perdidas * COALESCE(p.precio_venta, c."Costo", 0)) as perdida_valorizada,
+            SUM(a.unidades_perdidas * COALESCE(c."Costo", 0)) as perdida_costo,
+            AVG(CASE WHEN p.precio_venta > 0 AND c."Costo" > 0 
+              THEN ((p.precio_venta - c."Costo") / p.precio_venta * 100) END) as margen_promedio,
+            SUM(COALESCE(p.total_vendido, 0)) as ventas_totales
+          FROM ajustes_base a
+          LEFT JOIN precios_venta p ON a."Sucursal" = p."Sucursal" AND a.codigo_base = p.codigo_base
+          LEFT JOIN costos c ON a.codigo_base = c."Codigo"
+          WHERE a.unidades_perdidas > 0
+          GROUP BY a."Sucursal"
+        )
+        SELECT 
+          "Sucursal" as sucursal,
+          total_articulos,
+          ROUND(total_unidades::numeric, 0) as total_unidades,
+          ROUND(perdida_valorizada::numeric, 2) as perdida_valorizada,
+          ROUND(perdida_costo::numeric, 2) as perdida_costo,
+          ROUND(COALESCE(margen_promedio, 0)::numeric, 1) as margen_promedio,
+          ROUND(ventas_totales::numeric, 2) as ventas_totales,
+          CASE WHEN COALESCE(margen_promedio, 0) > 0 
+            THEN ROUND((perdida_valorizada / (margen_promedio / 100))::numeric, 2) 
+            ELSE 0 
+          END as punto_equilibrio,
+          CASE WHEN COALESCE(margen_promedio, 0) > 0 AND perdida_valorizada > 0
+            THEN LEAST(ROUND((ventas_totales / (perdida_valorizada / (margen_promedio / 100)) * 100)::numeric, 1), 100)
+            ELSE 0 
+          END as porcentaje_alcanzado
+        FROM por_sucursal
+        ORDER BY perdida_valorizada DESC
+      `;
+
+      const [detalle, resumen] = await Promise.all([
+        sql(query, params),
+        sql(resumenQuery, params)
+      ]);
+
+      return { detalle, resumen };
+    } catch (error) {
+      console.error('Error getting punto equilibrio:', error);
+      return { detalle: [], resumen: [] };
     }
   }
 }

@@ -72,6 +72,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/ajustes/punto-equilibrio', async (req, res) => {
+    try {
+      const { sucursal } = req.query;
+      const data = await storage.getPuntoEquilibrio(sucursal as string);
+      res.json(data);
+    } catch (error) {
+      console.error('Error getting punto equilibrio:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Resumen por unidad de medida
   app.get('/api/ajustes/por-unidad', async (req, res) => {
     try {

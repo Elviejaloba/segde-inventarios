@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { motion } from "framer-motion";
+import PuntoEquilibrio from "@/components/punto-equilibrio";
 
 interface AnalisisItem {
   sucursal: string;
@@ -1015,6 +1016,10 @@ export default function ReportesPage() {
         </CardContent>
         )}
       </Card>
+
+      {SUCURSALES_PREMIUM.includes(selectedSucursal) && unlockedBranches.includes(selectedSucursal) && (
+        <PuntoEquilibrio sucursal={selectedSucursal} />
+      )}
 
       <Dialog open={showHistorial} onOpenChange={setShowHistorial}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">

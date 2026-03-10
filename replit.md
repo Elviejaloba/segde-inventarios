@@ -224,4 +224,16 @@ To enable production deployment, the following changes are needed in .replit fil
 - **Production Build Verification**: Confirmed build process works correctly, creates optimized bundles
 - **Deployment Fix Solution**: Created DEPLOYMENT_MANUAL_FIX.md with complete manual fix instructions for .replit file
 
+**March 10, 2026**
+- **Punto de Equilibrio**: Added break-even analysis section inside Reportes Valorizados
+  - Appears when a premium branch is selected and unlocked
+  - Shows 4 KPIs: Pérdida valorizada, Punto de equilibrio, Ventas acumuladas, % avance
+  - Visual progress bar showing how close the branch is to covering losses
+  - Detailed article-by-article table with margin %, individual break-even, and progress bars
+  - Calculation: Pto. Equilibrio = Pérdida valorizada / Margen bruto (where margin = (precio venta - costo) / precio venta)
+  - API endpoint: `/api/ajustes/punto-equilibrio?sucursal=NOMBRE`
+  - Backend: `storage.getPuntoEquilibrio()` method in server/storage.ts
+  - Frontend: `client/src/components/punto-equilibrio.tsx` component
+  - Integrated into reportes.tsx (not a separate page)
+
 The system prioritizes real-time collaboration, data accuracy, and ease of use for inventory tracking across multiple retail locations using authentic product codes.
