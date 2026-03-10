@@ -679,7 +679,8 @@ export default function Home() {
 
 
         </div>
-        <div className="flex items-center gap-2 p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg w-full md:w-auto">
+        {/* Mensaje recordatorio - solo desktop */}
+        <div className="hidden sm:flex items-center gap-2 p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg w-full md:w-auto">
           <div className="flex-shrink-0 animate-bounce">
             <svg className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -689,11 +690,14 @@ export default function Home() {
             Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
           </p>
         </div>
+        {/* Fecha actualización - mobile: fija arriba, chica | desktop: normal */}
         {ultimaActualizacion && (
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5 border w-full md:w-auto">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">
+          <>
+            {/* Mobile: barra fija arriba debajo del header */}
+            <div className="sm:hidden fixed top-14 left-0 right-0 z-40 bg-muted/80 backdrop-blur-sm border-b px-2 py-1 flex items-center justify-center gap-1.5">
+              <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-[10px] text-muted-foreground">Act:</span>
+              <span className="text-[10px] font-semibold">
                 {(() => {
                   const parseLocalDate = (str: string) => {
                     if (!str) return null;
@@ -715,10 +719,38 @@ export default function Home() {
                   return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
                 })()}
               </span>
-              <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
-              <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
             </div>
-          </div>
+            {/* Desktop: bloque normal */}
+            <div className="hidden sm:flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5 border w-full md:w-auto">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold leading-tight">
+                  {(() => {
+                    const parseLocalDate = (str: string) => {
+                      if (!str) return null;
+                      if (str.includes(' ')) {
+                        const [datePart, timePart] = str.split(' ');
+                        const [y, m, d] = datePart.split('-').map(Number);
+                        const [h, min] = timePart.split(':').map(Number);
+                        return { date: new Date(y, m - 1, d, h, min), hasTime: true };
+                      }
+                      const [y, m, d] = str.split('-').map(Number);
+                      return { date: new Date(y, m - 1, d), hasTime: false };
+                    };
+                    const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
+                    const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
+                    const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
+                    if (!latest) return 'Sin datos';
+                    const d = latest.date;
+                    const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+                    return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
+                  })()}
+                </span>
+                <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
+                <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

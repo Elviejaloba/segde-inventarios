@@ -187,7 +187,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
         </div>
       </nav>
 
-      <main className="container py-4 sm:py-8 mt-14 sm:mt-16 pb-20 sm:pb-8 px-2 sm:px-4">
+      <main className="container py-4 sm:py-8 mt-20 sm:mt-16 pb-20 sm:pb-8 px-2 sm:px-4">
         {children}
       </main>
       <ImportExcel isHidden={hideImport} />
