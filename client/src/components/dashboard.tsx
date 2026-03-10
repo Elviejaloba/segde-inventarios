@@ -102,12 +102,17 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     const noStockItems = Object.values(items).filter(item => !item.hasStock).length;
     const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
     
+    const addedItemsCount = Object.keys(branchData?.addedItems || {}).length;
+    const addedItemsPercentage = totalItems > 0 ? (addedItemsCount / totalItems) * 100 : 0;
+
     return {
       id: branchId,
       totalCompleted,
       noStock: branchData?.noStock || 0,
       noStockPercentage,
       noStockItems,
+      addedItemsCount,
+      addedItemsPercentage,
       totalItems,
       items: branchData?.items || {},
       lastUpdated: branchData?.lastUpdated || 0
@@ -218,6 +223,32 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.noStockPercentage)}%
                       </motion.span>
                     </div>
+                    {branch.addedItemsCount > 0 && (
+                      <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1">
+                        <span className="text-[8px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
+                        <span className="text-[8px] text-gray-400 whitespace-nowrap sm:hidden">+Items</span>
+                        <div className="relative w-16 sm:w-24 h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                          <motion.div 
+                            className="h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${branch.addedItemsPercentage}%` }}
+                            transition={{ 
+                              duration: 1,
+                              ease: "easeOut",
+                              delay: index * 0.1 + 0.3
+                            }}
+                          />
+                        </div>
+                        <motion.span 
+                          className="text-[9px] sm:text-[10px] min-w-[35px] font-medium text-blue-500"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.1 + 0.8 }}
+                        >
+                          {Math.round(branch.addedItemsPercentage)}%
+                        </motion.span>
+                      </div>
+                    )}
                     {/* Indicadores de objetivos mensuales para sucursales con calendario */}
                     {['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'].includes(branch.id) && (() => {
                       const calendario = getCalendarioSucursal(branch.id);

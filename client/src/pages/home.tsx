@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock } from "lucide-react";
+import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
@@ -200,6 +200,8 @@ export default function Home() {
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
   const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
+  const [addedItems, setAddedItems] = useState<Record<string, { code: string; addedAt: number }>>({});
+  const [newItemCode, setNewItemCode] = useState('');
 
   const { toast } = useToast();
   const [lastToastProgress, setLastToastProgress] = useState(0);
@@ -216,7 +218,14 @@ export default function Home() {
     refetchInterval: 300000,
   });
 
-  // Sincronizar estado local con datos de Firebase cuando cambian
+  useEffect(() => {
+    if (!selectedBranch || !branchesData) return;
+    const branchData = branchesData.find(b => b.id === selectedBranch);
+    if (branchData?.addedItems) {
+      setAddedItems(branchData.addedItems);
+    }
+  }, [branchesData, selectedBranch]);
+
   useEffect(() => {
     if (!selectedBranch || !branchesData || loading) return;
     
@@ -427,6 +436,7 @@ export default function Home() {
       console.log('Items inicializados con CODES:', Object.keys(initializedItems).slice(0, 10));
       console.log('Ejemplo de items inicializados:', Object.entries(initializedItems).slice(0, 3));
       setItems(initializedItems);
+      setAddedItems(branchData?.addedItems || {});
       analytics.logAction('branch_select', { branch });
 
       // Restaurar el último progreso guardado
@@ -551,6 +561,38 @@ export default function Home() {
     }
   };
 
+  const handleAddItem = async () => {
+    if (!selectedBranch || !newItemCode.trim()) return;
+    const code = newItemCode.trim().toUpperCase();
+    const key = sanitizeCode(code);
+    if (addedItems[key]) {
+      toast({ title: "Ya existe", description: `El item ${code} ya fue agregado.`, variant: "destructive" });
+      return;
+    }
+    const newAddedItems = { ...addedItems, [key]: { code, addedAt: Date.now() } };
+    setAddedItems(newAddedItems);
+    setNewItemCode('');
+    try {
+      await storage.updateBranch(selectedBranch, { addedItems: newAddedItems });
+      toast({ title: "Item agregado", description: `${code} fue agregado a la lista.` });
+    } catch (error) {
+      setAddedItems(addedItems);
+      toast({ title: "Error", description: "No se pudo guardar.", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveAddedItem = async (key: string) => {
+    if (!selectedBranch) return;
+    const { [key]: _, ...rest } = addedItems;
+    setAddedItems(rest);
+    try {
+      await storage.updateBranch(selectedBranch, { addedItems: Object.keys(rest).length > 0 ? rest : {} });
+    } catch (error) {
+      setAddedItems(addedItems);
+      toast({ title: "Error", description: "No se pudo eliminar.", variant: "destructive" });
+    }
+  };
+
   const progress = useMemo(() => {
     if (!selectedBranch || Object.keys(items).length === 0) {
       return { completed: 0, noStock: 0, completedCount: 0, totalItems: 0 };
@@ -597,6 +639,7 @@ export default function Home() {
               onClick={() => {
                 setSelectedBranch(undefined);
                 setItems({});
+                setAddedItems({});
                 setLastToastProgress(0);
               }}
               size="sm"
@@ -838,6 +881,54 @@ export default function Home() {
                   })()}
                 </div>
               )}
+
+              {/* Sección Items Agregados */}
+              <div className="border-2 border-dashed border-blue-300 rounded-lg overflow-hidden">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-blue-600" />
+                    <span className="font-semibold text-blue-800 dark:text-blue-200">Items Agregados</span>
+                  </div>
+                  <span className="text-sm font-bold text-blue-600">{Object.keys(addedItems).length} items</span>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Código del artículo..."
+                      value={newItemCode}
+                      onChange={(e) => setNewItemCode(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddItem(); }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    />
+                    <Button size="sm" onClick={handleAddItem} disabled={!newItemCode.trim()} className="gap-1 bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4" />
+                      Agregar
+                    </Button>
+                  </div>
+                  {Object.keys(addedItems).length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
+                      {Object.entries(addedItems).map(([key, item]) => (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                        >
+                          <span className="font-mono text-sm text-blue-800 dark:text-blue-200">{item.code}</span>
+                          <button
+                            onClick={() => handleRemoveAddedItem(key)}
+                            className="text-red-400 hover:text-red-600 transition-colors p-1"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {Object.keys(addedItems).length === 0 && (
+                    <p className="text-xs text-gray-500 text-center py-2">No hay items agregados. Usá el campo de arriba para agregar artículos que encuentres de más.</p>
+                  )}
+                </div>
+              </div>
 
               {/* Lista completa de items (para sucursales sin calendario) */}
               {!calendarioSemanal && (

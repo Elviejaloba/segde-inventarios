@@ -6,6 +6,7 @@ interface BranchData {
   totalCompleted: number;
   noStock: number;
   items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  addedItems?: Record<string, { code: string; addedAt: number }>;
   lastUpdated?: number;
 }
 

@@ -235,5 +235,13 @@ To enable production deployment, the following changes are needed in .replit fil
   - Backend: `storage.getPuntoEquilibrio()` method in server/storage.ts
   - Frontend: `client/src/components/punto-equilibrio.tsx` component
   - Integrated into reportes.tsx (not a separate page)
+- **Reportes Valorizados - Filtros**: KPIs, resumen por sucursal, totales y alertas ahora responden a los filtros de período y rango de fechas
+- **Fix valorización artículos mixtos E/S**: Cambiado de ABS(SUM(Diferencia)) a SUM(ABS(Diferencia)) para consolidar correctamente artículos con entradas y salidas
+- **Precio histórico fallback**: Agregado CTE precios_historicos como fallback cuando no hay ventas post-ajuste
+- **Items Agregados (Checklist)**:
+  - Encargados de sucursal pueden agregar items extra desde la checklist
+  - Datos guardados en Firebase bajo `addedItems` en cada branch
+  - Dashboard muestra barra azul "Agregados" debajo de "Sin Stock" con % respecto al total
+  - Archivos: `home.tsx` (UI agregar/eliminar), `dashboard.tsx` (barra %), `storage.ts` (BranchData.addedItems), `use-firebase-data.ts` (interface)
 
 The system prioritizes real-time collaboration, data accuracy, and ease of use for inventory tracking across multiple retail locations using authentic product codes.

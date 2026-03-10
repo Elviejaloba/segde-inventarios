@@ -7,6 +7,7 @@ interface BranchData {
   totalCompleted: number;
   noStock: number;
   items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  addedItems?: Record<string, { code: string; addedAt: number }>;
   lastUpdated?: number;
 }
 
@@ -245,10 +246,16 @@ class FirebaseStorage {
           });
         }
         
+        const mergedAddedItems = {
+          ...existingBranch.addedItems,
+          ...data.addedItems
+        };
+
         updatedData[branchIndex] = {
           ...existingBranch,
           ...data,
           items: mergedItems,
+          addedItems: mergedAddedItems,
           lastUpdated: timestamp
         };
         
