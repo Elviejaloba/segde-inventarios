@@ -155,9 +155,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm text-center">Pos.</TableHead>
-                  <TableHead className="min-w-[120px] text-xs sm:text-sm">Sucursal</TableHead>
-                  <TableHead className="text-right min-w-[120px] text-xs sm:text-sm">Progreso</TableHead>
+                  <TableHead className="w-[30px] sm:w-[80px] text-[10px] sm:text-sm text-center p-1 sm:p-4">Pos.</TableHead>
+                  <TableHead className="min-w-[60px] sm:min-w-[120px] text-[10px] sm:text-sm p-1 sm:p-4">Sucursal</TableHead>
+                  <TableHead className="text-right min-w-[100px] sm:min-w-[120px] text-[10px] sm:text-sm p-1 sm:p-4">Progreso</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -171,10 +171,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   }`}
                   onClick={() => onBranchSelect?.(branch.id)}
                 >
-                  <TableCell className="text-xs sm:text-sm">
+                  <TableCell className="text-xs sm:text-sm p-1 sm:p-4">
                     {index < 3 ? (
                       <Trophy 
-                        className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                        className={`h-3 w-3 sm:h-5 sm:w-5 ${
                           index === 0 ? 'text-yellow-500' :
                           index === 1 ? 'text-gray-400' :
                           'text-amber-600'
@@ -184,10 +184,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       <span className="text-xs sm:text-sm">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs sm:text-sm font-medium">{branch.id}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="relative w-20 sm:w-24 h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                  <TableCell className="text-[10px] sm:text-sm font-medium p-1 sm:p-4">{branch.id}</TableCell>
+                  <TableCell className="text-right p-1 sm:p-4">
+                    <div className="flex items-center justify-end gap-1 sm:gap-2">
+                      <div className="relative w-14 sm:w-24 h-2 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
                         <motion.div 
                           className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
                           initial={{ width: 0 }}
@@ -200,7 +200,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="text-xs sm:text-sm min-w-[35px] font-medium text-green-600"
+                        className="text-[10px] sm:text-sm min-w-[28px] sm:min-w-[35px] font-medium text-green-600"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.5 }}
@@ -208,10 +208,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
-                    <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1">
-                      <span className="text-[8px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Sin Stock</span>
-                      <span className="text-[8px] text-gray-400 whitespace-nowrap sm:hidden">S/S</span>
-                      <div className="relative w-16 sm:w-24 h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                    <div className="flex items-center justify-end gap-0.5 sm:gap-2 mt-0.5 sm:mt-1">
+                      <span className="text-[7px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Sin Stock</span>
+                      <span className="text-[7px] text-gray-400 whitespace-nowrap sm:hidden">S/S</span>
+                      <div className="relative w-10 sm:w-24 h-1 sm:h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
                         <motion.div 
                           className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full"
                           initial={{ width: 0 }}
@@ -224,7 +224,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="text-[9px] sm:text-[10px] min-w-[35px] font-medium text-orange-500"
+                        className="text-[8px] sm:text-[10px] min-w-[20px] sm:min-w-[35px] font-medium text-orange-500"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.7 }}
@@ -233,10 +233,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       </motion.span>
                     </div>
                     {branch.addedItemsCount > 0 && (
-                      <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1">
-                        <span className="text-[8px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
-                        <span className="text-[8px] text-gray-400 whitespace-nowrap sm:hidden">+Items</span>
-                        <div className="relative w-16 sm:w-24 h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                      <div className="flex items-center justify-end gap-0.5 sm:gap-2 mt-0.5 sm:mt-1">
+                        <span className="text-[7px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
+                        <span className="text-[7px] text-gray-400 whitespace-nowrap sm:hidden">+</span>
+                        <div className="relative w-10 sm:w-24 h-1 sm:h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
                           <motion.div 
                             className="h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"
                             initial={{ width: 0 }}
@@ -249,7 +249,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                           />
                         </div>
                         <motion.span 
-                          className="text-[9px] sm:text-[10px] min-w-[35px] font-medium text-blue-500"
+                          className="text-[8px] sm:text-[10px] min-w-[20px] sm:min-w-[35px] font-medium text-blue-500"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: index * 0.1 + 0.8 }}
@@ -290,7 +290,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         });
                       
                       return (
-                        <div className="flex gap-0.5 sm:gap-1 mt-1 justify-end overflow-x-auto max-w-full" data-testid="indicadores-meses-ranking">
+                        <div className="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 justify-end flex-wrap max-w-full" data-testid="indicadores-meses-ranking">
                           {objetivos.map(({ mes, obj, acum }) => {
                             const acumAnterior = acum - obj;
                             const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
@@ -298,7 +298,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                             return (
                               <span 
                                 key={mes}
-                                className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded whitespace-nowrap ${
+                                className={`text-[7px] sm:text-[10px] px-0.5 sm:px-1.5 py-0 sm:py-0.5 rounded whitespace-nowrap leading-tight ${
                                   cumplido 
                                     ? 'bg-green-500 text-white' 
                                     : completadosMes > 0 
