@@ -120,7 +120,7 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress >= 60) {
-    const duration = 3000;
+    const duration = 1500;
     const end = Date.now() + duration;
 
     const frame = () => {
@@ -163,7 +163,7 @@ const celebrateProgress = (progress: number) => {
   }
 
   if (progress === 100) {
-    const duration = 5000;
+    const duration = 2000;
     const end = Date.now() + duration;
 
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
@@ -487,7 +487,7 @@ export default function Home() {
             title: message.title,
             description: `${message.description} - ${completedPercentage}% completado`,
             variant: "success",
-            duration: 10000,
+            duration: 5000,
           });
           
           // Actualizar el último progreso mostrado
@@ -495,11 +495,6 @@ export default function Home() {
           
           // Ejecutar animación de confetti inmediatamente
           celebrateProgress(thresholdNum);
-          
-          // Ejecutar confetti adicional después de un delay
-          setTimeout(() => {
-            celebrateProgress(thresholdNum);
-          }, 500);
           
           // Solo procesar un umbral a la vez
           break;
