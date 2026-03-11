@@ -1009,14 +1009,14 @@ export default function ReportesPage() {
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
                     </TableCell>
-                    <TableCell className="text-right text-purple-600 font-medium hidden md:table-cell">
-                      {(item.totalUn || 0) > 0 ? (item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
+                    <TableCell className={`text-right font-medium hidden md:table-cell ${(item.totalUn || 0) < 0 ? 'text-red-600' : (item.totalUn || 0) > 0 ? 'text-green-600' : 'text-purple-600'}`}>
+                      {(item.totalUn || 0) !== 0 ? (item.totalUn || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right text-blue-600 font-medium hidden md:table-cell">
-                      {(item.totalMts || 0) > 0 ? (item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '-'}
+                    <TableCell className={`text-right font-medium hidden md:table-cell ${(item.totalMts || 0) < 0 ? 'text-red-600' : (item.totalMts || 0) > 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                      {(item.totalMts || 0) !== 0 ? (item.totalMts || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
                     </TableCell>
-                    <TableCell className="text-right text-orange-600 font-medium hidden md:table-cell">
-                      {(item.totalKg || 0) > 0 ? (item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
+                    <TableCell className={`text-right font-medium hidden md:table-cell ${(item.totalKg || 0) < 0 ? 'text-red-600' : (item.totalKg || 0) > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {(item.totalKg || 0) !== 0 ? (item.totalKg || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '-'}
                     </TableCell>
                     <TableCell className="text-right text-red-600 font-medium text-xs sm:text-sm p-2 sm:p-4">
                       {formatCurrency(item.totalValorizado)}

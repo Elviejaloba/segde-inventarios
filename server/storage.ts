@@ -392,11 +392,11 @@ export class PostgreSQLStorage implements IStorage {
             WHEN c.fecha_ajuste_2026 IS NULL THEN true
             ELSE false
           END as sin_ajuste_anual,
-          ABS(c.diferencia_2025) as diferencia_2025,
-          ABS(c.diferencia_2026) as diferencia_2026,
-          ABS(COALESCE(uc.total_un, 0)) as total_un,
-          ABS(COALESCE(uc.total_mts, 0)) as total_mts,
-          ABS(COALESCE(uc.total_kg, 0)) as total_kg
+          c.diferencia_2025,
+          c.diferencia_2026,
+          COALESCE(uc.total_un, 0) as total_un,
+          COALESCE(uc.total_mts, 0) as total_mts,
+          COALESCE(uc.total_kg, 0) as total_kg
         FROM consolidado c
         LEFT JOIN ventas_periodo vp ON c."Sucursal" = vp."Sucursal" AND c.codigo_base = vp.codigo_base
         LEFT JOIN precios_historicos ph ON c."Sucursal" = ph."Sucursal" AND c.codigo_base = ph.codigo_base
