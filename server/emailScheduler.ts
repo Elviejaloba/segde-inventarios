@@ -492,9 +492,11 @@ try:
             continue
         
         total = len(items)
-        # Campo 'completed' es el que usa la app para marcar items verificados
-        verificados = sum(1 for item in items.values() if item.get('completed', False))
-        porcentaje = (verificados / total * 100) if total > 0 else 0
+        # Usar totalCompleted guardado por la app (es el % real del mes actual)
+        # No usar completed=True porque esos no se resetean entre meses
+        porcentaje = float(sucursal_data.get('totalCompleted', 0) or 0)
+        # Derivar cantidad verificados desde el porcentaje real
+        verificados = round(porcentaje / 100 * total) if total > 0 else 0
         
         # Códigos por día necesarios (solo días Lun/Mie/Vie restantes)
         dias_muestreo_restantes = max(1, dias_restantes // 2)
