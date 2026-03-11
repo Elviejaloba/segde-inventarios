@@ -525,26 +525,26 @@ export default function ReportesPage() {
       {SUCURSALES_PREMIUM.includes(selectedSucursal) && !unlockedBranches.includes(selectedSucursal) && (
         <div className="fixed inset-0 z-40 pointer-events-none" style={{ top: '140px' }}>
           <div className="absolute inset-0 backdrop-blur-md bg-white/30 dark:bg-black/30" />
-          <div className="absolute inset-0 flex items-start justify-center pt-[12vh] pointer-events-auto">
+          <div className="absolute inset-0 flex items-start justify-center pt-[5vh] sm:pt-[12vh] pointer-events-auto px-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 sm:p-10 max-w-md mx-4 text-center"
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 sm:p-10 w-full max-w-md text-center my-auto"
             >
-              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                <Lock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-5 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500 dark:text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">
                 Información Premium
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-2 sm:mb-4">
                 Para acceder a este nivel de información, comunicate con la administración para llegar a un acuerdo.
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3 sm:mb-4">
                 Si ya tenés el código enviado por administración, ingresalo a continuación:
               </p>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <input
                   type="text"
                   maxLength={4}
