@@ -765,35 +765,49 @@ export default function Home() {
                                     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                   }
                                 }}
-                                className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all relative overflow-hidden ${
-                                  mesCompleto ? 'bg-green-100 border-green-500 shadow-lg shadow-green-200' :
+                                className={`${mesCompleto ? 'p-1.5 sm:p-3' : 'p-3'} rounded-lg border-2 cursor-pointer hover:shadow-md transition-all relative overflow-hidden ${
+                                  mesCompleto ? 'bg-green-100 border-green-500' :
                                   completadosParaEsteMes > 0 ? 'bg-blue-50 border-blue-200' :
                                   'bg-gray-50 border-gray-200'
                                 }`}
                               >
-                                {/* Badge de objetivo cumplido */}
-                                {mesCompleto && (
-                                  <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg shadow">
-                                    ✓ CUMPLIDO
-                                  </div>
-                                )}
-                                <div className="text-[10px] sm:text-xs text-gray-500">Objetivo: {objetivo} items</div>
-                                <div className={`font-bold text-sm sm:text-lg ${mesCompleto ? 'text-green-700' : ''}`}>{mes}</div>
-                                <div className="text-xs sm:text-sm flex items-center gap-1">
-                                  <span className={`text-base sm:text-xl font-bold ${mesCompleto ? 'text-green-600' : 'text-gray-700'}`}>
-                                    {completadosParaEsteMes}
-                                  </span>
-                                  <span className="text-gray-400">/ {objetivo}</span>
-                                  {mesCompleto && <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 ml-1" />}
-                                </div>
-                                <Progress 
-                                  value={porcentajeMes} 
-                                  className={`h-2 mt-2 ${mesCompleto ? '[&>div]:bg-green-500' : ''}`} 
-                                />
-                                {mesCompleto && (
-                                  <div className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
-                                    <PartyPopper className="h-3 w-3" /> ¡Meta alcanzada!
-                                  </div>
+                                {mesCompleto ? (
+                                  <>
+                                    <div className="sm:hidden flex items-center justify-between gap-1">
+                                      <div className="flex items-center gap-1">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                        <span className="font-bold text-xs text-green-700">{mes}</span>
+                                      </div>
+                                      <span className="text-[10px] text-green-600 font-medium">{completadosParaEsteMes}/{objetivo}</span>
+                                    </div>
+                                    <Progress value={porcentajeMes} className="h-1.5 mt-1 sm:hidden [&>div]:bg-green-500" />
+                                    <div className="hidden sm:block">
+                                      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg shadow">
+                                        ✓ CUMPLIDO
+                                      </div>
+                                      <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
+                                      <div className="font-bold text-lg text-green-700">{mes}</div>
+                                      <div className="text-sm flex items-center gap-1">
+                                        <span className="text-xl font-bold text-green-600">{completadosParaEsteMes}</span>
+                                        <span className="text-gray-400">/ {objetivo}</span>
+                                        <Trophy className="h-5 w-5 text-yellow-500 ml-1" />
+                                      </div>
+                                      <Progress value={porcentajeMes} className="h-2 mt-2 [&>div]:bg-green-500" />
+                                      <div className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+                                        <PartyPopper className="h-3 w-3" /> ¡Meta alcanzada!
+                                      </div>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="text-[10px] sm:text-xs text-gray-500">Objetivo: {objetivo} items</div>
+                                    <div className="font-bold text-sm sm:text-lg">{mes}</div>
+                                    <div className="text-xs sm:text-sm flex items-center gap-1">
+                                      <span className="text-base sm:text-xl font-bold text-gray-700">{completadosParaEsteMes}</span>
+                                      <span className="text-gray-400">/ {objetivo}</span>
+                                    </div>
+                                    <Progress value={porcentajeMes} className="h-2 mt-2" />
+                                  </>
                                 )}
                               </div>
                             );
