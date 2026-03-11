@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertAjusteSchema } from "@shared/schema";
 import * as dropbox from "./dropbox";
 import multer from "multer";
-import { enviarRecordatoriosMuestreo, enviarReporteSemanal } from "./emailScheduler";
+import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } from "./emailScheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
@@ -354,6 +354,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error syncing data:', error);
       res.status(500).json({ error: 'Failed to sync data' });
+    }
+  });
+
+  // Endpoint de prueba: manda mail a un destinatario específico
+  app.post('/api/muestreo/enviar-prueba', async (req, res) => {
+    try {
+      const { destinatario, sucursal } = req.body;
+      if (!destinatario) return res.status(400).json({ error: 'destinatario requerido' });
+      console.log(`[API] Enviando mail de prueba a ${destinatario}...`);
+      const result = await enviarMailPrueba(destinatario, sucursal);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error('Error enviando mail de prueba:', error);
+      res.status(500).json({ error: error.message || 'Error al enviar' });
     }
   });
 

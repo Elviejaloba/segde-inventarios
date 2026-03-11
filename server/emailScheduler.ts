@@ -865,4 +865,154 @@ export function detenerScheduler() {
   console.log('[Scheduler] Schedulers detenidos');
 }
 
-export { enviarRecordatoriosMuestreo, enviarReporteSemanal };
+async function enviarMailPrueba(destinatario: string, sucursalFiltro?: string): Promise<{ enviados: number; sucursales: string[] }> {
+  console.log(`[Test] Enviando mail de prueba a ${destinatario}...`);
+  const rendimientos = await obtenerRendimientoMensual();
+  if (rendimientos.length === 0) throw new Error('No se obtuvieron datos de Firebase');
+
+  const ranking = generarRanking(rendimientos);
+  const lista = sucursalFiltro
+    ? rendimientos.filter(r => r.sucursal.toLowerCase().includes(sucursalFiltro.toLowerCase()))
+    : rendimientos.slice(0, 3); // Por defecto las primeras 3 sucursales
+
+  const enviados: string[] = [];
+
+  for (const rendimiento of lista) {
+    const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+    const semana = getSemanaDelMes();
+    const pctParaUrgencia = rendimiento.totalCodigosMes > 0 ? rendimiento.porcentajeMes : rendimiento.porcentaje;
+    const urgencia = getNivelUrgencia(pctParaUrgencia, semana);
+
+    let emoji = '📊';
+    let titulo = 'Recordatorio de Muestreo';
+    switch (urgencia) {
+      case 'critico': emoji = '🚨'; titulo = 'URGENTE: Muestreo Crítico'; break;
+      case 'muy_urgente': emoji = '⚠️'; titulo = 'Atención: Muestreo Pendiente'; break;
+      case 'urgente': emoji = '📈'; titulo = 'Recordatorio de Muestreo'; break;
+    }
+
+    const pythonCode = `
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+SMTP_SERVER = "smtp.textilcrisa.com"
+SMTP_PORT = 26
+SMTP_USER = "reportes@textilcrisa.com"
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+msg = MIMEMultipart()
+msg['Subject'] = "[PRUEBA] ${emoji} ${titulo} - ${rendimiento.sucursal} | ${mesActual}"
+msg['From'] = SMTP_USER
+msg['To'] = "${destinatario}"
+
+html = """
+<html>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background: #f0f2f5;">
+<div style="max-width: 600px; margin: 0 auto;">
+  <div style="background: #ff9900; color: white; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 8px;">
+    ✉️ MAIL DE PRUEBA - No es un envío real a la sucursal
+  </div>
+<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+  <div style="background: #4a5d6a; color: white; padding: 20px; text-align: center;">
+    <div style="margin-bottom: 12px;">
+      <span style="font-size: 14px; letter-spacing: 8px; font-weight: 300; color: #c0c8ce;">G R U P O</span><br>
+      <span style="font-size: 28px; letter-spacing: 4px; font-weight: 700; color: white;">C R I S A</span>
+    </div>
+    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; margin-top: 8px;">
+      <p style="margin: 0; font-size: 14px; opacity: 0.9;">${emoji} ${titulo}</p>
+      <p style="margin: 5px 0 0; opacity: 0.7; font-size: 12px;">${mesActual} - Sistema de Seguimiento de Inventarios</p>
+    </div>
+  </div>
+  <div style="padding: 25px 30px;">
+    <h2 style="color: #444; margin: 0 0 20px; font-weight: 500; font-size: 18px;">Sucursal: ${rendimiento.sucursal}</h2>
+
+    ${rendimiento.totalCodigosMes > 0 ? `
+    <div style="background: #f0f7f4; border-radius: 10px; padding: 20px 25px; margin: 0 0 14px; border: 1px solid #c3ddd2;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #5a7a6a; text-transform: uppercase; margin-bottom: 2px;">📅 ${rendimiento.nombreMes} (mes actual)</div>
+          <div style="font-size: 13px; color: #666;">${rendimiento.codigosVerificadosMes} de ${rendimiento.totalCodigosMes} items completados</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 36px; font-weight: 700; color: ${rendimiento.porcentajeMes >= 70 ? '#2d7a4f' : rendimiento.porcentajeMes >= 40 ? '#b36a00' : '#c0392b'};">${rendimiento.porcentajeMes.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div style="background: #d4e8de; border-radius: 6px; height: 10px; overflow: hidden;">
+        <div style="background: ${rendimiento.porcentajeMes >= 70 ? '#28a745' : rendimiento.porcentajeMes >= 40 ? '#fd7e14' : '#dc3545'}; height: 100%; width: ${Math.min(rendimiento.porcentajeMes, 100)}%; border-radius: 6px;"></div>
+      </div>
+      <div style="margin-top: 10px; color: #666; font-size: 12px;">
+        ⏳ Pendientes este mes: <strong>${rendimiento.totalCodigosMes - rendimiento.codigosVerificadosMes}</strong> items
+        ${rendimiento.diasRestantes > 0 ? ` · Ritmo necesario: <strong>${rendimiento.codigosPorDia} items/día</strong>` : ''}
+      </div>
+    </div>
+    ` : ''}
+
+    <div style="background: #f8f9fa; border-radius: 10px; padding: 20px 25px; margin: 0 0 20px; border: 1px solid #e9ecef;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #6a7a8a; text-transform: uppercase; margin-bottom: 2px;">📦 Avance total temporada</div>
+          <div style="font-size: 13px; color: #666;">${rendimiento.codigosVerificados} de ${rendimiento.totalCodigos} items completados</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 36px; font-weight: 700; color: #4a5d6a;">${rendimiento.porcentaje.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div style="background: #e0e4e8; border-radius: 6px; height: 10px; overflow: hidden;">
+        <div style="background: #6a8a9a; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
+      </div>
+      <div style="margin-top: 10px; color: #888; font-size: 12px;">
+        Restantes en la temporada: <strong>${rendimiento.totalCodigos - rendimiento.codigosVerificados}</strong> items
+      </div>
+    </div>
+
+    <div style="margin: 25px 0;">
+      <h3 style="color: #444; font-size: 15px; font-weight: 500; border-bottom: 2px solid #6a8a9a; padding-bottom: 8px; margin-bottom: 12px;">🏆 Ranking de Sucursales</h3>
+      <pre style="background: #f8f9fa; padding: 12px 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; overflow-x: auto; border: 1px solid #e9ecef; color: #555;">${ranking}</pre>
+    </div>
+
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
+        📋 Ir al Sistema de Muestreo
+      </a>
+    </div>
+    <p style="color: #888; font-size: 11px; text-align: center; margin-top: 25px;">
+      Recordatorios automáticos: Lunes (todas), Miércoles (&lt;70%), Viernes (&lt;40%)<br>
+      Sistema de Seguimiento de Inventarios - Grupo Crisa
+    </p>
+  </div>
+</div>
+</div>
+</body>
+</html>
+"""
+
+msg.attach(MIMEText(html, 'html'))
+
+try:
+    if SMTP_PASSWORD:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, ["${destinatario}"], msg.as_string())
+        server.quit()
+        print("OK: ${rendimiento.sucursal}")
+    else:
+        print("ERROR: SMTP_PASSWORD no configurada")
+except Exception as e:
+    print(f"ERROR: {e}")
+`;
+
+    const resultado = await ejecutarPython(pythonCode);
+    if (resultado.salida.includes('OK:')) {
+      enviados.push(rendimiento.sucursal);
+    } else {
+      console.error(`[Test] Error enviando para ${rendimiento.sucursal}:`, resultado.salida);
+    }
+  }
+
+  return { enviados: enviados.length, sucursales: enviados };
+}
+
+export { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba };
