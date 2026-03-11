@@ -209,39 +209,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = textoExtraido.split('\n');
       const codigosExtraidos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[] = [];
 
-      const articuloFullRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2,})\s+(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
-      const articuloSimpleRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2,})\s*¦?\s*$/;
+      const articuloFullRegex = /^\s*¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
+      const articuloNumFullRegex = /^\s*¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
+      const articuloSimpleRegex = /^\s*¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*¦?\s*$/;
+      const articuloNumSimpleRegex = /^\s*¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*¦?\s*$/;
 
       const PREFIJO_DESC: Record<string, string> = {
         'TC': 'Cortes Listos',
         'TA': 'Tela Algodón',
-        'TF': 'Tul/Fantasia',
+        'TF': 'Tul/Fantasía',
         'TD': 'Cuerina/Decoración',
         'TV': 'Tela Varios',
-        'TS': 'Tela Sintética',
+        'TI': 'Tela Interior',
+        'TM': 'Tela Mantelería',
+        'BL': 'Blanco',
+        'ME': 'Mercería',
+        'OT': 'Otros',
+        'PV': 'Prenda Vestir',
+        'AR': 'Aromatizante',
+        'CO': 'Complemento',
+        'BO': 'Bolsa',
+        'TO': 'Toalla',
+        'SE': 'Servicio',
       };
 
+      const skipWords = new Set(['LINEAS', 'COMPROBANTE', 'ESTADO', 'OBSERVACIONES', 'USUARIO', 'ARTICULO', 'DEPOSITO', 'FECHA', 'HORA', 'CANTIDAD', 'SALDO', 'DIFERENCIA', 'DESCRIPCION', 'TOTAL', 'AJUSTADO', 'TOMA', 'INVENTARIO', 'TOM', 'ORIGINAL', 'COPIA']);
+      const skipPatterns = [/TOMA\s+DE\s+INVENTARIO/i, /TRASLADO\s+DE/i, /AJUSTE\s+DE/i, /REMITO/i];
+
       for (const line of lines) {
-        const fullMatch = line.match(articuloFullRegex);
-        if (fullMatch) {
-          const [, codigo, descripcion, cantidad, saldo, diferencia] = fullMatch;
-          codigosExtraidos.push({
-            codigo: codigo.trim(),
-            descripcion: descripcion.trim().replace(/\s{2,}/g, ' '),
-            cantidad: cantidad?.trim(),
-            saldo: saldo?.trim(),
-            diferencia: diferencia?.trim(),
-          });
-          continue;
+        if (skipPatterns.some(p => p.test(line))) continue;
+        let matched = false;
+        for (const regex of [articuloFullRegex, articuloNumFullRegex]) {
+          const fullMatch = line.match(regex);
+          if (fullMatch) {
+            const codClean = fullMatch[1].trim();
+            if (skipWords.has(codClean.toUpperCase()) || codClean.length < 4) break;
+            codigosExtraidos.push({
+              codigo: codClean,
+              descripcion: fullMatch[2].trim().replace(/\s{2,}/g, ' '),
+              cantidad: fullMatch[3]?.trim(),
+              saldo: fullMatch[4]?.trim(),
+              diferencia: fullMatch[5]?.trim(),
+            });
+            matched = true;
+            break;
+          }
         }
-        const simpleMatch = line.match(articuloSimpleRegex);
-        if (simpleMatch) {
-          const codigo = simpleMatch[1].trim();
-          const prefijo = codigo.substring(0, 2);
-          codigosExtraidos.push({
-            codigo,
-            descripcion: PREFIJO_DESC[prefijo] || '',
-          });
+        if (matched) continue;
+        for (const regex of [articuloSimpleRegex, articuloNumSimpleRegex]) {
+          const simpleMatch = line.match(regex);
+          if (simpleMatch) {
+            const codigo = simpleMatch[1].trim();
+            if (skipWords.has(codigo.toUpperCase()) || codigo.length < 4) break;
+            const prefijo = codigo.substring(0, 2);
+            codigosExtraidos.push({
+              codigo,
+              descripcion: PREFIJO_DESC[prefijo] || '',
+            });
+            break;
+          }
         }
       }
 
