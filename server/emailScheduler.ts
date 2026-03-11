@@ -58,9 +58,16 @@ let muestreoInterval: NodeJS.Timeout | null = null;
 
 interface RendimientoSucursal {
   sucursal: string;
+  // Total temporada
   codigosVerificados: number;
   totalCodigos: number;
   porcentaje: number;
+  // Mes actual
+  codigosVerificadosMes: number;
+  totalCodigosMes: number;
+  porcentajeMes: number;
+  nombreMes: string;
+  // Días restantes
   diasRestantes: number;
   codigosPorDia: number;
 }
@@ -439,17 +446,41 @@ function generarBarraProgreso(porcentaje: number): string {
 }
 
 function generarRanking(rendimientos: RendimientoSucursal[]): string {
-  const ordenados = [...rendimientos].sort((a, b) => b.porcentaje - a.porcentaje);
-  let ranking = '';
+  // Ordenar por % del mes actual (si disponible) o por total temporada
+  const ordenados = [...rendimientos].sort((a, b) => {
+    const pctA = a.totalCodigosMes > 0 ? a.porcentajeMes : a.porcentaje;
+    const pctB = b.totalCodigosMes > 0 ? b.porcentajeMes : b.porcentaje;
+    return pctB - pctA;
+  });
   
+  let ranking = '';
   ordenados.forEach((r, i) => {
     const posicion = (i + 1).toString().padStart(2, ' ');
-    const barra = generarBarraProgreso(r.porcentaje);
-    const porcentajeStr = r.porcentaje.toFixed(0).padStart(3, ' ');
-    ranking += `  ${posicion}. ${r.sucursal.padEnd(12)} ${barra} ${porcentajeStr}%\n`;
+    const pctMes = r.totalCodigosMes > 0 ? r.porcentajeMes : r.porcentaje;
+    const pctTemporada = r.porcentaje;
+    const barra = generarBarraProgreso(pctMes);
+    const mesPctStr = pctMes.toFixed(0).padStart(3, ' ');
+    const tmpStr = pctTemporada.toFixed(0).padStart(3, ' ');
+    ranking += `  ${posicion}. ${r.sucursal.padEnd(12)} ${barra} ${mesPctStr}% (temp: ${tmpStr}%)\n`;
   });
   
   return ranking;
+}
+
+const MESES_ES: Record<number, string> = {
+  1: 'ENERO', 2: 'FEBRERO', 3: 'MARZO', 4: 'ABRIL',
+  5: 'MAYO', 6: 'JUNIO', 7: 'JULIO', 8: 'AGOSTO',
+  9: 'SEPTIEMBRE', 10: 'OCTUBRE', 11: 'NOVIEMBRE', 12: 'DICIEMBRE'
+};
+
+const MESES_DISPLAY: Record<number, string> = {
+  1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+  5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+  9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+};
+
+function sanitizarCodigo(code: string): string {
+  return code.toLowerCase().replace(/[/.#$[\]]/g, '-');
 }
 
 async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
@@ -462,6 +493,8 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
     if (!data) return [];
 
     const now = new Date();
+    const mesActualKey = MESES_ES[now.getMonth() + 1];
+    const nombreMes = MESES_DISPLAY[now.getMonth() + 1];
     const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const diasRestantes = ultimoDia - now.getDate();
     const diasMuestreoRestantes = Math.max(1, Math.floor(diasRestantes / 2));
@@ -480,31 +513,55 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
       const calendario = getCalendarioSucursal(sucursal);
       let totalCodigos: number;
       let codigosVerificados: number;
+      let totalCodigosMes: number;
+      let codigosVerificadosMes: number;
 
       if (calendario) {
-        // Misma lógica que dashboard.tsx: usar items del calendario como denominador
+        // === TOTAL TEMPORADA: todos los items del calendario ===
         const codigosCalendario = calendario.semanas.flatMap(s => s.items);
         totalCodigos = codigosCalendario.length;
         codigosVerificados = codigosCalendario.filter(code => {
-          const sanitized = code.toLowerCase().replace(/[/.#$[\]]/g, '-');
-          return items[sanitized]?.completed === true || items[code]?.completed === true;
+          const s = sanitizarCodigo(code);
+          return items[s]?.completed === true || items[code]?.completed === true;
+        }).length;
+
+        // === MES ACTUAL: solo items de las semanas del mes en curso ===
+        const semanasMesActual = calendario.semanas.filter(s => s.mes === mesActualKey);
+        const codigosMesActual = semanasMesActual.flatMap(s => s.items);
+        totalCodigosMes = codigosMesActual.length;
+        codigosVerificadosMes = codigosMesActual.filter(code => {
+          const s = sanitizarCodigo(code);
+          return items[s]?.completed === true || items[code]?.completed === true;
         }).length;
       } else {
-        // Sin calendario: usar totalCompleted guardado en Firebase
+        // Sin calendario: usar totalCompleted de Firebase (sin desglose por mes)
         totalCodigos = Object.keys(items).length;
         const pct = parseFloat(branchData.totalCompleted || 0);
         codigosVerificados = Math.round(pct / 100 * totalCodigos);
+        totalCodigosMes = 0;
+        codigosVerificadosMes = 0;
       }
 
-      const porcentaje = totalCodigos > 0 ? Math.round((codigosVerificados / totalCodigos) * 100 * 10) / 10 : 0;
-      const codigosPendientes = totalCodigos - codigosVerificados;
-      const codigosPorDia = Math.round((codigosPendientes / diasMuestreoRestantes) * 10) / 10;
+      const porcentaje = totalCodigos > 0
+        ? Math.round((codigosVerificados / totalCodigos) * 1000) / 10
+        : 0;
+      const porcentajeMes = totalCodigosMes > 0
+        ? Math.round((codigosVerificadosMes / totalCodigosMes) * 1000) / 10
+        : 0;
+
+      // Pendientes en base al mes actual (urgencia inmediata)
+      const pendientesMes = totalCodigosMes - codigosVerificadosMes;
+      const codigosPorDia = Math.round((pendientesMes / diasMuestreoRestantes) * 10) / 10;
 
       rendimientos.push({
         sucursal,
         codigosVerificados,
         totalCodigos,
         porcentaje,
+        codigosVerificadosMes,
+        totalCodigosMes,
+        porcentajeMes,
+        nombreMes,
         diasRestantes,
         codigosPorDia
       });
@@ -531,7 +588,9 @@ async function enviarRecordatorioMuestreo(rendimiento: RendimientoSucursal, rank
   }
   
   const semana = getSemanaDelMes();
-  const urgencia = getNivelUrgencia(rendimiento.porcentaje, semana);
+  // Urgencia basada en el avance del mes actual; si no hay calendario usa el total
+  const pctParaUrgencia = rendimiento.totalCodigosMes > 0 ? rendimiento.porcentajeMes : rendimiento.porcentaje;
+  const urgencia = getNivelUrgencia(pctParaUrgencia, semana);
   const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
   
   // Determinar emoji y color según urgencia
@@ -594,26 +653,46 @@ html = """
   
   <div style="padding: 25px 30px;">
     <h2 style="color: #444; margin: 0 0 20px; font-weight: 500; font-size: 18px;">Sucursal: ${rendimiento.sucursal}</h2>
-    
-    <div style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin: 15px 0; border: 1px solid #e9ecef;">
-      <div style="text-align: center; margin-bottom: 15px;">
-        <span style="font-size: 42px; font-weight: 600; color: #4a5d6a;">${rendimiento.porcentaje.toFixed(0)}%</span>
-        <p style="color: #666; margin: 5px 0; font-size: 14px;">Avance del muestreo mensual</p>
+
+    <!-- BLOQUE MES ACTUAL -->
+    ${rendimiento.totalCodigosMes > 0 ? `
+    <div style="background: #f0f7f4; border-radius: 10px; padding: 20px 25px; margin: 0 0 14px; border: 1px solid #c3ddd2;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #5a7a6a; text-transform: uppercase; margin-bottom: 2px;">📅 ${rendimiento.nombreMes} (mes actual)</div>
+          <div style="font-size: 13px; color: #666;">${rendimiento.codigosVerificadosMes} de ${rendimiento.totalCodigosMes} items completados</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 36px; font-weight: 700; color: ${rendimiento.porcentajeMes >= 70 ? '#2d7a4f' : rendimiento.porcentajeMes >= 40 ? '#b36a00' : '#c0392b'};">${rendimiento.porcentajeMes.toFixed(0)}%</span>
+        </div>
       </div>
-      
-      <div style="background: #e0e4e8; border-radius: 6px; height: 12px; overflow: hidden;">
-        <div style="background: #6a8a9a; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
+      <div style="background: #d4e8de; border-radius: 6px; height: 10px; overflow: hidden;">
+        <div style="background: ${rendimiento.porcentajeMes >= 70 ? '#28a745' : rendimiento.porcentajeMes >= 40 ? '#fd7e14' : '#dc3545'}; height: 100%; width: ${Math.min(rendimiento.porcentajeMes, 100)}%; border-radius: 6px;"></div>
       </div>
-      
-      <div style="display: flex; justify-content: space-between; margin-top: 12px; color: #666; font-size: 13px;">
-        <span>✓ ${rendimiento.codigosVerificados} códigos verificados</span>
-        <span>${rendimiento.totalCodigos} códigos asignados</span>
+      <div style="margin-top: 10px; color: #666; font-size: 12px;">
+        ⏳ Pendientes este mes: <strong>${rendimiento.totalCodigosMes - rendimiento.codigosVerificadosMes}</strong> items
+        ${rendimiento.diasRestantes > 0 ? ` · Ritmo necesario: <strong>${rendimiento.codigosPorDia} items/día</strong>` : ''}
       </div>
     </div>
-    
-    <div style="text-align: center; background: #f5f0f2; border-radius: 8px; padding: 20px; margin: 20px 0;">
-      <div style="font-size: 32px; font-weight: 600; color: #5a5055;">${rendimiento.totalCodigos - rendimiento.codigosVerificados}</div>
-      <div style="color: #666; font-size: 13px; margin-top: 4px;">Códigos pendientes por verificar</div>
+    ` : ''}
+
+    <!-- BLOQUE TOTAL TEMPORADA -->
+    <div style="background: #f8f9fa; border-radius: 10px; padding: 20px 25px; margin: 0 0 20px; border: 1px solid #e9ecef;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #6a7a8a; text-transform: uppercase; margin-bottom: 2px;">📦 Avance total temporada</div>
+          <div style="font-size: 13px; color: #666;">${rendimiento.codigosVerificados} de ${rendimiento.totalCodigos} items completados</div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 36px; font-weight: 700; color: #4a5d6a;">${rendimiento.porcentaje.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div style="background: #e0e4e8; border-radius: 6px; height: 10px; overflow: hidden;">
+        <div style="background: #6a8a9a; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
+      </div>
+      <div style="margin-top: 10px; color: #888; font-size: 12px;">
+        Restantes en la temporada: <strong>${rendimiento.totalCodigos - rendimiento.codigosVerificados}</strong> items
+      </div>
     </div>
     
     <div style="margin: 25px 0;">
@@ -678,7 +757,8 @@ async function enviarRecordatoriosMuestreo(): Promise<void> {
   let enviados = 0;
   
   for (const r of rendimientos) {
-    if (debeRecibirRecordatorio(r.porcentaje)) {
+    const pctRecordatorio = r.totalCodigosMes > 0 ? r.porcentajeMes : r.porcentaje;
+    if (debeRecibirRecordatorio(pctRecordatorio)) {
       console.log(`[Muestreo] Enviando recordatorio a ${r.sucursal}...`);
       await enviarRecordatorioMuestreo(r, ranking);
       enviados++;
