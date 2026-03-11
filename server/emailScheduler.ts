@@ -58,15 +58,18 @@ let muestreoInterval: NodeJS.Timeout | null = null;
 
 interface RendimientoSucursal {
   sucursal: string;
+  tieneCalendario: boolean;
   // Total temporada
   codigosVerificados: number;
   totalCodigos: number;
   porcentaje: number;
-  // Mes actual
+  // Mes actual (solo si tieneCalendario)
   codigosVerificadosMes: number;
   totalCodigosMes: number;
   porcentajeMes: number;
   nombreMes: string;
+  // Sin calendario: métricas simples
+  noStockPct: number;
   // Días restantes
   diasRestantes: number;
   codigosPorDia: number;
@@ -516,6 +519,8 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
       let codigosVerificados: number;
       let totalCodigosMes: number;
       let codigosVerificadosMes: number;
+      let noStockPct: number = 0;
+      const tieneCalendario: boolean = !!calendario;
 
       if (calendario) {
         // === TOTAL TEMPORADA: todos los items del calendario ===
@@ -535,17 +540,21 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
           return items[s]?.completed === true || items[code]?.completed === true;
         }).length;
       } else {
-        // Sin calendario: usar totalCompleted de Firebase (sin desglose por mes)
-        totalCodigos = Object.keys(items).length;
-        const pct = parseFloat(branchData.totalCompleted || 0);
-        codigosVerificados = Math.round(pct / 100 * totalCodigos);
+        // Sin calendario: % de cumplimiento desde Firebase + % sin stock
+        totalCodigos = 0;
+        codigosVerificados = 0;
         totalCodigosMes = 0;
         codigosVerificadosMes = 0;
+        // noStockPct: artículos sin stock / total items de Firebase
+        const allItems = Object.values(items) as any[];
+        const sinStock = allItems.filter(v => v && !v.hasStock).length;
+        noStockPct = allItems.length > 0 ? Math.round((sinStock / allItems.length) * 1000) / 10 : 0;
       }
 
-      const porcentaje = totalCodigos > 0
-        ? Math.round((codigosVerificados / totalCodigos) * 1000) / 10
-        : 0;
+      // Porcentaje de cumplimiento: para calendario = calculado; sin calendario = totalCompleted de Firebase
+      const porcentaje = tieneCalendario
+        ? (totalCodigos > 0 ? Math.round((codigosVerificados / totalCodigos) * 1000) / 10 : 0)
+        : parseFloat(String(branchData.totalCompleted || 0));
       const porcentajeMes = totalCodigosMes > 0
         ? Math.round((codigosVerificadosMes / totalCodigosMes) * 1000) / 10
         : 0;
@@ -556,6 +565,7 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
 
       rendimientos.push({
         sucursal,
+        tieneCalendario,
         codigosVerificados,
         totalCodigos,
         porcentaje,
@@ -563,6 +573,7 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
         totalCodigosMes,
         porcentajeMes,
         nombreMes,
+        noStockPct,
         diasRestantes,
         codigosPorDia
       });
@@ -677,7 +688,8 @@ html = """
     </div>
     ` : ''}
 
-    <!-- BLOQUE TOTAL TEMPORADA -->
+    <!-- BLOQUE CUMPLIMIENTO: con calendario = items detallados; sin calendario = % simple + sin stock -->
+    ${rendimiento.tieneCalendario ? `
     <div style="background: #f8f9fa; border-radius: 10px; padding: 20px 25px; margin: 0 0 20px; border: 1px solid #e9ecef;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
         <div>
@@ -695,6 +707,26 @@ html = """
         Restantes en la temporada: <strong>${rendimiento.totalCodigos - rendimiento.codigosVerificados}</strong> items
       </div>
     </div>
+    ` : `
+    <div style="display: flex; gap: 14px; margin: 0 0 20px;">
+      <!-- Cumplimiento -->
+      <div style="flex: 1; background: #f8f9fa; border-radius: 10px; padding: 18px 20px; border: 1px solid #e9ecef;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #6a7a8a; text-transform: uppercase; margin-bottom: 10px;">📊 Cumplimiento</div>
+        <div style="font-size: 34px; font-weight: 700; color: ${rendimiento.porcentaje >= 70 ? '#2d7a4f' : rendimiento.porcentaje >= 40 ? '#b36a00' : '#c0392b'};">${rendimiento.porcentaje.toFixed(0)}%</div>
+        <div style="background: #e0e4e8; border-radius: 6px; height: 8px; overflow: hidden; margin-top: 10px;">
+          <div style="background: ${rendimiento.porcentaje >= 70 ? '#28a745' : rendimiento.porcentaje >= 40 ? '#fd7e14' : '#dc3545'}; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
+        </div>
+      </div>
+      <!-- Sin Stock -->
+      <div style="flex: 1; background: #fff8f0; border-radius: 10px; padding: 18px 20px; border: 1px solid #fde8c8;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #8a6a3a; text-transform: uppercase; margin-bottom: 10px;">📦 Sin Stock</div>
+        <div style="font-size: 34px; font-weight: 700; color: ${rendimiento.noStockPct >= 20 ? '#c0392b' : rendimiento.noStockPct >= 10 ? '#b36a00' : '#2d7a4f'};">${rendimiento.noStockPct.toFixed(1)}%</div>
+        <div style="background: #fde8c8; border-radius: 6px; height: 8px; overflow: hidden; margin-top: 10px;">
+          <div style="background: ${rendimiento.noStockPct >= 20 ? '#dc3545' : rendimiento.noStockPct >= 10 ? '#fd7e14' : '#28a745'}; height: 100%; width: ${Math.min(rendimiento.noStockPct, 100)}%; border-radius: 6px;"></div>
+        </div>
+      </div>
+    </div>
+    `}
     
     <div style="margin: 25px 0;">
       <h3 style="color: #444; font-size: 15px; font-weight: 500; border-bottom: 2px solid #6a8a9a; padding-bottom: 8px; margin-bottom: 12px;">🏆 Ranking de Sucursales</h3>
