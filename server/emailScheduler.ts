@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { getCalendarioSucursal } from '@shared/calendario-semanal';
 
 const DESTINATARIOS_REPORTE = [
   "adolfotripodi@textilcrisa.com",
@@ -452,84 +453,68 @@ function generarRanking(rendimientos: RendimientoSucursal[]): string {
 }
 
 async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
-  // Usar REST API de Firebase para obtener datos sin credenciales hardcodeadas
-  const pythonCode = `
-import sys
-import json
-import urllib.request
-from datetime import datetime, timedelta
-import calendar
+  try {
+    const res = await fetch('https://check-d1753-default-rtdb.firebaseio.com/branches.json', {
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!res.ok) throw new Error(`Firebase error: ${res.status}`);
+    const data = await res.json();
+    if (!data) return [];
 
-FIREBASE_URL = "https://check-d1753-default-rtdb.firebaseio.com/branches.json"
+    const now = new Date();
+    const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const diasRestantes = ultimoDia - now.getDate();
+    const diasMuestreoRestantes = Math.max(1, Math.floor(diasRestantes / 2));
 
-try:
-    # Obtener datos de Firebase via REST API
-    with urllib.request.urlopen(FIREBASE_URL, timeout=30) as response:
-        data = json.loads(response.read().decode())
-    
-    if not data:
-        print(json.dumps([]))
-        sys.exit(0)
-    
-    hoy = datetime.now()
-    ultimo_dia = calendar.monthrange(hoy.year, hoy.month)[1]
-    dias_restantes = ultimo_dia - hoy.day
-    
-    rendimientos = []
-    
-    # Data es una lista de sucursales, cada una con 'id' e 'items'
-    branches = data if isinstance(data, list) else [data]
-    
-    for sucursal_data in branches:
-        if not sucursal_data:
-            continue
-        sucursal = sucursal_data.get('id', 'Desconocida')
-        # Omitir Centro de Distribución
-        if 'Ctro' in sucursal or 'Centro' in sucursal or 'Distribucion' in sucursal:
-            continue
-        items = sucursal_data.get('items', {})
-        if not items:
-            continue
-        
-        total = len(items)
-        # Usar totalCompleted guardado por la app (es el % real del mes actual)
-        # No usar completed=True porque esos no se resetean entre meses
-        porcentaje = float(sucursal_data.get('totalCompleted', 0) or 0)
-        # Derivar cantidad verificados desde el porcentaje real
-        verificados = round(porcentaje / 100 * total) if total > 0 else 0
-        
-        # Códigos por día necesarios (solo días Lun/Mie/Vie restantes)
-        dias_muestreo_restantes = max(1, dias_restantes // 2)
-        codigos_pendientes = total - verificados
-        codigos_por_dia = round(codigos_pendientes / dias_muestreo_restantes, 1) if dias_muestreo_restantes > 0 else codigos_pendientes
-        
-        rendimientos.append({
-            'sucursal': sucursal,
-            'codigosVerificados': verificados,
-            'totalCodigos': total,
-            'porcentaje': round(porcentaje, 1),
-            'diasRestantes': dias_restantes,
-            'codigosPorDia': codigos_por_dia
-        })
-    
-    print(json.dumps(rendimientos))
-except Exception as e:
-    print(json.dumps([]))
-`;
+    const branches: any[] = Array.isArray(data) ? data : [data];
+    const rendimientos: RendimientoSucursal[] = [];
 
-  const resultado = await ejecutarPython(pythonCode);
-  
-  if (resultado.exito) {
-    try {
-      return JSON.parse(resultado.salida.trim());
-    } catch {
-      console.error('[Muestreo] Error parseando rendimientos:', resultado.salida);
-      return [];
+    for (const branchData of branches) {
+      if (!branchData) continue;
+      const sucursal: string = branchData.id || 'Desconocida';
+      if (sucursal.includes('Ctro') || sucursal.includes('Centro') || sucursal.includes('Distribucion')) continue;
+
+      const items: Record<string, any> = branchData.items || {};
+      if (Object.keys(items).length === 0) continue;
+
+      const calendario = getCalendarioSucursal(sucursal);
+      let totalCodigos: number;
+      let codigosVerificados: number;
+
+      if (calendario) {
+        // Misma lógica que dashboard.tsx: usar items del calendario como denominador
+        const codigosCalendario = calendario.semanas.flatMap(s => s.items);
+        totalCodigos = codigosCalendario.length;
+        codigosVerificados = codigosCalendario.filter(code => {
+          const sanitized = code.toLowerCase().replace(/[/.#$[\]]/g, '-');
+          return items[sanitized]?.completed === true || items[code]?.completed === true;
+        }).length;
+      } else {
+        // Sin calendario: usar totalCompleted guardado en Firebase
+        totalCodigos = Object.keys(items).length;
+        const pct = parseFloat(branchData.totalCompleted || 0);
+        codigosVerificados = Math.round(pct / 100 * totalCodigos);
+      }
+
+      const porcentaje = totalCodigos > 0 ? Math.round((codigosVerificados / totalCodigos) * 100 * 10) / 10 : 0;
+      const codigosPendientes = totalCodigos - codigosVerificados;
+      const codigosPorDia = Math.round((codigosPendientes / diasMuestreoRestantes) * 10) / 10;
+
+      rendimientos.push({
+        sucursal,
+        codigosVerificados,
+        totalCodigos,
+        porcentaje,
+        diasRestantes,
+        codigosPorDia
+      });
     }
+
+    return rendimientos;
+  } catch (err) {
+    console.error('[Muestreo] Error obteniendo rendimientos:', err);
+    return [];
   }
-  
-  console.error('[Muestreo] Error obteniendo rendimientos:', resultado.salida);
-  return [];
 }
 
 async function enviarRecordatorioMuestreo(rendimiento: RendimientoSucursal, ranking: string): Promise<void> {
