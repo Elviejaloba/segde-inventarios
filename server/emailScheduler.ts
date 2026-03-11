@@ -505,7 +505,8 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
     for (const branchData of branches) {
       if (!branchData) continue;
       const sucursal: string = branchData.id || 'Desconocida';
-      if (sucursal.includes('Ctro') || sucursal.includes('Centro') || sucursal.includes('Distribucion')) continue;
+      // Ignorar Centro de Distribución y T.Luis (clave obsoleta de Firebase; la sucursal San Luis usa T.SLuis)
+      if (sucursal.includes('Ctro') || sucursal.includes('Centro') || sucursal.includes('Distribucion') || sucursal === 'T.Luis') continue;
 
       const items: Record<string, any> = branchData.items || {};
       if (Object.keys(items).length === 0) continue;
