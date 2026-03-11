@@ -982,6 +982,7 @@ html = """
     </div>
     ` : ''}
 
+    ${rendimiento.tieneCalendario ? `
     <div style="background: #f8f9fa; border-radius: 10px; padding: 20px 25px; margin: 0 0 20px; border: 1px solid #e9ecef;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
         <div>
@@ -999,6 +1000,24 @@ html = """
         Restantes en la temporada: <strong>${rendimiento.totalCodigos - rendimiento.codigosVerificados}</strong> items
       </div>
     </div>
+    ` : `
+    <div style="display: flex; gap: 14px; margin: 0 0 20px;">
+      <div style="flex: 1; background: #f8f9fa; border-radius: 10px; padding: 18px 20px; border: 1px solid #e9ecef;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #6a7a8a; text-transform: uppercase; margin-bottom: 10px;">📊 Cumplimiento</div>
+        <div style="font-size: 34px; font-weight: 700; color: ${rendimiento.porcentaje >= 70 ? '#2d7a4f' : rendimiento.porcentaje >= 40 ? '#b36a00' : '#c0392b'};">${rendimiento.porcentaje.toFixed(0)}%</div>
+        <div style="background: #e0e4e8; border-radius: 6px; height: 8px; overflow: hidden; margin-top: 10px;">
+          <div style="background: ${rendimiento.porcentaje >= 70 ? '#28a745' : rendimiento.porcentaje >= 40 ? '#fd7e14' : '#dc3545'}; height: 100%; width: ${Math.min(rendimiento.porcentaje, 100)}%; border-radius: 6px;"></div>
+        </div>
+      </div>
+      <div style="flex: 1; background: #fff8f0; border-radius: 10px; padding: 18px 20px; border: 1px solid #fde8c8;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #8a6a3a; text-transform: uppercase; margin-bottom: 10px;">📦 Sin Stock</div>
+        <div style="font-size: 34px; font-weight: 700; color: ${rendimiento.noStockPct >= 20 ? '#c0392b' : rendimiento.noStockPct >= 10 ? '#b36a00' : '#2d7a4f'};">${rendimiento.noStockPct.toFixed(1)}%</div>
+        <div style="background: #fde8c8; border-radius: 6px; height: 8px; overflow: hidden; margin-top: 10px;">
+          <div style="background: ${rendimiento.noStockPct >= 20 ? '#dc3545' : rendimiento.noStockPct >= 10 ? '#fd7e14' : '#28a745'}; height: 100%; width: ${Math.min(rendimiento.noStockPct, 100)}%; border-radius: 6px;"></div>
+        </div>
+      </div>
+    </div>
+    `}
 
     <div style="margin: 25px 0;">
       <h3 style="color: #444; font-size: 15px; font-weight: 500; border-bottom: 2px solid #6a8a9a; padding-bottom: 8px; margin-bottom: 12px;">🏆 Ranking de Sucursales</h3>
