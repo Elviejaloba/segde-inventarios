@@ -209,18 +209,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = textoExtraido.split('\n');
       const codigosExtraidos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[] = [];
 
-      const articuloRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2})\s+(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
+      const articuloFullRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2,})\s+(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
+      const articuloSimpleRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2,})\s*¦?\s*$/;
+
+      const PREFIJO_DESC: Record<string, string> = {
+        'TC': 'Cortes Listos',
+        'TA': 'Tela Algodón',
+        'TF': 'Tul/Fantasia',
+        'TD': 'Cuerina/Decoración',
+        'TV': 'Tela Varios',
+        'TS': 'Tela Sintética',
+      };
 
       for (const line of lines) {
-        const match = line.match(articuloRegex);
-        if (match) {
-          const [, codigo, descripcion, cantidad, saldo, diferencia] = match;
+        const fullMatch = line.match(articuloFullRegex);
+        if (fullMatch) {
+          const [, codigo, descripcion, cantidad, saldo, diferencia] = fullMatch;
           codigosExtraidos.push({
             codigo: codigo.trim(),
             descripcion: descripcion.trim().replace(/\s{2,}/g, ' '),
             cantidad: cantidad?.trim(),
             saldo: saldo?.trim(),
             diferencia: diferencia?.trim(),
+          });
+          continue;
+        }
+        const simpleMatch = line.match(articuloSimpleRegex);
+        if (simpleMatch) {
+          const codigo = simpleMatch[1].trim();
+          const prefijo = codigo.substring(0, 2);
+          codigosExtraidos.push({
+            codigo,
+            descripcion: PREFIJO_DESC[prefijo] || '',
           });
         }
       }
