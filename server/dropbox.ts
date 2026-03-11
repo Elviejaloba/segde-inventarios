@@ -237,3 +237,20 @@ export function invalidateFileCache(): void {
 export async function getFileLink(path: string): Promise<string> {
   return createSharedLink(path);
 }
+
+export async function downloadFile(path: string): Promise<Buffer> {
+  const accessToken = await getAccessToken();
+  const response = await fetch('https://content.dropboxapi.com/2/files/download', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Dropbox-API-Arg': JSON.stringify({ path }),
+    },
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to download file: ${error}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}

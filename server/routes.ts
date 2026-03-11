@@ -175,6 +175,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/muestreos/:id/contenido', async (req: Request, res: Response) => {
+    try {
+      const { path: filePath } = req.query;
+      if (!filePath || typeof filePath !== 'string') {
+        res.status(400).json({ error: 'Missing file path' });
+        return;
+      }
+
+      const ext = filePath.toLowerCase().split('.').pop();
+      if (!ext || !['doc', 'docx'].includes(ext)) {
+        res.json({ codigos: [], texto: '', error: 'Solo se pueden analizar archivos Word (.doc/.docx)' });
+        return;
+      }
+
+      const fileBuffer = await dropbox.downloadFile(filePath);
+      let textoExtraido = '';
+
+      if (ext === 'docx') {
+        const mammoth = await import('mammoth');
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
+        textoExtraido = result.value;
+      } else if (ext === 'doc') {
+        const WordExtractor = (await import('word-extractor')).default;
+        const extractor = new WordExtractor();
+        const doc = await extractor.extract(fileBuffer);
+        textoExtraido = doc.getBody();
+      }
+
+      const sucursalMatch = filePath.match(/\[([^\]]+)\]/);
+      const sucursal = sucursalMatch ? sucursalMatch[1] : undefined;
+
+      const lines = textoExtraido.split('\n');
+      const codigosExtraidos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[] = [];
+
+      const articuloRegex = /^\s*¦?\s*(T[A-Z][A-Z0-9]{2,}[A-Z0-9]*\d{2})\s+(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
+
+      for (const line of lines) {
+        const match = line.match(articuloRegex);
+        if (match) {
+          const [, codigo, descripcion, cantidad, saldo, diferencia] = match;
+          codigosExtraidos.push({
+            codigo: codigo.trim(),
+            descripcion: descripcion.trim().replace(/\s{2,}/g, ' '),
+            cantidad: cantidad?.trim(),
+            saldo: saldo?.trim(),
+            diferencia: diferencia?.trim(),
+          });
+        }
+      }
+
+      let comprobante: string | undefined;
+      const compMatch = textoExtraido.match(/Comprobante\s*:\s*(\S+\s+\S+)/i);
+      if (compMatch) comprobante = compMatch[1].trim();
+
+      let observaciones: string | undefined;
+      const obsMatch = textoExtraido.match(/Observaciones\s*:\s*([^\n¦]+)/i);
+      if (obsMatch) observaciones = obsMatch[1].trim().replace(/\s{2,}/g, ' ').replace(/\s*DEPOSITO.*/, '');
+
+      res.json({
+        codigos: codigosExtraidos,
+        totalCodigos: codigosExtraidos.length,
+        comprobante,
+        observaciones,
+        sucursal,
+        tipoArchivo: ext,
+      });
+    } catch (error) {
+      console.error('Error parsing file content:', error);
+      res.status(500).json({ error: 'Error al analizar el archivo' });
+    }
+  });
+
   // ========================================
   // BRIDGE SYNC ENDPOINTS (protegidos con API Key)
   // ========================================

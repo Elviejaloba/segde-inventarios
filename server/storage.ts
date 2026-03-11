@@ -28,6 +28,7 @@ export interface IStorage {
   getAnalisisValorizadoConCosto(sucursal?: string): Promise<any>;
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
   getPuntoEquilibrio(sucursal?: string): Promise<any>;
+  getCodigosArticulos(): Promise<string[]>;
 }
 
 export class PostgreSQLStorage implements IStorage {
@@ -1098,6 +1099,20 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('Error getting punto equilibrio:', error);
       return { detalle: [], resumen: [] };
+    }
+  }
+  async getCodigosArticulos(): Promise<string[]> {
+    try {
+      const rows = await sql`
+        SELECT DISTINCT TRIM("Codigo") as codigo
+        FROM ajustes_sucursales 
+        WHERE "Codigo" IS NOT NULL AND TRIM("Codigo") != ''
+        ORDER BY codigo
+      `;
+      return rows.map((r: any) => r.codigo);
+    } catch (error) {
+      console.error('Error getting codigos articulos:', error);
+      return [];
     }
   }
 }

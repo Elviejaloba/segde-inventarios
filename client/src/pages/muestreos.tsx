@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp, Clock } from "lucide-react";
+import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp, Clock, Search, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -67,6 +67,24 @@ function extractSucursalFromName(fileName: string): string | undefined {
   return undefined;
 }
 
+function extractCodigoFromName(fileName: string): string | null {
+  const match = fileName.match(/(?:MUESTREO|muestreo)[_\s-]+(.+?)\.(?:doc|docx|pdf|xlsx?)$/i);
+  if (!match) return null;
+  let raw = match[1].replace(/_/g, ' ').trim();
+  raw = raw.replace(/^\d{4}-\d{2}-\d{2}T[\d-]+Z[_\s]*/i, '');
+  return raw || null;
+}
+
+interface FileContenido {
+  codigos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[];
+  totalCodigos: number;
+  comprobante?: string;
+  observaciones?: string;
+  sucursal?: string;
+  tipoArchivo: string;
+  error?: string;
+}
+
 export default function MuestreosPage() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -76,6 +94,9 @@ export default function MuestreosPage() {
   const [fileStatuses, setFileStatuses] = useState<Record<string, FileStatus>>(getFileStatuses);
   const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
   const [cachedLinks, setCachedLinks] = useState<Record<string, string>>({});
+  const [expandedFile, setExpandedFile] = useState<string | null>(null);
+  const [loadingContenido, setLoadingContenido] = useState<Record<string, boolean>>({});
+  const [cachedContenido, setCachedContenido] = useState<Record<string, FileContenido>>({});
 
   const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
     queryKey: ['/api/ultima-actualizacion'],
@@ -95,6 +116,41 @@ export default function MuestreosPage() {
     setFileStatus(fileId, nextStatus);
     setFileStatuses(prev => ({ ...prev, [fileId]: nextStatus }));
   };
+
+  const toggleContenido = useCallback(async (file: DropboxFile) => {
+    if (expandedFile === file.id) {
+      setExpandedFile(null);
+      return;
+    }
+
+    setExpandedFile(file.id);
+
+    if (cachedContenido[file.id]) return;
+
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (!ext || !['doc', 'docx'].includes(ext)) {
+      setCachedContenido(prev => ({
+        ...prev,
+        [file.id]: { codigos: [], totalCodigos: 0, tipoArchivo: ext || '', error: 'Solo archivos Word (.doc/.docx)' }
+      }));
+      return;
+    }
+
+    setLoadingContenido(prev => ({ ...prev, [file.id]: true }));
+    try {
+      const response = await fetch(`/api/muestreos/${file.id}/contenido?path=${encodeURIComponent(file.path)}`);
+      if (!response.ok) throw new Error('Error al analizar');
+      const data: FileContenido = await response.json();
+      setCachedContenido(prev => ({ ...prev, [file.id]: data }));
+    } catch (error) {
+      setCachedContenido(prev => ({
+        ...prev,
+        [file.id]: { codigos: [], totalCodigos: 0, tipoArchivo: ext || '', error: 'Error al analizar el archivo' }
+      }));
+    } finally {
+      setLoadingContenido(prev => ({ ...prev, [file.id]: false }));
+    }
+  }, [expandedFile, cachedContenido]);
 
   const openFileLink = useCallback(async (file: DropboxFile, action: 'view' | 'download') => {
     if (file.sharedLink || cachedLinks[file.id]) {
@@ -408,89 +464,169 @@ export default function MuestreosPage() {
                 <p className="text-xs sm:text-sm">{filterBranch ? 'No hay archivos de esta sucursal' : 'No hay archivos subidos'}</p>
               </div>
             ) : (
-              <div className="space-y-1.5 sm:space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-1.5 sm:space-y-2 max-h-[500px] overflow-y-auto">
                 {filteredFiles.map((file) => {
                   const status = fileStatuses[file.id] || "no_visto";
                   const statusConfig = STATUS_CONFIG[status];
                   const StatusIcon = statusConfig.icon;
+                  const codigoNombre = extractCodigoFromName(file.name);
+                  const isExpanded = expandedFile === file.id;
+                  const contenido = cachedContenido[file.id];
+                  const isLoadingContenido = loadingContenido[file.id];
+                  const isWord = /\.(doc|docx)$/i.test(file.name);
                   return (
                     <div
                       key={file.id}
-                      className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      className="bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                       data-testid={`file-item-${file.id}`}
                     >
-                      <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                          {file.sucursal && (
-                            <span className="inline-flex items-center px-1 sm:px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] sm:text-xs font-medium">
-                              {file.sucursal}
+                      <div className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5">
+                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                            {file.sucursal && (
+                              <span className="inline-flex items-center px-1 sm:px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] sm:text-xs font-medium">
+                                {file.sucursal}
+                              </span>
+                            )}
+                            {codigoNombre && (
+                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-[10px] sm:text-xs font-medium">
+                                <Package className="h-2.5 w-2.5" />
+                                {codigoNombre}
+                              </span>
+                            )}
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">
+                              {new Date(file.modified).toLocaleDateString('es-AR')}
                             </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                          {isWord && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleContenido(file)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                                >
+                                  {isLoadingContenido ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : isExpanded ? (
+                                    <ChevronUp className="h-3 w-3" />
+                                  ) : (
+                                    <Search className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{isExpanded ? 'Ocultar artículos' : 'Ver artículos'}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
-                          <span className="text-[10px] sm:text-xs text-muted-foreground">
-                            {new Date(file.modified).toLocaleDateString('es-AR')}
-                          </span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => cycleStatus(file.id)}
+                                className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 active:scale-95 ${statusConfig.bgColor} ${statusConfig.color}`}
+                                data-testid={`button-status-${file.id}`}
+                              >
+                                <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                <span className="hidden sm:inline">{statusConfig.label}</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{statusConfig.label} — Clic para cambiar</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openFileLink(file, 'view')}
+                                disabled={loadingLinks[file.id]}
+                                data-testid={`button-view-${file.id}`}
+                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                              >
+                                {loadingLinks[file.id] ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <ExternalLink className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ver archivo</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openFileLink(file, 'download')}
+                                disabled={loadingLinks[file.id]}
+                                data-testid={`button-download-${file.id}`}
+                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                              >
+                                {loadingLinks[file.id] ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Download className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Descargar</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
-                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => cycleStatus(file.id)}
-                              className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 active:scale-95 ${statusConfig.bgColor} ${statusConfig.color}`}
-                              data-testid={`button-status-${file.id}`}
-                            >
-                              <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                              <span className="hidden sm:inline">{statusConfig.label}</span>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{statusConfig.label} — Clic para cambiar</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openFileLink(file, 'view')}
-                              disabled={loadingLinks[file.id]}
-                              data-testid={`button-view-${file.id}`}
-                              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                            >
-                              {loadingLinks[file.id] ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <ExternalLink className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Ver archivo</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openFileLink(file, 'download')}
-                              disabled={loadingLinks[file.id]}
-                              data-testid={`button-download-${file.id}`}
-                              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                            >
-                              {loadingLinks[file.id] ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Download className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Descargar</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                      {isExpanded && (
+                        <div className="px-2 sm:px-3 pb-2 sm:pb-3 pt-0">
+                          <div className="border-t pt-2 space-y-1.5">
+                            {isLoadingContenido ? (
+                              <div className="flex items-center gap-2 py-2 justify-center">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                <span className="text-[11px] sm:text-xs text-muted-foreground">Analizando archivo...</span>
+                              </div>
+                            ) : contenido?.error ? (
+                              <p className="text-[11px] sm:text-xs text-red-500 py-1">{contenido.error}</p>
+                            ) : contenido && contenido.codigos.length > 0 ? (
+                              <>
+                                {(contenido.comprobante || contenido.observaciones) && (
+                                  <div className="text-[10px] sm:text-xs text-muted-foreground space-y-0.5">
+                                    {contenido.comprobante && <p><span className="font-medium">Comp:</span> {contenido.comprobante}</p>}
+                                    {contenido.observaciones && <p><span className="font-medium">Obs:</span> {contenido.observaciones}</p>}
+                                  </div>
+                                )}
+                                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                                  {contenido.totalCodigos} artículo{contenido.totalCodigos !== 1 ? 's' : ''}:
+                                </p>
+                                <div className="max-h-40 overflow-y-auto space-y-0.5">
+                                  {contenido.codigos.map((c) => {
+                                    const dif = c.diferencia ? parseFloat(c.diferencia.replace(',', '.')) : 0;
+                                    return (
+                                      <div key={c.codigo} className="flex items-center gap-1.5 text-[10px] sm:text-xs">
+                                        <span className="font-mono font-medium text-blue-700 dark:text-blue-400 min-w-[70px] sm:min-w-[90px]">{c.codigo}</span>
+                                        <span className="text-muted-foreground truncate flex-1">{c.descripcion}</span>
+                                        {c.diferencia && (
+                                          <span className={`font-mono shrink-0 ${dif < 0 ? 'text-red-600' : dif > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                            {dif > 0 ? '+' : ''}{c.diferencia}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            ) : contenido ? (
+                              <p className="text-[11px] sm:text-xs text-muted-foreground py-1">No se encontraron códigos de artículo en el archivo</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
