@@ -1,5 +1,4 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
 import { AVAILABLE_BRANCHES, Branch } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
@@ -34,14 +33,30 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     await refetch();
   };
 
-  if (!mounted) {
-    return null;
-  }
-
-  if (loading) {
+  if (!mounted || loading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <LoadingMascot size="sm" message="Cargando datos..." />
+      <div className="space-y-4 sm:space-y-6">
+        <div className="hidden sm:block text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos sin rotacion y sobre stock</h1>
+          <p className="text-muted-foreground text-sm">Sistema de Seguimiento — Grupo Crisa</p>
+        </div>
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <div className="p-3 sm:p-4 border-b bg-muted/30">
+            <div className="h-5 w-40 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="divide-y">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <div className="w-6 h-4 bg-muted animate-pulse rounded" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted animate-pulse rounded w-32" />
+                  <div className="h-2 bg-muted animate-pulse rounded w-full" />
+                </div>
+                <div className="h-5 w-12 bg-muted animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
