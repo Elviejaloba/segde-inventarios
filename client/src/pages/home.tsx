@@ -886,7 +886,7 @@ export default function Home() {
               )}
 
               {/* Sección Items Agregados */}
-              <div className="border-2 border-dashed border-blue-300 rounded-lg overflow-hidden">
+              <div className="border-2 border-dashed border-blue-300 rounded-lg overflow-hidden" data-testid="items-agregados">
                 <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-2 sm:p-3 flex items-center justify-between gap-1">
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <Plus className="h-4 w-4 text-blue-600 shrink-0" />

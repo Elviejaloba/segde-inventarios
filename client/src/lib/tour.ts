@@ -123,6 +123,15 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
         side: 'top',
         align: 'center'
       }
+    },
+    {
+      element: '[data-testid="items-agregados"]',
+      popover: {
+        title: 'Items Agregados',
+        description: 'Si encontrás artículos que no están en la lista pero creés conveniente muestrear, agregalos acá escribiendo el código. Quedan registrados por mes y se suman al progreso de la sucursal.',
+        side: 'top',
+        align: 'center'
+      }
     }
   ];
 
@@ -268,6 +277,22 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
         description: 'Filtrá la lista de archivos por sucursal para encontrar lo que buscás.',
         side: 'bottom',
         align: 'start'
+      }
+    },
+    {
+      popover: {
+        title: 'Ver Contenido del Archivo',
+        description: 'Los archivos Word muestran un botón de lupa. Tocalo para ver los artículos que contiene el muestreo sin necesidad de abrir el archivo: código, descripción y diferencia.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      popover: {
+        title: 'Código del Archivo',
+        description: 'Cada archivo muestra un badge amarillo con el código extraído del nombre. Así identificás rápido de qué artículo trata cada muestreo.',
+        side: 'top',
+        align: 'center'
       }
     },
     {
