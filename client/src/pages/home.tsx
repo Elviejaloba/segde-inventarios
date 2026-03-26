@@ -578,7 +578,11 @@ export default function Home() {
       noStockCount = codigosCalendario.filter(code => items[sanitizeCode(code)]?.hasStock === false).length;
     } else {
       totalItems = CODES.length;
-      completedCount = Object.values(items).filter(i => i.completed).length;
+      // Cuenta items procesados: completado O confirmado sin stock, capped al total
+      completedCount = Math.min(
+        Object.values(items).filter(i => i.completed || i.hasStock === false).length,
+        totalItems
+      );
       noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
     }
     
