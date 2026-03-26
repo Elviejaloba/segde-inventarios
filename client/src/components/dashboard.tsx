@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
-import { AVAILABLE_BRANCHES, Branch } from "@/lib/store";
+import { AVAILABLE_BRANCHES, Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -109,12 +109,16 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       const completados = codigosCalendario.filter(code => findItemByCode(items, code)?.completed).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     } else {
-      // Para otras sucursales, usar el cálculo original
-      totalItems = Object.keys(items).length;
-      totalCompleted = branchData?.totalCompleted || 0;
+      // Para sucursales sin calendario, calcular desde los items usando CODES como referencia
+      totalItems = SEASON_CODES_TEMPORADA_VERANO.length;
+      const completados = SEASON_CODES_TEMPORADA_VERANO.filter(code => findItemByCode(items, code)?.completed).length;
+      totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     }
     
-    const noStockItems = Object.values(items).filter(item => !item.hasStock).length;
+    const referenciaCodigos = calendario
+      ? calendario.semanas.flatMap(s => s.items)
+      : SEASON_CODES_TEMPORADA_VERANO;
+    const noStockItems = referenciaCodigos.filter(code => findItemByCode(items, code)?.hasStock === false).length;
     const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
     
     const now = new Date();
