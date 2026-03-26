@@ -109,9 +109,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       const completados = codigosCalendario.filter(code => findItemByCode(items, code)?.completed).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     } else {
-      // Para sucursales sin calendario, calcular desde los items usando CODES como referencia
+      // Para sucursales sin calendario: misma fórmula que home.tsx (todos los items completados / CODES.length, cap 100)
       totalItems = SEASON_CODES_TEMPORADA_VERANO.length;
-      const completados = SEASON_CODES_TEMPORADA_VERANO.filter(code => findItemByCode(items, code)?.completed).length;
+      const completados = Math.min(Object.values(items).filter(i => i.completed).length, totalItems);
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     }
     
