@@ -746,7 +746,7 @@ export default function Home() {
                     return (
                       <>
                         {/* Sección fija: objetivos y progreso */}
-                        <div className="sticky top-16 z-10 bg-white dark:bg-background pb-3 pt-2 space-y-3 shadow-sm">
+                        <div className="sticky top-[84px] sm:top-16 z-10 bg-background pb-3 pt-2 space-y-3 shadow-sm border-b border-border/50">
                         {/* Resumen de objetivos por mes */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3" data-testid="objetivos-mensuales">
                           {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
