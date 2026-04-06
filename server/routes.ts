@@ -390,26 +390,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/bridge/reporte-semanal', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
-    try {
-      console.log('[Bridge API] Reporte semanal solicitado desde servicio Windows');
-      await enviarReporteSemanal(true);
-      res.json({ success: true, message: 'Reporte semanal enviado' });
-    } catch (error) {
-      console.error('[Bridge API] Error enviando reporte semanal:', error);
-      res.status(500).json({ error: 'Error al enviar reporte semanal' });
-    }
+    // EMAILS DESACTIVADOS MANUALMENTE
+    console.log('[Bridge API] Reporte semanal recibido pero EMAILS DESACTIVADOS - no se enviará nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se envió nada' });
   });
 
   app.post('/api/bridge/recordatorios-muestreo', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
-    try {
-      console.log('[Bridge API] Recordatorios de muestreo solicitados desde servicio Windows');
-      await enviarRecordatoriosMuestreo();
-      res.json({ success: true, message: 'Recordatorios de muestreo enviados' });
-    } catch (error) {
-      console.error('[Bridge API] Error enviando recordatorios:', error);
-      res.status(500).json({ error: 'Error al enviar recordatorios de muestreo' });
-    }
+    // EMAILS DESACTIVADOS MANUALMENTE
+    console.log('[Bridge API] Recordatorios recibidos pero EMAILS DESACTIVADOS - no se enviará nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se envió nada' });
   });
 
   app.get('/api/ultima-actualizacion', async (req, res) => {
