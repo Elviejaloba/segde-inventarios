@@ -22,6 +22,7 @@ import { storage } from "@/lib/storage";
 // @ts-ignore
 import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
+import { getLatestSyncLabel } from "@/lib/sync-date";
 
 
 
@@ -649,26 +650,7 @@ export default function Home() {
               <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-[10px] text-muted-foreground">Act:</span>
               <span className="text-[10px] font-semibold">
-                {(() => {
-                  const parseLocalDate = (str: string) => {
-                    if (!str) return null;
-                    if (str.includes(' ')) {
-                      const [datePart, timePart] = str.split(' ');
-                      const [y, m, d] = datePart.split('-').map(Number);
-                      const [h, min] = timePart.split(':').map(Number);
-                      return { date: new Date(y, m - 1, d, h, min), hasTime: true };
-                    }
-                    const [y, m, d] = str.split('-').map(Number);
-                    return { date: new Date(y, m - 1, d), hasTime: false };
-                  };
-                  const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
-                  const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
-                  const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
-                  if (!latest) return 'Sin datos';
-                  const d = latest.date;
-                  const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
-                  return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
-                })()}
+                {getLatestSyncLabel(ultimaActualizacion.costos_fecha, ultimaActualizacion.ventas_fecha)}
               </span>
             </div>
             {/* Desktop: bloque normal */}
@@ -676,26 +658,7 @@ export default function Home() {
               <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold leading-tight">
-                  {(() => {
-                    const parseLocalDate = (str: string) => {
-                      if (!str) return null;
-                      if (str.includes(' ')) {
-                        const [datePart, timePart] = str.split(' ');
-                        const [y, m, d] = datePart.split('-').map(Number);
-                        const [h, min] = timePart.split(':').map(Number);
-                        return { date: new Date(y, m - 1, d, h, min), hasTime: true };
-                      }
-                      const [y, m, d] = str.split('-').map(Number);
-                      return { date: new Date(y, m - 1, d), hasTime: false };
-                    };
-                    const costo = parseLocalDate(ultimaActualizacion.costos_fecha);
-                    const venta = parseLocalDate(ultimaActualizacion.ventas_fecha);
-                    const latest = costo && venta ? (costo.date > venta.date ? costo : venta) : costo || venta;
-                    if (!latest) return 'Sin datos';
-                    const d = latest.date;
-                    const timeStr = latest.hasTime ? ` ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
-                    return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
-                  })()}
+                  {getLatestSyncLabel(ultimaActualizacion.costos_fecha, ultimaActualizacion.ventas_fecha)}
                 </span>
                 <span className="text-[10px] text-muted-foreground leading-tight">Última actualización</span>
                 <span className="text-[9px] text-muted-foreground/70 leading-tight">Actualización automática: Lun, Mié, Vie</span>
