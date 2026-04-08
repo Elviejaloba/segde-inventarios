@@ -407,7 +407,7 @@ export class PostgreSQLStorage implements IStorage {
             EXTRACT(YEAR FROM a."FechaMovimiento") as anio
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
         ),
@@ -558,7 +558,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
@@ -583,7 +583,7 @@ export class PostgreSQLStorage implements IStorage {
               SUM(a."Diferencia") as net_diff
             FROM ajustes_sucursales a
             WHERE a."FechaMovimiento" IS NOT NULL
-            AND a."Sucursal" != 'CRISA 3'
+            AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
             ${sucursal ? 'AND a."Sucursal" = $1' : ''}
             ${periodoFilter}
             GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), COALESCE(a."UnidadMedida", 'UN')
@@ -603,7 +603,7 @@ export class PostgreSQLStorage implements IStorage {
         ),
         codigos_con_ajuste AS (
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
-          FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "Sucursal" != 'CRISA 3'
+          FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${periodoFilterNoAlias}
         ),
         ventas_por_sucursal AS (
@@ -648,7 +648,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
@@ -684,7 +684,7 @@ export class PostgreSQLStorage implements IStorage {
           COUNT(DISTINCT TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))) FILTER (WHERE EXTRACT(YEAR FROM "FechaMovimiento") = 2026) as articulos_2026
         FROM ajustes_sucursales
         WHERE "FechaMovimiento" IS NOT NULL
-        AND "Sucursal" != 'CRISA 3'
+        AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
         ${sucursal ? 'AND "Sucursal" = $1' : ''}
         ${periodoFilterNoAlias}
       `;
@@ -698,7 +698,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY EXTRACT(YEAR FROM a."FechaMovimiento"), TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), a."Sucursal"
@@ -729,7 +729,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
           FROM ajustes_sucursales
           WHERE "FechaMovimiento" IS NOT NULL
-          AND "Sucursal" != 'CRISA 3'
+          AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND "Sucursal" = $1' : ''}
           ${periodoFilterNoAlias}
         )

@@ -354,6 +354,8 @@ export default function ReportesPage() {
   const totalVentas = resumenVisible.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
   const articulosConAlerta = detalleVisible.filter((item) => item.alertaPerdida).length || 0;
   const totalArticulos = detalleVisible.length || 0;
+  const articulos2025Visible = detalleVisible.filter((item) => Math.abs(item.diferencia2025 || 0) > 0).length;
+  const articulos2026Visible = detalleVisible.filter((item) => Math.abs(item.diferencia2026 || 0) > 0).length;
 
   const handleVerHistorial = (codigo: string) => {
     setSelectedCodigo(codigo);
@@ -703,8 +705,8 @@ export default function ReportesPage() {
                 {totalArticulos}
               </div>
               {(() => {
-                const art2025 = (analisis as any)?.totales?.articulos2025 || 0;
-                const art2026 = (analisis as any)?.totales?.articulos2026 || 0;
+                const art2025 = articulos2025Visible;
+                const art2026 = articulos2026Visible;
                 const diferencia = art2026 - art2025;
                 const variacion = art2025 > 0 ? ((diferencia / art2025) * 100) : 0;
                 const isPositive = diferencia > 0;
