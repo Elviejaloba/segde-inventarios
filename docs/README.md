@@ -5,9 +5,11 @@
 1. `RESILIENCIA_METODOLOGIA.md`: politicas y principios de resiliencia.
 2. `CHECKLIST_CAMBIOS_SEGUROS.md`: checklist previo a merge/deploy.
 3. `RUNBOOK_INCIDENTES.md`: pasos de contencion y recuperacion.
+4. `MONITOREO_ALERTAS.md`: healthcheck y alertas automaticas.
 
 ## Orden recomendado de uso
 
 1. Planificar cambio: `RESILIENCIA_METODOLOGIA.md`
 2. Ejecutar cambio: `CHECKLIST_CAMBIOS_SEGUROS.md`
 3. Resolver incidente: `RUNBOOK_INCIDENTES.md`
+4. Operar monitoreo: `MONITOREO_ALERTAS.md`

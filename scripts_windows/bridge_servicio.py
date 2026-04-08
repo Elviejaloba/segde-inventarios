@@ -12,6 +12,7 @@ import sys
 import logging
 import schedule
 import configparser
+from uuid import uuid4
 from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -35,6 +36,10 @@ SMTP_SERVER = _config.get('bridge', 'smtp_server', fallback='smtp.textilcrisa.co
 SMTP_PORT = _config.getint('bridge', 'smtp_port', fallback=26)
 SMTP_USER = _config.get('bridge', 'smtp_user', fallback='reportes@textilcrisa.com')
 NOTIFICACION_ERRORES = _config.get('bridge', 'notificacion_errores', fallback='lreyes@textilcrisa.com')
+OUTBOX_ENABLED = _config.getboolean('bridge', 'outbox_enabled', fallback=True)
+OUTBOX_REPROCESS_LIMIT = int(os.getenv("OUTBOX_REPROCESS_LIMIT", _config.get('bridge', 'outbox_reprocess_limit', fallback='25')))
+OUTBOX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outbox")
+os.makedirs(OUTBOX_DIR, exist_ok=True)
 
 def get_sync_info():
     try:
@@ -237,6 +242,67 @@ def json_serial(obj):
         return obj.isoformat()
     return str(obj)
 
+def _guardar_outbox(payload, batch_id, data_type, reason):
+    if not OUTBOX_ENABLED:
+        return
+    try:
+        item = {
+            "batch_id": batch_id,
+            "data_type": data_type,
+            "reason": reason,
+            "saved_at": datetime.utcnow().isoformat() + "Z",
+            "payload": payload
+        }
+        filename = f"{datetime.utcnow().strftime('%Y%m%dT%H%M%S')}_{batch_id}.json"
+        filepath = os.path.join(OUTBOX_DIR, filename)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(item, f, ensure_ascii=False, default=json_serial)
+        logging.warning(f"[OUTBOX] Lote guardado para reintento: {filepath}")
+    except Exception as e:
+        logging.error(f"[OUTBOX] No se pudo guardar lote fallido: {e}")
+
+def reprocesar_outbox():
+    if not OUTBOX_ENABLED:
+        return
+    try:
+        pendientes = sorted([x for x in os.listdir(OUTBOX_DIR) if x.endswith(".json")])[:OUTBOX_REPROCESS_LIMIT]
+        if not pendientes:
+            return
+
+        logging.info(f"[OUTBOX] Reprocesando {len(pendientes)} lote(s) pendientes")
+        for nombre in pendientes:
+            ruta = os.path.join(OUTBOX_DIR, nombre)
+            try:
+                with open(ruta, "r", encoding="utf-8") as f:
+                    item = json.load(f)
+                payload = item.get("payload")
+                batch_id = item.get("batch_id", f"requeue-{uuid4().hex}")
+                if not payload:
+                    logging.warning(f"[OUTBOX] Payload vacio en {nombre}, se elimina")
+                    os.remove(ruta)
+                    continue
+
+                headers = {
+                    'Content-Type': 'application/json',
+                    'X-Bridge-Api-Key': BRIDGE_API_KEY,
+                    'X-Idempotency-Key': batch_id
+                }
+                r = requests.post(
+                    f"{TARGET_BASE_URL}/sync",
+                    data=json.dumps(payload, default=json_serial),
+                    headers=headers,
+                    timeout=300
+                )
+                if r.status_code == 200:
+                    os.remove(ruta)
+                    logging.info(f"[OUTBOX] Reproceso OK ({nombre})")
+                else:
+                    logging.warning(f"[OUTBOX] Reproceso pendiente ({nombre}): {r.status_code} {r.text[:120]}")
+            except Exception as e:
+                logging.warning(f"[OUTBOX] Error reprocesando {nombre}: {e}")
+    except Exception as e:
+        logging.error(f"[OUTBOX] Error general: {e}")
+
 def enviar_en_lotes(nombre, registros, batch_size=5000):
     total = len(registros)
     if total == 0:
@@ -247,6 +313,9 @@ def enviar_en_lotes(nombre, registros, batch_size=5000):
         lote = registros[i:i+batch_size]
         lote_num = (i // batch_size) + 1
         total_lotes = (total + batch_size - 1) // batch_size
+        batch_id = f"{nombre}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:10]}"
+        payload = {nombre: lote, "incremental": True}
+        entregado = False
         for intento in range(3):
             try:
                 if intento > 0:
@@ -254,12 +323,16 @@ def enviar_en_lotes(nombre, registros, batch_size=5000):
                     logging.info(f"    Reintento {intento + 1}/3 en {wait_time}s...")
                     time.sleep(wait_time)
                 logging.info(f"    {nombre}: Lote {lote_num}/{total_lotes} ({len(lote)} registros)...")
-                data = {nombre: lote, "incremental": True}
-                json_data = json.dumps(data, default=json_serial)
+                json_data = json.dumps(payload, default=json_serial)
                 response = requests.post(f"{TARGET_BASE_URL}/sync", data=json_data,
-                    headers={'Content-Type': 'application/json', 'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=300)
+                    headers={
+                        'Content-Type': 'application/json',
+                        'X-Bridge-Api-Key': BRIDGE_API_KEY,
+                        'X-Idempotency-Key': batch_id
+                    }, timeout=300)
                 if response.status_code == 200:
                     enviados += len(lote)
+                    entregado = True
                     break
                 elif response.status_code in [502, 503, 504]:
                     logging.warning(f"    Timeout servidor (HTTP {response.status_code})")
@@ -273,6 +346,8 @@ def enviar_en_lotes(nombre, registros, batch_size=5000):
             except Exception as e:
                 logging.error(f"    Error enviando lote {lote_num}: {e}")
                 break
+        if not entregado:
+            _guardar_outbox(payload, batch_id, nombre, f"Fallo tras 3 intentos en lote {lote_num}/{total_lotes}")
     return True, enviados
 
 QUERY_AJUSTES = """SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
@@ -409,6 +484,7 @@ def ejecutar_sincronizacion():
     fecha_vtas_str = None
 
     try:
+        reprocesar_outbox()
         sync_info = get_sync_info()
         conn = pyodbc.connect(CONN_STR, timeout=30)
         conn.timeout = 120
@@ -493,6 +569,10 @@ def ejecutar_sincronizacion():
         enviar_notificacion_error(str(e))
 
 if __name__ == "__main__":
+    if not BRIDGE_API_KEY:
+        logging.error("BRIDGE_API_KEY no configurada. Definila en bridge_config.ini o variable de entorno.")
+        sys.exit(1)
+
     if "--ahora" in sys.argv:
         ejecutar_sincronizacion()
         if "--reporte" in sys.argv: enviar_reporte_semanal()
@@ -513,6 +593,8 @@ if __name__ == "__main__":
         schedule.every().monday.at("09:00").do(enviar_recordatorios_muestreo)
 
         logging.info("Servicio iniciado - Horarios programados:")
+        logging.info(f"  Destino API: {TARGET_BASE_URL}")
+        logging.info(f"  Outbox resiliente: {'ACTIVO' if OUTBOX_ENABLED else 'DESACTIVADO'} ({OUTBOX_DIR})")
         logging.info("  Sync datos: Lun-Sáb 07:00")
         logging.info("  Reporte semanal: Lunes 09:00")
         logging.info("  Recordatorios muestreo: Lunes 09:00")

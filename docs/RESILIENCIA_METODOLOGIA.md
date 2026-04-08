@@ -77,3 +77,4 @@ Si una tarea requiere alguna de estas acciones:
 - `RAILWAY_DEPLOY.md`
 - `docs/CHECKLIST_CAMBIOS_SEGUROS.md`
 - `docs/RUNBOOK_INCIDENTES.md`
+- `docs/MONITOREO_ALERTAS.md`

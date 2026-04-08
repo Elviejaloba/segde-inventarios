@@ -9,6 +9,17 @@ import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } f
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
   dropbox.initializeDropbox();
+  const SYNC_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+  const syncIdempotencyCache = new Map<string, { state: "processing" | "done"; expiresAt: number; response?: any }>();
+
+  function cleanupSyncIdempotencyCache() {
+    const now = Date.now();
+    for (const [key, entry] of syncIdempotencyCache.entries()) {
+      if (entry.expiresAt <= now) {
+        syncIdempotencyCache.delete(key);
+      }
+    }
+  }
 
   // Rutas API básicas
   app.get('/api/health', (req, res) => {
@@ -331,6 +342,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/sync', async (req: Request, res: Response) => {
     if (!verificarBridgeApiKey(req, res)) return;
+    const idempotencyKey = (req.headers['x-idempotency-key'] as string | undefined)?.trim();
+    cleanupSyncIdempotencyCache();
+    if (idempotencyKey) {
+      const cached = syncIdempotencyCache.get(idempotencyKey);
+      if (cached?.state === "done" && cached.response) {
+        return res.json({ ...cached.response, duplicate: true, idempotencyKey });
+      }
+      if (cached?.state === "processing") {
+        return res.status(409).json({ error: 'Sync already in progress for this idempotency key', idempotencyKey });
+      }
+      syncIdempotencyCache.set(idempotencyKey, {
+        state: "processing",
+        expiresAt: Date.now() + SYNC_IDEMPOTENCY_TTL_MS,
+      });
+    }
+
     try {
       const { ajustes, costos, ventas, incremental } = req.body;
       const results: any = { success: true, timestamp: new Date().toISOString() };
@@ -349,9 +376,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const count = await storage.syncVentas(ventas, incremental !== false);
         results.ventas = { synced: count };
       }
+
+      if (idempotencyKey) {
+        syncIdempotencyCache.set(idempotencyKey, {
+          state: "done",
+          expiresAt: Date.now() + SYNC_IDEMPOTENCY_TTL_MS,
+          response: results,
+        });
+      }
       
       res.json(results);
     } catch (error) {
+      if (idempotencyKey) {
+        syncIdempotencyCache.delete(idempotencyKey);
+      }
       console.error('Error syncing data:', error);
       res.status(500).json({ error: 'Failed to sync data' });
     }
