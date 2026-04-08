@@ -63,6 +63,19 @@ python .\bridge_ajustes_costos.py
    - `GET /api/health`
    - Bridge sync endpoint with `X-Bridge-Api-Key`
 
+## 4.1) Autodeploy with GitHub flow
+
+Use branch flow:
+- `dev` for ongoing work
+- `main` for production
+
+Recommended sequence:
+1. Push changes to `dev`
+2. Open PR `dev -> main`
+3. Wait for CI checks
+4. Merge PR
+5. Railway deploys automatically from `main`
+
 ## 5) Important security cleanup before publish
 
 - Rotate any leaked credentials (API keys, SMTP password, SQL credentials, Dropbox token).
