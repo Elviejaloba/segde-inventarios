@@ -327,12 +327,15 @@ export default function ReportesPage() {
     setShowCostoReposicion(false);
   };
 
-  const filteredData = analisis?.detalle?.filter(item => {
+  const resumenVisible = (analisis?.resumen || []).filter((item: any) => item.sucursal !== "TEST");
+  const detalleVisible = (analisis?.detalle || []).filter((item: any) => item.sucursal !== "TEST");
+
+  const filteredData = detalleVisible.filter(item => {
     const matchesSearch = searchTerm === "" || 
       item.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.articulo?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
-  }) || [];
+  });
 
   const sortedData = [...filteredData].sort((a, b) => {
     switch (sortBy) {
@@ -347,10 +350,10 @@ export default function ReportesPage() {
     }
   });
 
-  const totalValorizado = analisis?.resumen?.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
-  const totalVentas = analisis?.resumen?.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
-  const articulosConAlerta = (analisis as any)?.totales?.totalAlertas || 0;
-  const totalArticulos = (analisis as any)?.totales?.totalArticulos || 0;
+  const totalValorizado = resumenVisible.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
+  const totalVentas = resumenVisible.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
+  const articulosConAlerta = detalleVisible.filter((item) => item.alertaPerdida).length || 0;
+  const totalArticulos = detalleVisible.length || 0;
 
   const handleVerHistorial = (codigo: string) => {
     setSelectedCodigo(codigo);
@@ -391,7 +394,7 @@ export default function ReportesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas</SelectItem>
-              {analisis?.resumen?.map((item: any) => (
+              {resumenVisible.map((item: any) => (
                 <SelectItem key={item.sucursal} value={item.sucursal}>{item.sucursal}</SelectItem>
               ))}
             </SelectContent>
@@ -820,7 +823,7 @@ export default function ReportesPage() {
         </Card>
       )}
 
-      {analisis?.resumen && analisis.resumen.length > 0 && (
+      {resumenVisible.length > 0 && (
         <Card data-testid="tabla-resumen">
           <CardHeader className="p-3 sm:p-6">
             <div className="flex items-center justify-between gap-2">
@@ -883,7 +886,7 @@ export default function ReportesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analisis.resumen.map((item: any) => {
+                  {resumenVisible.map((item: any) => {
                     const costData = analisisCosto?.resumen?.find(c => c.sucursal === item.sucursal);
                     return (
                       <TableRow key={item.sucursal} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedSucursal(item.sucursal)}>
