@@ -13,12 +13,36 @@ from datetime import datetime, time as dt_time, timedelta
 # ==============================================================
 # CONFIGURACIÓN DE CONEXIÓN SQL SERVER (TANGO)
 # ==============================================================
+def env_or_default(name, default):
+    value = os.environ.get(name)
+    return value if value not in (None, "") else default
+
+
+def env_to_int(name, default):
+    value = os.environ.get(name)
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        print(f"[WARN] {name} no es un entero valido ({value}), usando {default}")
+        return default
+
+
+TARGET_BASE_URL = env_or_default("TARGET_BASE_URL", "http://localhost:5000").rstrip("/")
+BRIDGE_API_KEY = env_or_default("BRIDGE_API_KEY", "").strip()
+
+TANGO_SERVER = env_or_default("TANGO_SERVER", "tangoserver")
+TANGO_DATABASE = env_or_default("TANGO_DATABASE", "crisa_real1")
+TANGO_USER = env_or_default("TANGO_USER", "Axoft")
+TANGO_PASSWORD = env_or_default("TANGO_PASSWORD", "Axoft")
+
 conn_str = (
     "Driver={SQL Server};"
-    "Server=tangoserver;"
-    "Database=crisa_real1;"
-    "UID=Axoft;"
-    "PWD=Axoft;"
+    f"Server={TANGO_SERVER};"
+    f"Database={TANGO_DATABASE};"
+    f"UID={TANGO_USER};"
+    f"PWD={TANGO_PASSWORD};"
 )
 
 # ==============================================================
@@ -26,14 +50,14 @@ conn_str = (
 # ==============================================================
 
 # URL de PRODUCCIÓN:
-REPL_URL = "https://seguimientodeinv.replit.app"
+SYNC_INTERVAL = env_to_int("SYNC_INTERVAL", 300)
+BATCH_SIZE = env_to_int("BRIDGE_BATCH_SIZE", 5000)
+MAX_RETRIES = env_to_int("BRIDGE_MAX_RETRIES", 3)
+REQUEST_TIMEOUT_SECONDS = env_to_int("BRIDGE_REQUEST_TIMEOUT_SECONDS", 300)
 
 # ==============================================================
 # CONFIGURACIÓN DE SINCRONIZACIÓN
 # ==============================================================
-SYNC_INTERVAL = 300      # 5 minutos entre sincronizaciones
-BATCH_SIZE = 5000        # Registros por lote (aumentado para velocidad)
-MAX_RETRIES = 3          # Reintentos por lote
 
 # Horario de sincronización (opcional)
 SYNC_HORARIO_INICIO = dt_time(6, 0)   # 6:00 AM
@@ -56,12 +80,10 @@ def esta_en_horario_sync():
     return SYNC_HORARIO_INICIO <= ahora <= SYNC_HORARIO_FIN
 
 
-BRIDGE_API_KEY = "6dac374f2929194d8a220fa59dc012bfc6e0d3717b5cb3a7521749e8d2ec7a86"
-
 def get_sync_info():
     """Obtener información de sincronización desde Replit"""
     try:
-        response = requests.get(f"{REPL_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
+        response = requests.get(f"{TARGET_BASE_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
         if response.status_code == 200:
             return response.json()
     except Exception as e:
@@ -96,10 +118,10 @@ def enviar_en_lotes(nombre, registros, batch_size=2000):
                 json_data = json.dumps(data, default=json_serial)
                 
                 response = requests.post(
-                    f"{REPL_URL}/sync",
+                    f"{TARGET_BASE_URL}/sync",
                     data=json_data,
                     headers={'Content-Type': 'application/json', 'X-Bridge-Api-Key': BRIDGE_API_KEY},
-                    timeout=300  # 5 minutos para lotes grandes
+                    timeout=REQUEST_TIMEOUT_SECONDS
                 )
                 
                 if response.status_code == 200:
@@ -284,19 +306,24 @@ def main():
         "ultima_fecha_ventas": None,
         "error": None
     }
+
+    if not BRIDGE_API_KEY:
+        resultado["error"] = "BRIDGE_API_KEY no configurada. Defina la variable de entorno BRIDGE_API_KEY."
+        print(f"[ERROR] {resultado['error']}")
+        return resultado
     
     try:
         print("=" * 60)
         print("BRIDGE SQL - Sincronización AJUSTES, COSTOS y VENTAS")
         print("=" * 60)
-        print(f"Servidor: tangoserver")
-        print(f"Base de datos: crisa_real1")
-        print(f"Destino: {REPL_URL}")
+        print(f"Servidor: {TANGO_SERVER}")
+        print(f"Base de datos: {TANGO_DATABASE}")
+        print(f"Destino: {TARGET_BASE_URL}")
         print("=" * 60)
         
         # Obtener info de última sincronización
         sync_info = get_sync_info()
-        print(f"  Estado actual en Replit:")
+        print(f"  Estado actual en servidor:")
         print(f"    - Ajustes: {sync_info.get('total_ajustes', 0)}")
         print(f"    - Costos: {sync_info.get('total_costos', 0)}")
         print(f"    - Ventas: {sync_info.get('total_ventas', 0)}")

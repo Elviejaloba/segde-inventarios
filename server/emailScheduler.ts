@@ -13,6 +13,7 @@ const DESTINATARIOS_REPORTE = [
 ];
 
 const NOTIFICACION_ERRORES = "lreyes@textilcrisa.com";
+const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "http://localhost:5000";
 
 // Configuración de emails por sucursal para recordatorios de muestreo
 const EMAILS_SUCURSALES: Record<string, string[]> = {
@@ -734,7 +735,7 @@ html = """
     </div>
     
     <div style="text-align: center; margin: 25px 0;">
-      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
+      <a href="${PUBLIC_APP_URL}/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
         📋 Ir al Sistema de Muestreo
       </a>
     </div>
@@ -1025,7 +1026,7 @@ html = """
     </div>
 
     <div style="text-align: center; margin: 25px 0;">
-      <a href="https://seguimientodeinv.replit.app/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
+      <a href="${PUBLIC_APP_URL}/" style="display: inline-block; background: #4a5d6a; color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 15px;">
         📋 Ir al Sistema de Muestreo
       </a>
     </div>

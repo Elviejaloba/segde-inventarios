@@ -6,6 +6,9 @@ import cors from 'cors';
 import compression from 'compression';
 
 const app = express();
+const PORT = Number(process.env.PORT || 5000);
+const HOST = process.env.HOST || "0.0.0.0";
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(compression());
 
@@ -13,7 +16,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cors());
 
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   app.use((req, res, next) => {
     if (req.path.startsWith('/assets/') && (req.path.endsWith('.js') || req.path.endsWith('.css') || req.path.endsWith('.woff2') || req.path.endsWith('.woff'))) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -39,7 +42,7 @@ async function startServer() {
     await registerRoutes(app);
     
     // 2. Configurar Vite (que maneja el frontend y fallback)
-    if (process.env.NODE_ENV !== 'production') {
+    if (!isProduction) {
       log('Configurando Vite...');
       await setupVite(app, server);
     } else {
@@ -54,8 +57,8 @@ async function startServer() {
 }
 
 // Inicializar el servidor
-const server = app.listen(5000, '0.0.0.0', () => {
-  log('Servidor iniciado en puerto 5000');
+const server = app.listen(PORT, HOST, () => {
+  log(`Servidor iniciado en ${HOST}:${PORT}`);
   // Configurar todo después de que el servidor esté en funcionamiento
   startServer();
   // Schedulers de email desactivados manualmente

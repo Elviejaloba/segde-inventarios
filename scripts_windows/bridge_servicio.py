@@ -16,7 +16,6 @@ from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
-REPL_URL = "https://seguimientodeinv.replit.app"
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bridge_config.ini")
 
 def cargar_configuracion():
@@ -26,19 +25,20 @@ def cargar_configuracion():
     return config
 
 _config = cargar_configuracion()
-BRIDGE_API_KEY = _config.get('bridge', 'api_key', fallback='')
-SMTP_PASSWORD = _config.get('bridge', 'smtp_password', fallback='')
+TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", _config.get('bridge', 'base_url', fallback='http://localhost:5000')).rstrip('/')
+BRIDGE_API_KEY = os.getenv("BRIDGE_API_KEY", _config.get('bridge', 'api_key', fallback='')).strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", _config.get('bridge', 'smtp_password', fallback=''))
 _tango = _config['tango'] if 'tango' in _config else {}
-CONN_STR = f"Driver={{SQL Server}};Server={_tango.get('server', 'tangoserver')};Database={_tango.get('database', 'crisa_real1')};UID={_tango.get('user', 'Axoft')};PWD={_tango.get('password', 'Axoft')};"
+CONN_STR = f"Driver={{SQL Server}};Server={os.getenv('TANGO_SERVER', _tango.get('server', 'tangoserver'))};Database={os.getenv('TANGO_DATABASE', _tango.get('database', 'crisa_real1'))};UID={os.getenv('TANGO_USER', _tango.get('user', 'Axoft'))};PWD={os.getenv('TANGO_PASSWORD', _tango.get('password', 'Axoft'))};"
 
-SMTP_SERVER = "smtp.textilcrisa.com"
-SMTP_PORT = 26
-SMTP_USER = "reportes@textilcrisa.com"
-NOTIFICACION_ERRORES = "lreyes@textilcrisa.com"
+SMTP_SERVER = _config.get('bridge', 'smtp_server', fallback='smtp.textilcrisa.com')
+SMTP_PORT = _config.getint('bridge', 'smtp_port', fallback=26)
+SMTP_USER = _config.get('bridge', 'smtp_user', fallback='reportes@textilcrisa.com')
+NOTIFICACION_ERRORES = _config.get('bridge', 'notificacion_errores', fallback='lreyes@textilcrisa.com')
 
 def get_sync_info():
     try:
-        r = requests.get(f"{REPL_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
+        r = requests.get(f"{TARGET_BASE_URL}/sync-info", headers={'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=30)
         return r.json() if r.status_code == 200 else {}
     except: return {}
 
@@ -208,7 +208,7 @@ def enviar_reporte_semanal():
     """Llama al endpoint del servidor para enviar el reporte semanal de ajustes"""
     try:
         logging.info("[REPORTE] Enviando reporte semanal...")
-        r = requests.post(f"{REPL_URL}/api/bridge/reporte-semanal",
+        r = requests.post(f"{TARGET_BASE_URL}/api/bridge/reporte-semanal",
                           headers={'X-Bridge-Api-Key': BRIDGE_API_KEY, 'Content-Type': 'application/json'},
                           timeout=120)
         if r.status_code == 200:
@@ -222,7 +222,7 @@ def enviar_recordatorios_muestreo():
     """Llama al endpoint del servidor para enviar recordatorios de muestreo a sucursales"""
     try:
         logging.info("[MUESTREO] Enviando recordatorios de muestreo...")
-        r = requests.post(f"{REPL_URL}/api/bridge/recordatorios-muestreo",
+        r = requests.post(f"{TARGET_BASE_URL}/api/bridge/recordatorios-muestreo",
                           headers={'X-Bridge-Api-Key': BRIDGE_API_KEY, 'Content-Type': 'application/json'},
                           timeout=120)
         if r.status_code == 200:
@@ -256,7 +256,7 @@ def enviar_en_lotes(nombre, registros, batch_size=5000):
                 logging.info(f"    {nombre}: Lote {lote_num}/{total_lotes} ({len(lote)} registros)...")
                 data = {nombre: lote, "incremental": True}
                 json_data = json.dumps(data, default=json_serial)
-                response = requests.post(f"{REPL_URL}/sync", data=json_data,
+                response = requests.post(f"{TARGET_BASE_URL}/sync", data=json_data,
                     headers={'Content-Type': 'application/json', 'X-Bridge-Api-Key': BRIDGE_API_KEY}, timeout=300)
                 if response.status_code == 200:
                     enviados += len(lote)

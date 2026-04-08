@@ -21,7 +21,7 @@ SMTP_USER = "reportes@textilcrisa.com"
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 # URL del dashboard
-DASHBOARD_URL = "https://seguimientodeinv.replit.app"
+DASHBOARD_URL = os.environ.get("PUBLIC_APP_URL", "http://localhost:5000")
 
 # Colores corporativos
 COLORS = {

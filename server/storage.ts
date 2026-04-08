@@ -2,11 +2,15 @@ import { type Ajuste, type InsertAjuste } from "@shared/schema";
 import { neon } from "@neondatabase/serverless";
 
 const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is not set");
+const runningWithoutDb = !databaseUrl;
+
+if (runningWithoutDb) {
+  console.warn("[Storage] DATABASE_URL is not set. Running in no-DB mode with empty results.");
 }
 
-const sql = neon(databaseUrl);
+const sql: any = databaseUrl
+  ? neon(databaseUrl)
+  : (async (..._args: any[]) => []);
 
 // modify the interface with any CRUD methods
 // you might need

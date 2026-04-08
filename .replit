@@ -63,4 +63,4 @@ integrations = ["javascript_stripe:1.0.0", "javascript_websocket:1.0.0", "fireba
 [userenv]
 
 [userenv.shared]
-DROPBOX_REFRESH_TOKEN_CORRECT = "cPpAvUn6NuIAAAAAAAAAAVeI5KZ0yiMAfBbOFGwGr3Ar2WCN-eleDXCtAbtM6_nx"
+# Define secrets in Railway/Replit environment settings (do not commit values).

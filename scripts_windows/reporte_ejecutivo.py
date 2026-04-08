@@ -10,6 +10,7 @@ import smtplib
 import json
 import urllib.request
 import calendar
+import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -20,10 +21,10 @@ from email.mime.multipart import MIMEMultipart
 SMTP_SERVER = "smtp.textilcrisa.com"
 SMTP_PORT = 26
 SMTP_USER = "reportes@textilcrisa.com"
-SMTP_PASSWORD = "TU_PASSWORD_AQUI"  # <-- CAMBIAR
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 FIREBASE_URL = "https://check-d1753-default-rtdb.firebaseio.com/branches.json"
-APP_URL = "https://seguimientodeinv.replit.app/"
+APP_URL = os.environ.get("PUBLIC_APP_URL", "http://localhost:5000/")
 
 DESTINATARIOS = [
     "adolfotripodi@textilcrisa.com",
