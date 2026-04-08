@@ -1,5 +1,7 @@
 import { type Ajuste, type InsertAjuste } from "@shared/schema";
-import { neon } from "@neondatabase/serverless";
+import pg from "pg";
+
+const { Pool } = pg;
 
 const databaseUrl = process.env.DATABASE_URL;
 const runningWithoutDb = !databaseUrl;
@@ -8,14 +10,53 @@ if (runningWithoutDb) {
   console.warn("[Storage] DATABASE_URL is not set. Running in no-DB mode with empty results.");
 }
 
-const sql: any = databaseUrl
-  ? neon(databaseUrl)
-  : (async (..._args: any[]) => []);
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1")
+        ? false
+        : { rejectUnauthorized: false },
+    })
+  : null;
+
+type SqlLike = {
+  (query: string, params?: any[]): Promise<any[]>;
+  (strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
+};
+
+const sql: SqlLike = (async (first: string | TemplateStringsArray, ...rest: any[]): Promise<any[]> => {
+  if (!pool) return [];
+
+  if (typeof first === "string") {
+    const params = Array.isArray(rest[0]) ? rest[0] : [];
+    const result = await pool.query(first, params);
+    return result.rows;
+  }
+
+  if (Array.isArray(first) && "raw" in first) {
+    let text = "";
+    const values: any[] = [];
+
+    for (let i = 0; i < first.length; i++) {
+      text += first[i];
+      if (i < rest.length) {
+        values.push(rest[i]);
+        text += `$${values.length}`;
+      }
+    }
+
+    const result = await pool.query(text, values);
+    return result.rows;
+  }
+
+  return [];
+}) as SqlLike;
 
 // modify the interface with any CRUD methods
 // you might need
 
 export interface IStorage {
+  ensureSchema(): Promise<void>;
   // Ajustes methods
   getAjustes(sucursal?: string): Promise<Ajuste[]>;
   getAjustesBySucursal(sucursal: string): Promise<Ajuste[]>;
@@ -36,6 +77,89 @@ export interface IStorage {
 }
 
 export class PostgreSQLStorage implements IStorage {
+  async ensureSchema(): Promise<void> {
+    if (runningWithoutDb) return;
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS ajustes_sucursales (
+        id BIGSERIAL PRIMARY KEY,
+        "Sucursal" TEXT,
+        "Comprobante" TEXT,
+        "NroComprobante" TEXT,
+        "FechaMovimiento" TIMESTAMP,
+        "TipoMovimiento" TEXT,
+        "Codigo" TEXT NOT NULL,
+        "Articulo" TEXT,
+        "Diferencia" NUMERIC DEFAULT 0,
+        "UnidadMedida" TEXT
+      );
+    `);
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS costos_articulos (
+        id BIGSERIAL PRIMARY KEY,
+        "Codigo" TEXT NOT NULL UNIQUE,
+        "Descripcion" TEXT,
+        "Sinonimo" TEXT,
+        "CodigoFamilia" TEXT,
+        "CodigoBase" TEXT,
+        "DescripcionBase" TEXT,
+        "Saldo" NUMERIC DEFAULT 0,
+        "Cotizacion" NUMERIC DEFAULT 0,
+        "Costo" NUMERIC DEFAULT 0,
+        "SaldoValorizado" NUMERIC DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS ventas_sucursales (
+        id BIGSERIAL PRIMARY KEY,
+        "Fecha" DATE NOT NULL,
+        "Sucursal" TEXT NOT NULL,
+        "CodigoFamilia" TEXT,
+        "DescripcionFamilia" TEXT,
+        "Codigo" TEXT NOT NULL,
+        "Sinonimo" TEXT,
+        "Descripcion" TEXT,
+        "CantidadVenta" NUMERIC DEFAULT 0,
+        "PrecioConIVA" NUMERIC DEFAULT 0,
+        "ImporteConIVA" NUMERIC DEFAULT 0
+      );
+    `);
+
+    await sql(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_ajustes_suc_comp_codigo
+      ON ajustes_sucursales ("Sucursal", "NroComprobante", "Codigo")
+      WHERE "NroComprobante" IS NOT NULL;
+    `);
+
+    await sql(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_fecha_sucursal_codigo
+      ON ventas_sucursales ("Fecha", "Sucursal", "Codigo");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ajustes_sucursal_fecha
+      ON ajustes_sucursales ("Sucursal", "FechaMovimiento");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ajustes_codigo
+      ON ajustes_sucursales ("Codigo");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ventas_sucursal_fecha
+      ON ventas_sucursales ("Sucursal", "Fecha");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ventas_codigo
+      ON ventas_sucursales ("Codigo");
+    `);
+  }
+
   async getAjustes(sucursal?: string): Promise<Ajuste[]> {
     try {
       let query = 'SELECT * FROM ajustes_sucursales';
@@ -283,7 +407,7 @@ export class PostgreSQLStorage implements IStorage {
             EXTRACT(YEAR FROM a."FechaMovimiento") as anio
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
         ),
@@ -434,7 +558,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
@@ -459,7 +583,7 @@ export class PostgreSQLStorage implements IStorage {
               SUM(a."Diferencia") as net_diff
             FROM ajustes_sucursales a
             WHERE a."FechaMovimiento" IS NOT NULL
-            AND a."Sucursal" != 'CRISA 3'
+            AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
             ${sucursal ? 'AND a."Sucursal" = $1' : ''}
             ${periodoFilter}
             GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), COALESCE(a."UnidadMedida", 'UN')
@@ -479,7 +603,7 @@ export class PostgreSQLStorage implements IStorage {
         ),
         codigos_con_ajuste AS (
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
-          FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "Sucursal" != 'CRISA 3'
+          FROM ajustes_sucursales WHERE "FechaMovimiento" IS NOT NULL AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${periodoFilterNoAlias}
         ),
         ventas_por_sucursal AS (
@@ -524,7 +648,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY a."Sucursal", TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', ''))
@@ -560,7 +684,7 @@ export class PostgreSQLStorage implements IStorage {
           COUNT(DISTINCT TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', ''))) FILTER (WHERE EXTRACT(YEAR FROM "FechaMovimiento") = 2026) as articulos_2026
         FROM ajustes_sucursales
         WHERE "FechaMovimiento" IS NOT NULL
-        AND "Sucursal" != 'CRISA 3'
+        AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
         ${sucursal ? 'AND "Sucursal" = $1' : ''}
         ${periodoFilterNoAlias}
       `;
@@ -574,7 +698,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(a."Diferencia") as total_diferencia
           FROM ajustes_sucursales a
           WHERE a."FechaMovimiento" IS NOT NULL
-          AND a."Sucursal" != 'CRISA 3'
+          AND a."Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND a."Sucursal" = $1' : ''}
           ${periodoFilter}
           GROUP BY EXTRACT(YEAR FROM a."FechaMovimiento"), TRIM(REGEXP_REPLACE(a."Codigo", '\\s*\\d{2}$', '')), a."Sucursal"
@@ -605,7 +729,7 @@ export class PostgreSQLStorage implements IStorage {
           SELECT DISTINCT "Sucursal", TRIM(REGEXP_REPLACE("Codigo", '\\s*\\d{2}$', '')) as codigo_base
           FROM ajustes_sucursales
           WHERE "FechaMovimiento" IS NOT NULL
-          AND "Sucursal" != 'CRISA 3'
+          AND "Sucursal" NOT IN ('CRISA 3', 'TEST')
           ${sucursal ? 'AND "Sucursal" = $1' : ''}
           ${periodoFilterNoAlias}
         )
@@ -694,11 +818,11 @@ export class PostgreSQLStorage implements IStorage {
         ),
         costos_base AS (
           SELECT 
-            "CodArticulo",
+            "Codigo",
             AVG("Costo") as costo_promedio
           FROM costos_articulos
           WHERE "Costo" > 0
-          GROUP BY "CodArticulo"
+          GROUP BY "Codigo"
         ),
         ajustes_valorizado AS (
           SELECT 
@@ -706,7 +830,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(ABS(ab.total_diferencia)) as total_unidades,
             SUM(ABS(ab.total_diferencia) * COALESCE(cb.costo_promedio, 0)) as total_costo_reposicion
           FROM ajustes_base ab
-          LEFT JOIN costos_base cb ON ab.codigo_base = cb."CodArticulo"
+          LEFT JOIN costos_base cb ON ab.codigo_base = cb."Codigo"
           GROUP BY ab."Sucursal"
         )
         SELECT 

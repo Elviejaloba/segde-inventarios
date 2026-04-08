@@ -27,3 +27,10 @@
 2. Set **Production Branch** to `main`.
 3. Keep autodeploy enabled.
 4. Configure all environment variables from `.env.example`.
+
+## Resilience controls
+
+1. Use PR checklist in `.github/PULL_REQUEST_TEMPLATE.md`.
+2. Follow `docs/CHECKLIST_CAMBIOS_SEGUROS.md` before merge/deploy.
+3. For incidents, execute `docs/RUNBOOK_INCIDENTES.md`.
+4. Keep `docs/RESILIENCIA_METODOLOGIA.md` as operational baseline.

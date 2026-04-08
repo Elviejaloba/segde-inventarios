@@ -15,3 +15,5 @@ __pycache__/
 attached_assets/
 .config/
 .local/
+.playwright-cli/
+output/

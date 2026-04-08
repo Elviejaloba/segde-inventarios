@@ -9,6 +9,22 @@ import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } f
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
   dropbox.initializeDropbox();
+  try {
+    await storage.ensureSchema();
+  } catch (error) {
+    console.error("[Storage] Could not ensure DB schema on startup:", error);
+  }
+  const SYNC_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+  const syncIdempotencyCache = new Map<string, { state: "processing" | "done"; expiresAt: number; response?: any }>();
+
+  function cleanupSyncIdempotencyCache() {
+    const now = Date.now();
+    for (const [key, entry] of syncIdempotencyCache.entries()) {
+      if (entry.expiresAt <= now) {
+        syncIdempotencyCache.delete(key);
+      }
+    }
+  }
 
   // Rutas API básicas
   app.get('/api/health', (req, res) => {
@@ -135,7 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(files);
     } catch (error) {
       console.error('Error listing muestreos:', error);
-      res.status(500).json({ error: 'Failed to list files' });
+      // In local/dev or if Dropbox is not configured, avoid breaking the UI.
+      res.json([]);
     }
   });
 
@@ -331,6 +348,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/sync', async (req: Request, res: Response) => {
     if (!verificarBridgeApiKey(req, res)) return;
+    const idempotencyKey = (req.headers['x-idempotency-key'] as string | undefined)?.trim();
+    cleanupSyncIdempotencyCache();
+    if (idempotencyKey) {
+      const cached = syncIdempotencyCache.get(idempotencyKey);
+      if (cached?.state === "done" && cached.response) {
+        return res.json({ ...cached.response, duplicate: true, idempotencyKey });
+      }
+      if (cached?.state === "processing") {
+        return res.status(409).json({ error: 'Sync already in progress for this idempotency key', idempotencyKey });
+      }
+      syncIdempotencyCache.set(idempotencyKey, {
+        state: "processing",
+        expiresAt: Date.now() + SYNC_IDEMPOTENCY_TTL_MS,
+      });
+    }
+
     try {
       const { ajustes, costos, ventas, incremental } = req.body;
       const results: any = { success: true, timestamp: new Date().toISOString() };
@@ -349,9 +382,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const count = await storage.syncVentas(ventas, incremental !== false);
         results.ventas = { synced: count };
       }
+
+      if (idempotencyKey) {
+        syncIdempotencyCache.set(idempotencyKey, {
+          state: "done",
+          expiresAt: Date.now() + SYNC_IDEMPOTENCY_TTL_MS,
+          response: results,
+        });
+      }
       
       res.json(results);
     } catch (error) {
+      if (idempotencyKey) {
+        syncIdempotencyCache.delete(idempotencyKey);
+      }
       console.error('Error syncing data:', error);
       res.status(500).json({ error: 'Failed to sync data' });
     }
@@ -404,18 +448,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/ultima-actualizacion', async (req, res) => {
     try {
-      const { neon } = await import("@neondatabase/serverless");
-      const sql = neon(process.env.DATABASE_URL!);
-      const result = await sql`
-        SELECT 
-          (SELECT MAX("FechaMovimiento") FROM ajustes_sucursales)::text as ajustes_fecha,
-          (SELECT MAX(updated_at) FROM costos_articulos)::text as costos_fecha,
-          (SELECT MAX("Fecha") FROM ventas_sucursales)::text as ventas_fecha,
-          (SELECT COUNT(*) FROM ajustes_sucursales)::text as ajustes_total,
-          (SELECT COUNT(*) FROM costos_articulos)::text as costos_total,
-          (SELECT COUNT(*) FROM ventas_sucursales)::text as ventas_total
-      `;
-      res.json(result[0]);
+      if (!process.env.DATABASE_URL) {
+        return res.json({
+          ajustes_fecha: null,
+          costos_fecha: null,
+          ventas_fecha: null,
+          ajustes_total: "0",
+          costos_total: "0",
+          ventas_total: "0",
+        });
+      }
+
+      const info = await storage.getSyncInfo();
+      res.json({
+        ajustes_fecha: info.ultima_fecha_ajustes ?? null,
+        costos_fecha: info.ultima_sync_costos ?? null,
+        ventas_fecha: info.ultima_fecha_ventas ?? null,
+        ajustes_total: String(info.total_ajustes ?? 0),
+        costos_total: String(info.total_costos ?? 0),
+        ventas_total: String(info.total_ventas ?? 0),
+      });
     } catch (error) {
       console.error('Error getting ultima actualizacion:', error);
       res.status(500).json({ error: 'Internal server error' });
