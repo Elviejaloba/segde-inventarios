@@ -818,11 +818,11 @@ export class PostgreSQLStorage implements IStorage {
         ),
         costos_base AS (
           SELECT 
-            "CodArticulo",
+            "Codigo",
             AVG("Costo") as costo_promedio
           FROM costos_articulos
           WHERE "Costo" > 0
-          GROUP BY "CodArticulo"
+          GROUP BY "Codigo"
         ),
         ajustes_valorizado AS (
           SELECT 
@@ -830,7 +830,7 @@ export class PostgreSQLStorage implements IStorage {
             SUM(ABS(ab.total_diferencia)) as total_unidades,
             SUM(ABS(ab.total_diferencia) * COALESCE(cb.costo_promedio, 0)) as total_costo_reposicion
           FROM ajustes_base ab
-          LEFT JOIN costos_base cb ON ab.codigo_base = cb."CodArticulo"
+          LEFT JOIN costos_base cb ON ab.codigo_base = cb."Codigo"
           GROUP BY ab."Sucursal"
         )
         SELECT 
