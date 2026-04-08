@@ -9,6 +9,11 @@ import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } f
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
   dropbox.initializeDropbox();
+  try {
+    await storage.ensureSchema();
+  } catch (error) {
+    console.error("[Storage] Could not ensure DB schema on startup:", error);
+  }
   const SYNC_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
   const syncIdempotencyCache = new Map<string, { state: "processing" | "done"; expiresAt: number; response?: any }>();
 
@@ -454,18 +459,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { neon } = await import("@neondatabase/serverless");
-      const sql = neon(process.env.DATABASE_URL!);
-      const result = await sql`
-        SELECT 
-          (SELECT MAX("FechaMovimiento") FROM ajustes_sucursales)::text as ajustes_fecha,
-          (SELECT MAX(updated_at) FROM costos_articulos)::text as costos_fecha,
-          (SELECT MAX("Fecha") FROM ventas_sucursales)::text as ventas_fecha,
-          (SELECT COUNT(*) FROM ajustes_sucursales)::text as ajustes_total,
-          (SELECT COUNT(*) FROM costos_articulos)::text as costos_total,
-          (SELECT COUNT(*) FROM ventas_sucursales)::text as ventas_total
-      `;
-      res.json(result[0]);
+      const info = await storage.getSyncInfo();
+      res.json({
+        ajustes_fecha: info.ultima_fecha_ajustes ?? null,
+        costos_fecha: info.ultima_sync_costos ?? null,
+        ventas_fecha: info.ultima_fecha_ventas ?? null,
+        ajustes_total: String(info.total_ajustes ?? 0),
+        costos_total: String(info.total_costos ?? 0),
+        ventas_total: String(info.total_ventas ?? 0),
+      });
     } catch (error) {
       console.error('Error getting ultima actualizacion:', error);
       res.status(500).json({ error: 'Internal server error' });

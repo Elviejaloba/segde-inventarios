@@ -1,5 +1,7 @@
 import { type Ajuste, type InsertAjuste } from "@shared/schema";
-import { neon } from "@neondatabase/serverless";
+import pg from "pg";
+
+const { Pool } = pg;
 
 const databaseUrl = process.env.DATABASE_URL;
 const runningWithoutDb = !databaseUrl;
@@ -8,14 +10,53 @@ if (runningWithoutDb) {
   console.warn("[Storage] DATABASE_URL is not set. Running in no-DB mode with empty results.");
 }
 
-const sql: any = databaseUrl
-  ? neon(databaseUrl)
-  : (async (..._args: any[]) => []);
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1")
+        ? false
+        : { rejectUnauthorized: false },
+    })
+  : null;
+
+type SqlLike = {
+  (query: string, params?: any[]): Promise<any[]>;
+  (strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
+};
+
+const sql: SqlLike = (async (first: string | TemplateStringsArray, ...rest: any[]): Promise<any[]> => {
+  if (!pool) return [];
+
+  if (typeof first === "string") {
+    const params = Array.isArray(rest[0]) ? rest[0] : [];
+    const result = await pool.query(first, params);
+    return result.rows;
+  }
+
+  if (Array.isArray(first) && "raw" in first) {
+    let text = "";
+    const values: any[] = [];
+
+    for (let i = 0; i < first.length; i++) {
+      text += first[i];
+      if (i < rest.length) {
+        values.push(rest[i]);
+        text += `$${values.length}`;
+      }
+    }
+
+    const result = await pool.query(text, values);
+    return result.rows;
+  }
+
+  return [];
+}) as SqlLike;
 
 // modify the interface with any CRUD methods
 // you might need
 
 export interface IStorage {
+  ensureSchema(): Promise<void>;
   // Ajustes methods
   getAjustes(sucursal?: string): Promise<Ajuste[]>;
   getAjustesBySucursal(sucursal: string): Promise<Ajuste[]>;
@@ -36,6 +77,89 @@ export interface IStorage {
 }
 
 export class PostgreSQLStorage implements IStorage {
+  async ensureSchema(): Promise<void> {
+    if (runningWithoutDb) return;
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS ajustes_sucursales (
+        id BIGSERIAL PRIMARY KEY,
+        "Sucursal" TEXT,
+        "Comprobante" TEXT,
+        "NroComprobante" TEXT,
+        "FechaMovimiento" TIMESTAMP,
+        "TipoMovimiento" TEXT,
+        "Codigo" TEXT NOT NULL,
+        "Articulo" TEXT,
+        "Diferencia" NUMERIC DEFAULT 0,
+        "UnidadMedida" TEXT
+      );
+    `);
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS costos_articulos (
+        id BIGSERIAL PRIMARY KEY,
+        "Codigo" TEXT NOT NULL UNIQUE,
+        "Descripcion" TEXT,
+        "Sinonimo" TEXT,
+        "CodigoFamilia" TEXT,
+        "CodigoBase" TEXT,
+        "DescripcionBase" TEXT,
+        "Saldo" NUMERIC DEFAULT 0,
+        "Cotizacion" NUMERIC DEFAULT 0,
+        "Costo" NUMERIC DEFAULT 0,
+        "SaldoValorizado" NUMERIC DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await sql(`
+      CREATE TABLE IF NOT EXISTS ventas_sucursales (
+        id BIGSERIAL PRIMARY KEY,
+        "Fecha" DATE NOT NULL,
+        "Sucursal" TEXT NOT NULL,
+        "CodigoFamilia" TEXT,
+        "DescripcionFamilia" TEXT,
+        "Codigo" TEXT NOT NULL,
+        "Sinonimo" TEXT,
+        "Descripcion" TEXT,
+        "CantidadVenta" NUMERIC DEFAULT 0,
+        "PrecioConIVA" NUMERIC DEFAULT 0,
+        "ImporteConIVA" NUMERIC DEFAULT 0
+      );
+    `);
+
+    await sql(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_ajustes_suc_comp_codigo
+      ON ajustes_sucursales ("Sucursal", "NroComprobante", "Codigo")
+      WHERE "NroComprobante" IS NOT NULL;
+    `);
+
+    await sql(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_fecha_sucursal_codigo
+      ON ventas_sucursales ("Fecha", "Sucursal", "Codigo");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ajustes_sucursal_fecha
+      ON ajustes_sucursales ("Sucursal", "FechaMovimiento");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ajustes_codigo
+      ON ajustes_sucursales ("Codigo");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ventas_sucursal_fecha
+      ON ventas_sucursales ("Sucursal", "Fecha");
+    `);
+
+    await sql(`
+      CREATE INDEX IF NOT EXISTS ix_ventas_codigo
+      ON ventas_sucursales ("Codigo");
+    `);
+  }
+
   async getAjustes(sucursal?: string): Promise<Ajuste[]> {
     try {
       let query = 'SELECT * FROM ajustes_sucursales';
