@@ -80,3 +80,10 @@ Recommended sequence:
 
 - Rotate any leaked credentials (API keys, SMTP password, SQL credentials, Dropbox token).
 - Do not commit `.env`, `.replit`, service logs, or `attached_assets/`.
+
+## 6) Resilience documentation (required)
+
+- `docs/RESILIENCIA_METODOLOGIA.md`
+- `docs/CHECKLIST_CAMBIOS_SEGUROS.md`
+- `docs/RUNBOOK_INCIDENTES.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
