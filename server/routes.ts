@@ -146,7 +146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(files);
     } catch (error) {
       console.error('Error listing muestreos:', error);
-      res.status(500).json({ error: 'Failed to list files' });
+      // In local/dev or if Dropbox is not configured, avoid breaking the UI.
+      res.json([]);
     }
   });
 
@@ -442,6 +443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/ultima-actualizacion', async (req, res) => {
     try {
+      if (!process.env.DATABASE_URL) {
+        return res.json({
+          ajustes_fecha: null,
+          costos_fecha: null,
+          ventas_fecha: null,
+          ajustes_total: "0",
+          costos_total: "0",
+          ventas_total: "0",
+        });
+      }
+
       const { neon } = await import("@neondatabase/serverless");
       const sql = neon(process.env.DATABASE_URL!);
       const result = await sql`
