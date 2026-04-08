@@ -6,10 +6,12 @@
 2. `CHECKLIST_CAMBIOS_SEGUROS.md`: checklist previo a merge/deploy.
 3. `RUNBOOK_INCIDENTES.md`: pasos de contencion y recuperacion.
 4. `MONITOREO_ALERTAS.md`: healthcheck y alertas automaticas.
+5. `FLUJO_ACTUALIZACION.md`: flujo operativo de actualizacion segura local -> PR -> main -> Railway.
 
 ## Orden recomendado de uso
 
-1. Planificar cambio: `RESILIENCIA_METODOLOGIA.md`
-2. Ejecutar cambio: `CHECKLIST_CAMBIOS_SEGUROS.md`
-3. Resolver incidente: `RUNBOOK_INCIDENTES.md`
-4. Operar monitoreo: `MONITOREO_ALERTAS.md`
+1. Entender flujo: `FLUJO_ACTUALIZACION.md`
+2. Planificar cambio: `RESILIENCIA_METODOLOGIA.md`
+3. Ejecutar cambio: `CHECKLIST_CAMBIOS_SEGUROS.md`
+4. Resolver incidente: `RUNBOOK_INCIDENTES.md`
+5. Operar monitoreo: `MONITOREO_ALERTAS.md`
