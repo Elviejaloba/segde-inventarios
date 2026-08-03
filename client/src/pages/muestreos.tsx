@@ -55,6 +55,7 @@ const BRANCHES = [
   "T.Lujan",
   "T.Maipu",
   "T.Srafael",
+  "T.GLLEN",
   "Ctro. de Distribucion"
 ];
 
@@ -282,7 +283,12 @@ export default function MuestreosPage() {
     <TooltipProvider>
     <div className="space-y-3 sm:space-y-6">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-base sm:text-2xl font-bold">Muestreos</h1>
+        <div className="space-y-1">
+          <h1 className="text-base sm:text-2xl font-bold">Muestreos</h1>
+          <p className="max-w-2xl text-xs sm:text-sm text-muted-foreground">
+            {'Esta secci\u00f3n sirve para subir, organizar y consultar los archivos de muestreo de cada sucursal.'}
+          </p>
+        </div>
         {ultimaActualizacion && (
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border shrink-0">
             <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
@@ -309,10 +315,16 @@ export default function MuestreosPage() {
                   return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
                 })()}
               </span>
-              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">Últ. actualización</span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">{'Últ. actualización'}</span>
             </div>
           </div>
         )}
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 px-3 py-2 sm:px-4 sm:py-3">
+        <p className="text-[11px] sm:text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{'C\u00f3mo usarlo:'}</span>{' eleg\u00ed la sucursal, adjunt\u00e1 el archivo del muestreo y luego revis\u00e1 o descarg\u00e1 los archivos ya cargados desde el panel de la derecha.'}
+        </p>
       </div>
 
       <div className="grid gap-3 sm:gap-6 md:grid-cols-2">
@@ -323,7 +335,7 @@ export default function MuestreosPage() {
               Subir Archivo
             </CardTitle>
             <CardDescription className="text-[11px] sm:text-sm">
-              Selecciona la sucursal y el archivo de muestreo
+              {'Carg\u00e1 el archivo del relevamiento para dejarlo asociado a una sucursal.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4 space-y-3 sm:space-y-4">
@@ -417,7 +429,7 @@ export default function MuestreosPage() {
               Archivos Subidos
             </CardTitle>
             <CardDescription className="text-[11px] sm:text-sm">
-              Visualiza y descarga cada muestreo
+              {'Consult\u00e1, filtr\u00e1 por sucursal y descarg\u00e1 los muestreos ya disponibles.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4">

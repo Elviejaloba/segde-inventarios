@@ -5,6 +5,7 @@ export interface SemanaCalendario {
   mes: string;
   semana: string;
   items: string[];
+  periodKey?: string;
 }
 
 export interface CalendarioSucursal {
@@ -13,9 +14,132 @@ export interface CalendarioSucursal {
   semanas: SemanaCalendario[];
 }
 
+
+export const AGOSTO_2026_PERIOD_KEY = "2026-08";
+
+export const AGOSTO_2026_BASE_CODES = [
+  "TA148L", "TI505", "TV51S00", "TC424B00", "TD36T00",
+  "TA236", "TI400I", "TV450M", "TC50600", "TD157E",
+  "TA01B00", "TI510M", "TV84S00", "TC107S00", "TD107S00",
+  "TA105F", "TI506T", "TV83P00", "TC506M00", "TD36T",
+  "TA70K", "TI50500", "TV84L00", "TC01B00", "TD15700",
+  "TA77-1S00", "TI510L00", "TV84L", "TC507M00", "TD40C00",
+  "TA77-1P00", "TI506M00", "TV84C00", "TC50500", "TD197S",
+  "TA88-1500", "TI506C", "TV76L", "TC510L00", "TD80SM00",
+  "TA11M", "TI506M", "TV84B", "TC99C00", "TD80S00",
+  "TA148R00", "TI506T00", "TV84P", "TC506M", "TD197A",
+  "TI138P00", "TI150M00", "TV84M", "TC505X", "TD301M00",
+  "TI114F", "TI158S00", "TV51S", "TC510T00", "TD2138",
+  "TI118M", "TI98KS00", "TV444", "TC01X00", "TD106M00",
+  "TI605T", "TV74L", "TC36T", "TD2119",
+  "TI505M", "TV444M", "TC9900", "TD808",
+  "TI152P", "TV76G00", "TC148L00", "TD37M",
+  "TI30S", "TV139F", "TC148F00", "TD195",
+  "TI99C00", "TV139M", "TC305K", "TD2107",
+  "TC38M"
+] as const;
+
+export const AGOSTO_2026_ADDITIONAL_CODES = [
+  "BL7010X00", "BL7009A09", "BL7009X00", "BL7010A09", "BL7009A08", "BL7009A13", "BL700900", "BL7010Q00",
+  "BL7009A19", "BL7010G00", "BL7010A04", "BL7010B00", "BL7009A05", "BL7009K00", "BL7010A00", "BL7009A00",
+  "BL7009A11", "BL7009A02", "BL7010A15", "BL7010A19", "BL7010K00", "BL7009A03", "BL7009A04", "BL7009A10",
+  "BL7009A14", "BL7009A16", "BL7009A21", "BL7009E00", "BL701000", "BL7010A03", "BL7010A21", "BL7010E00"
+] as const;
+
+export const AGOSTO_2026_CODES = [
+  ...AGOSTO_2026_BASE_CODES,
+  ...AGOSTO_2026_ADDITIONAL_CODES,
+] as const;
+
+const AGOSTO_2026_BASE_WEEK_SIZES = [22, 22, 21, 21] as const;
+const AGOSTO_2026_ADDITIONAL_WEEK_SIZES = [8, 8, 8, 8] as const;
+const AGOSTO_2026_BL_NO_COLOR_CODES = new Set<string>(
+  AGOSTO_2026_ADDITIONAL_CODES.filter((code) => code.startsWith("BL") && !code.endsWith("00"))
+);
+
+function splitChecklistBySizes(codes: readonly string[], sizes: readonly number[]): string[][] {
+  const result: string[][] = [];
+  let offset = 0;
+  for (const size of sizes) {
+    result.push([...codes.slice(offset, offset + size)]);
+    offset += size;
+  }
+  return result;
+}
+
+function buildAugustWeeks(): SemanaCalendario[] {
+  const baseWeeks = splitChecklistBySizes(AGOSTO_2026_BASE_CODES, AGOSTO_2026_BASE_WEEK_SIZES);
+  const additionalWeeks = splitChecklistBySizes(AGOSTO_2026_ADDITIONAL_CODES, AGOSTO_2026_ADDITIONAL_WEEK_SIZES);
+
+  return AGOSTO_2026_BASE_WEEK_SIZES.map((_, index) => ({
+    mes: "AGOSTO",
+    semana: `${index + 1}° Semana`,
+    periodKey: AGOSTO_2026_PERIOD_KEY,
+    items: [...baseWeeks[index], ...additionalWeeks[index]],
+  }));
+}
+
+export const AGOSTO_2026_WEEKS = buildAugustWeeks();
+
+export function sanitizeChecklistCode(code: string): string {
+  return code.toLowerCase().replace(/[/.#$[\]]/g, '-');
+}
+
+export function getChecklistEntryKey(code: string, periodKey?: string): string {
+  const sanitized = sanitizeChecklistCode(code);
+  return periodKey ? `${periodKey}::${sanitized}` : sanitized;
+}
+
+export function getChecklistDisplayCode(code: string): string {
+  if (AGOSTO_2026_BL_NO_COLOR_CODES.has(code)) return code;
+  return code.endsWith('00') ? code : `${code} (Color)`;
+}
+
+export function getChecklistItemState(branchData: any, code: string, periodKey?: string) {
+  const sanitized = sanitizeChecklistCode(code);
+  if (periodKey) {
+    return branchData?.periods?.[periodKey]?.items?.[sanitized]
+      || branchData?.periods?.[periodKey]?.items?.[code]
+      || null;
+  }
+  return branchData?.items?.[sanitized] || branchData?.items?.[code] || null;
+}
+
+export function getMesActualCalendario(date = new Date()): string {
+  const meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+  return meses[date.getMonth()];
+}
+
+export function getChecklistEntriesForMonth(calendario: CalendarioSucursal | null, mes: string) {
+  if (!calendario) return [] as Array<{ code: string; mes: string; semana: string; periodKey?: string }>;
+  return calendario.semanas
+    .filter((semana) => semana.mes === mes)
+    .flatMap((semana) => semana.items.map((code) => ({ code, mes: semana.mes, semana: semana.semana, periodKey: semana.periodKey })));
+}
+
+export function getAllChecklistEntries(calendario: CalendarioSucursal | null) {
+  if (!calendario) return [] as Array<{ code: string; mes: string; semana: string; periodKey?: string }>;
+  return calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, mes: semana.mes, semana: semana.semana, periodKey: semana.periodKey })));
+}
+
+
+const buildAugustOnlyCalendar = (sucursal: string): CalendarioSucursal => ({
+  sucursal,
+  totalItems: AGOSTO_2026_CODES.length,
+  semanas: [...AGOSTO_2026_WEEKS],
+});
+
+export const CALENDARIO_TTUNUYAN: CalendarioSucursal = {
+  sucursal: "T.Tunuyan",
+  totalItems: 118,
+  semanas: [
+    ...AGOSTO_2026_WEEKS
+  ]
+};
+
 export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
   sucursal: "T.Mendoza",
-  totalItems: 260,
+  totalItems: 378,
   semanas: [
     {
         "mes": "ENERO",
@@ -360,24 +484,25 @@ export const CALENDARIO_TMENDOZA: CalendarioSucursal = {
             "TA66L",
             "TF147-3"
         ]
-    }
+    },
+    ...AGOSTO_2026_WEEKS
 ]
 };
 
-// Función para obtener la semana actual según la fecha
+// Funci?n para obtener la semana actual seg?n la fecha
 export function getSemanaActual(): { mes: string; semana: string } | null {
   const hoy = new Date();
-  const año = hoy.getFullYear();
+  const anio = hoy.getFullYear();
   const mes = hoy.getMonth(); // 0-11
   const dia = hoy.getDate();
   
-  // Calcular número de semana del mes (1-4)
-  const primerDiaMes = new Date(año, mes, 1);
+  // Calcular n?mero de semana del mes (1-4)
+  const primerDiaMes = new Date(anio, mes, 1);
   const diaSemana = primerDiaMes.getDay(); // 0=Dom, 1=Lun...
   const semanaNum = Math.ceil((dia + diaSemana) / 7);
-  const semanaStr = semanaNum === 1 ? "1° Semana" : 
-                    semanaNum === 2 ? "2° Semana" : 
-                    semanaNum === 3 ? "3° Semana" : "4° Semana";
+  const semanaStr = semanaNum === 1 ? "1� Semana" : 
+                    semanaNum === 2 ? "2� Semana" : 
+                    semanaNum === 3 ? "3� Semana" : "4� Semana";
   
   const meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
                  "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
@@ -388,7 +513,7 @@ export function getSemanaActual(): { mes: string; semana: string } | null {
 // Calendario T.Sjuan - 244 items (Enero 2025 - Abril 2025)
 export const CALENDARIO_TSJUAN: CalendarioSucursal = {
   sucursal: "T.Sjuan",
-  totalItems: 244,
+  totalItems: 362,
   semanas: [
     {
         "mes": "ENERO",
@@ -459,13 +584,14 @@ export const CALENDARIO_TSJUAN: CalendarioSucursal = {
         "mes": "ABRIL",
         "semana": "4° Semana",
         "items": ["TV80M", "TV84S", "TV139F", "TF61T", "TF166M", "TA56LF03", "TV103", "TF44KM", "TA77-3S00", "TA452T", "BL61700", "TA605V", "TA70KF07", "BL67100V15", "BL67100V10", "TA72RJ00", "TA70MF", "BL89AT00"]
-    }
+    },
+    ...AGOSTO_2026_WEEKS
   ]
 };
 
 export const CALENDARIO_TLUIS: CalendarioSucursal = {
   sucursal: "T.SLuis",
-  totalItems: 169,
+  totalItems: 287,
   semanas: [
     {
         "mes": "ENERO",
@@ -516,13 +642,14 @@ export const CALENDARIO_TLUIS: CalendarioSucursal = {
         "mes": "MARZO",
         "semana": "4° Semana",
         "items": ["OT003B00", "TA09023", "TA452T", "OT05M05", "TD09027", "TV82M", "TA77-3S00", "TA72RJ00", "TD37C", "TA170", "TD302SM", "BL54A-100", "TV450", "BL35024", "BL60200", "BL7045S02", "BL7045S04"]
-    }
+    },
+    ...AGOSTO_2026_WEEKS
   ]
 };
 
 export const CALENDARIO_CRISA2: CalendarioSucursal = {
   sucursal: "Crisa2",
-  totalItems: 410,
+  totalItems: 528,
   semanas: [
     {
         "mes": "ENERO",
@@ -603,9 +730,16 @@ export const CALENDARIO_CRISA2: CalendarioSucursal = {
         "mes": "MAYO",
         "semana": "2° Semana",
         "items": ["TF169-3", "TV18G", "TF188H05", "TV51S16", "TA451S29", "TF169B", "TF161A", "TA90I04", "TF47S21", "TF147BS03", "TA72RJ08", "TF62B", "TA170T05", "TF147BS07", "TA453T", "TA139M00", "TA77-1M09", "TD84090109", "TF800", "TF44BC", "TF307S", "TF72R", "TA35M", "TA72RJ00", "TA70KF07", "TF147-3"]
-    }
+    },
+    ...AGOSTO_2026_WEEKS
   ]
 };
+
+export const CALENDARIO_TSMARTIN = buildAugustOnlyCalendar("T.S.Martin");
+export const CALENDARIO_TLUJAN = buildAugustOnlyCalendar("T.Lujan");
+export const CALENDARIO_TMAIPU = buildAugustOnlyCalendar("T.Maipu");
+export const CALENDARIO_TSRAFAEL = buildAugustOnlyCalendar("T.Srafael");
+export const CALENDARIO_TGGLLEN = buildAugustOnlyCalendar("T.GLLEN");
 
 // Obtener el calendario por sucursal
 export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | null {
@@ -618,8 +752,21 @@ export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | 
       return CALENDARIO_TLUIS;
     case "Crisa2":
       return CALENDARIO_CRISA2;
+    case "T.S.Martin":
+      return CALENDARIO_TSMARTIN;
+    case "T.Tunuyan":
+      return CALENDARIO_TTUNUYAN;
+    case "T.Lujan":
+      return CALENDARIO_TLUJAN;
+    case "T.Maipu":
+      return CALENDARIO_TMAIPU;
+    case "T.Srafael":
+      return CALENDARIO_TSRAFAEL;
+    case "T.GLLEN":
+      return CALENDARIO_TGGLLEN;
     default:
       return null;
   }
 }
+
 

@@ -12,7 +12,8 @@ export const branchSchema = z.enum([
   "T.SMartin",
   "T.Maipu",
   "T.Tunuyan",
-  "T.Lujan"
+  "T.Lujan",
+  "T.GLLEN"
 ]);
 
 export type Branch = z.infer<typeof branchSchema>;

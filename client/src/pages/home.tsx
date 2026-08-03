@@ -6,7 +6,7 @@ import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, C
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
-import { getCalendarioSucursal, getSemanaActual, type SemanaCalendario } from "@/lib/calendario-semanal";
+import { getAllChecklistEntries, getCalendarioSucursal, getChecklistDisplayCode, getChecklistEntriesForMonth, getChecklistEntryKey, getChecklistItemState, getMesActualCalendario, getSemanaActual, type SemanaCalendario } from "@/lib/calendario-semanal";
 
 import {
   Card,
@@ -44,6 +44,22 @@ interface ItemState {
   lastUpdated?: number;
 }
 
+interface ChecklistEntry {
+  code: string;
+  mes: string;
+  semana: string;
+  periodKey?: string;
+}
+
+type ChecklistViewFilter = 'pending' | 'completed' | 'noStock' | 'all';
+
+const buildFallbackEntries = (codes: string[]): ChecklistEntry[] => codes.map((code) => ({ code, mes: '', semana: '' }));
+
+const getLocalItemState = (localItems: Record<string, ItemState>, code: string, periodKey?: string): ItemState => {
+  const key = getChecklistEntryKey(code, periodKey);
+  return localItems[key] || { completed: false, hasStock: true };
+};
+
 const MOTIVATION_MESSAGES = {
   20: {
     title: "¡Excelente inicio! 🌟",
@@ -67,7 +83,7 @@ const MOTIVATION_MESSAGES = {
   },
   100: {
     title: "¡FELICITACIONES! 🎉",
-    description: "¡Has completado todos los items!",
+    description: "¡Has completado todos los ítems!",
     variant: "success" as const
   }
 };
@@ -199,6 +215,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
+  const [checklistViewFilter, setChecklistViewFilter] = useState<ChecklistViewFilter>('pending');
   const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
   const [addedItems, setAddedItems] = useState<Record<string, { code: string; addedAt: number; month?: string }>>({});
   const [newItemCode, setNewItemCode] = useState('');
@@ -207,6 +224,8 @@ export default function Home() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
+
+  const currentCalendarMonth = useMemo(() => getMesActualCalendario(), []);
 
   const currentMonthAddedItems = useMemo(() => {
     return Object.fromEntries(
@@ -221,6 +240,7 @@ export default function Home() {
   }, [addedItems, currentMonth]);
 
   const { toast } = useToast();
+  const isFirebaseReadOnly = import.meta.env.DEV && import.meta.env.VITE_FIREBASE_READONLY === 'true';
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
@@ -245,58 +265,63 @@ export default function Home() {
 
   useEffect(() => {
     if (!selectedBranch || !branchesData || loading) return;
-    
+
     const branchData = branchesData.find(b => b.id === selectedBranch);
-    if (!branchData?.items) return;
-    
-    // Solo actualizar si hay diferencias para evitar loops innecesarios
-    // IMPORTANTE: Buscar PRIMERO el código sanitizado, luego el original
-    // Esto debe coincidir con loadBranchData y Dashboard
-    
-    // Usar los códigos del calendario si existe, de lo contrario CODES
+    if (!branchData) return;
+
     const calendario = getCalendarioSucursal(selectedBranch);
-    const codesToUse = calendario 
-      ? calendario.semanas.flatMap(s => s.items) 
-      : CODES;
-    
-    const newItems = codesToUse.reduce((acc, code) => {
-      const sanitizedCode = sanitizeCode(code);
-      const existingItem = branchData.items[sanitizedCode] || branchData.items[code];
-      if (existingItem) {
-        acc[sanitizedCode] = existingItem;
-      } else {
-        acc[sanitizedCode] = { completed: false, hasStock: true };
-      }
+    const entriesToUse = calendario ? getAllChecklistEntries(calendario) : buildFallbackEntries(CODES);
+
+    const newItems = entriesToUse.reduce((acc, entry) => {
+      const itemKey = getChecklistEntryKey(entry.code, entry.periodKey);
+      const existingItem = getChecklistItemState(branchData, entry.code, entry.periodKey);
+      acc[itemKey] = existingItem
+        ? {
+            completed: existingItem.completed === true,
+            hasStock: existingItem.hasStock !== false,
+            lastUpdated: existingItem.lastUpdated,
+          }
+        : { completed: false, hasStock: true };
       return acc;
     }, {} as Record<string, ItemState>);
-    
-    // Comparar si hay cambios reales antes de actualizar
-    const hasChanges = Object.keys(newItems).some(key => {
+
+    const currentKeys = Object.keys(items);
+    const nextKeys = Object.keys(newItems);
+    const hasChanges = currentKeys.length !== nextKeys.length || nextKeys.some((key) => {
       const current = items[key];
       const updated = newItems[key];
       return !current || current.completed !== updated.completed || current.hasStock !== updated.hasStock;
     });
-    
-    if (hasChanges && Object.keys(items).length > 0) {
-      
+
+    if (hasChanges) {
       setItems(newItems);
     }
-  }, [branchesData, selectedBranch]);
+  }, [branchesData, selectedBranch, loading, items]);
 
   // Obtener calendario semanal si existe para la sucursal
   const calendarioSemanal = selectedBranch ? getCalendarioSucursal(selectedBranch) : null;
   const semanaActual = getSemanaActual();
 
+  const allChecklistEntries = useMemo(() => {
+    return calendarioSemanal ? getAllChecklistEntries(calendarioSemanal) : buildFallbackEntries(CODES);
+  }, [calendarioSemanal]);
+
+  const activeChecklistEntries = useMemo(() => {
+    if (!calendarioSemanal) return buildFallbackEntries(CODES);
+    const currentMonthEntries = getChecklistEntriesForMonth(calendarioSemanal, currentCalendarMonth);
+    return currentMonthEntries.length > 0 ? currentMonthEntries : getAllChecklistEntries(calendarioSemanal);
+  }, [calendarioSemanal, currentCalendarMonth]);
+
   // Calcular progreso por semana
   const progresoSemanal = useMemo(() => {
     if (!calendarioSemanal || Object.keys(items).length === 0) return [];
-    
+
     return calendarioSemanal.semanas.map(semana => {
-      const completados = semana.items.filter(code => items[sanitizeCode(code)]?.completed).length;
+      const completados = semana.items.filter(code => getLocalItemState(items, code, semana.periodKey).completed).length;
       const total = semana.items.length;
       const porcentaje = total > 0 ? (completados / total) * 100 : 0;
       const esActual = semanaActual?.mes === semana.mes && semanaActual?.semana === semana.semana;
-      
+
       return {
         ...semana,
         completados,
@@ -323,26 +348,17 @@ export default function Home() {
   // Calcular progreso por mes para detectar objetivos cumplidos
   const progresoMensual = useMemo(() => {
     if (!calendarioSemanal) return [];
-    
-    const todosLosCodigos = calendarioSemanal.semanas.flatMap(s => s.items);
-    const totalCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed).length;
-    
-    // Calcular objetivos dinámicamente desde el calendario
-    const mesesMap: { [key: string]: number } = {};
-    calendarioSemanal.semanas.forEach(s => {
-      mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
-    });
-    
-    let acumuladoCalc = 0;
-    const objetivosMensuales = Object.entries(mesesMap).map(([mes, objetivo]) => {
-      acumuladoCalc += objetivo;
-      return { mes, objetivo, acumulado: acumuladoCalc };
-    });
-    
-    return objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
-      const acumuladoAnterior = acumulado - objetivo;
-      const completadosParaEsteMes = Math.min(Math.max(totalCompletados - acumuladoAnterior, 0), objetivo);
-      return { mes, objetivo, completados: completadosParaEsteMes, cumplido: completadosParaEsteMes >= objetivo };
+
+    const meses = Array.from(new Set(calendarioSemanal.semanas.map((semana) => semana.mes)));
+    return meses.map((mes) => {
+      const entries = getChecklistEntriesForMonth(calendarioSemanal, mes);
+      const completados = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed).length;
+      return {
+        mes,
+        objetivo: entries.length,
+        completados,
+        cumplido: completados >= entries.length && entries.length > 0,
+      };
     });
   }, [calendarioSemanal, items]);
 
@@ -360,7 +376,7 @@ export default function Home() {
         
         // Mostrar toast de felicitación
         toast({
-          title: `🎉 ¡Objetivo ${mes} Cumplido!`,
+          title: `�x}0 ¡Objetivo ${mes} Cumplido!`,
           description: `¡Excelente trabajo! Has completado todos los items del mes de ${mes}.`,
           duration: 5000,
         });
@@ -394,34 +410,27 @@ export default function Home() {
 
     try {
       const branchData = branchesData?.find(b => b.id === branch);
-      
-      
-      // Verificar qué códigos hay en los datos de la sucursal
-      // Si la sucursal tiene calendario, usar los códigos del calendario
-      // Si no, usar CODES de store.ts
       const calendario = getCalendarioSucursal(branch);
-      const codesToUse = calendario 
-        ? calendario.semanas.flatMap(s => s.items) 
-        : CODES;
-      
-      const initializedItems = codesToUse.reduce((acc, code) => {
-        const sanitizedCode = sanitizeCode(code);
-        const fromSanitized = branchData?.items?.[sanitizedCode];
-        const fromOriginal = branchData?.items?.[code];
-        const existingItem = fromSanitized || fromOriginal;
-        
-        if (existingItem) {
-          acc[sanitizedCode] = existingItem;
-        } else {
-          acc[sanitizedCode] = { completed: false, hasStock: true };
-        }
+      const entriesToUse = calendario ? getAllChecklistEntries(calendario) : buildFallbackEntries(CODES);
+
+      const initializedItems = entriesToUse.reduce((acc, entry) => {
+        const itemKey = getChecklistEntryKey(entry.code, entry.periodKey);
+        const existingItem = branchData ? getChecklistItemState(branchData, entry.code, entry.periodKey) : null;
+
+        acc[itemKey] = existingItem
+          ? {
+              completed: existingItem.completed === true,
+              hasStock: existingItem.hasStock !== false,
+              lastUpdated: existingItem.lastUpdated,
+            }
+          : { completed: false, hasStock: true };
         return acc;
       }, {} as Record<string, ItemState>);
+
       setItems(initializedItems);
       setAddedItems(branchData?.addedItems || {});
       analytics.logAction('branch_select', { branch });
 
-      // Restaurar el último progreso guardado
       if (branchData?.totalCompleted) {
         const progress = Math.floor(branchData.totalCompleted);
         setLastToastProgress(progress);
@@ -440,23 +449,29 @@ export default function Home() {
     }
   };
 
-  const handleToggle = async (code: string, field: keyof ItemState) => {
+  const handleToggle = async (code: string, field: keyof ItemState, periodKey?: string) => {
     if (!selectedBranch || loading) return;
+    if (isFirebaseReadOnly) {
+      toast({
+        title: 'Modo solo lectura',
+        description: 'La visual local está conectada a Firebase real en modo lectura. No se guardan cambios.',
+      });
+      return;
+    }
 
     const sanitizedCode = sanitizeCode(code);
-    const originalCode = code; // Mantener el código original para Firebase
-    
-    // Actualizar estado local con código sanitizado
+    const itemKey = getChecklistEntryKey(code, periodKey);
+
     const newItems = {
       ...items,
-      [sanitizedCode]: {
-        ...(items[sanitizedCode] || { completed: false, hasStock: true }),
-        [field]: !items[sanitizedCode]?.[field],
-        ...(field === 'completed' ?
-          { hasStock: true } :
-          field === 'hasStock' ?
-            { completed: !items[sanitizedCode]?.hasStock } :
-            {}
+      [itemKey]: {
+        ...(items[itemKey] || { completed: false, hasStock: true }),
+        [field]: !items[itemKey]?.[field],
+        ...(field === 'completed'
+          ? { hasStock: true }
+          : field === 'hasStock'
+            ? { completed: !items[itemKey]?.hasStock }
+            : {}
         )
       }
     };
@@ -464,54 +479,61 @@ export default function Home() {
     setItems(newItems);
 
     try {
-      const completedPercentage = Math.round((Object.values(newItems).filter(i => i.completed).length / CODES.length) * 100);
-      const noStockCount = Object.values(newItems).filter(item => item.hasStock === false).length;
+      const totalItemsActivos = activeChecklistEntries.length > 0 ? activeChecklistEntries.length : CODES.length;
+      const completedCount = activeChecklistEntries.filter((entry) => getLocalItemState(newItems, entry.code, entry.periodKey).completed).length;
+      const noStockCount = activeChecklistEntries.filter((entry) => getLocalItemState(newItems, entry.code, entry.periodKey).hasStock === false).length;
+      const completedPercentage = totalItemsActivos > 0 ? Math.round((completedCount / totalItemsActivos) * 100) : 0;
 
-      // Crear objeto para Firebase usando códigos SANITIZADOS (lowercase)
-      // Esto asegura consistencia con la lógica del Dashboard
-      const firebaseItems = Object.entries(newItems).reduce((acc, [sanitizedKey, value]) => {
-        acc[sanitizedKey] = {
-          ...value,
-          lastUpdated: Date.now()
-        };
-        return acc;
-      }, {} as Record<string, any>);
+      const payload = periodKey
+        ? {
+            periods: {
+              [periodKey]: {
+                items: {
+                  [sanitizedCode]: {
+                    ...newItems[itemKey],
+                    lastUpdated: Date.now()
+                  }
+                }
+              }
+            }
+          }
+        : {
+            items: {
+              [sanitizedCode]: {
+                ...newItems[itemKey],
+                lastUpdated: Date.now()
+              }
+            }
+          };
 
       for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
-        
+
         if (completedPercentage >= thresholdNum && lastToastProgress < thresholdNum) {
-          
-          // Mostrar toast de celebración
           toast({
             title: message.title,
             description: `${message.description} - ${completedPercentage}% completado`,
             variant: "success",
             duration: 5000,
           });
-          
-          // Actualizar el último progreso mostrado
+
           setLastToastProgress(thresholdNum);
-          
-          // Ejecutar animación de confetti inmediatamente
           celebrateProgress(thresholdNum);
-          
-          // Solo procesar un umbral a la vez
           break;
         }
       }
 
       await storage.updateBranch(selectedBranch, {
-        items: firebaseItems,
+        ...payload,
         totalCompleted: completedPercentage,
         noStock: noStockCount,
       });
 
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
-        code: sanitizedCode,
+        code: itemKey,
         field,
-        newValue: !items[sanitizedCode]?.[field]
+        newValue: !items[itemKey]?.[field]
       });
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -526,6 +548,10 @@ export default function Home() {
   };
 
   const handleAddItem = async () => {
+    if (isFirebaseReadOnly) {
+      toast({ title: 'Modo solo lectura', description: 'No se pueden agregar artículos en esta sesión local.' });
+      return;
+    }
     if (!selectedBranch || !newItemCode.trim()) return;
     const code = newItemCode.trim().toUpperCase();
     const key = sanitizeCode(code);
@@ -548,6 +574,10 @@ export default function Home() {
   };
 
   const handleRemoveAddedItem = async (key: string) => {
+    if (isFirebaseReadOnly) {
+      toast({ title: 'Modo solo lectura', description: 'No se pueden eliminar artículos en esta sesión local.' });
+      return;
+    }
     if (!selectedBranch) return;
     const { [key]: _, ...rest } = addedItems;
     setAddedItems(rest);
@@ -563,41 +593,84 @@ export default function Home() {
     if (!selectedBranch || Object.keys(items).length === 0) {
       return { completed: 0, noStock: 0, completedCount: 0, totalItems: 0 };
     }
-    
-    // Si hay calendario semanal, usar los items del calendario (260 para T.Mendoza)
-    // Si no, usar los CODES generales
+
     let totalItems: number;
     let completedCount: number;
     let noStockCount: number;
-    
+
     if (calendarioSemanal) {
-      // Obtener todos los códigos del calendario semanal
-      const codigosCalendario = calendarioSemanal.semanas.flatMap(s => s.items);
-      totalItems = codigosCalendario.length;
-      completedCount = codigosCalendario.filter(code => items[sanitizeCode(code)]?.completed).length;
-      noStockCount = codigosCalendario.filter(code => items[sanitizeCode(code)]?.hasStock === false).length;
+      totalItems = activeChecklistEntries.length;
+      completedCount = activeChecklistEntries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed).length;
+      noStockCount = activeChecklistEntries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).hasStock === false).length;
     } else {
       totalItems = CODES.length;
-      // Cuenta items procesados: completado O confirmado sin stock, capped al total
       completedCount = Math.min(
         Object.values(items).filter(i => i.completed || i.hasStock === false).length,
         totalItems
       );
       noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
     }
-    
+
     const completedPercentage = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
     const noStockPercentage = totalItems > 0 ? (noStockCount / totalItems) * 100 : 0;
-    
-    
-    
+
     return {
       completed: completedPercentage,
       noStock: noStockPercentage,
       completedCount,
       totalItems
     };
-  }, [selectedBranch, items, calendarioSemanal]);
+  }, [selectedBranch, items, calendarioSemanal, activeChecklistEntries]);
+
+  const checklistFilterLabels: Record<ChecklistViewFilter, string> = {
+    pending: 'Pendientes',
+    completed: 'Completados',
+    noStock: 'Sin Stock',
+    all: 'Todos',
+  };
+
+  const checklistSourceEntries = useMemo(() => {
+    return activeChecklistEntries.length > 0 ? activeChecklistEntries : buildFallbackEntries(CODES);
+  }, [activeChecklistEntries]);
+
+  const checklistSummary = useMemo(() => {
+    const total = checklistSourceEntries.length;
+    const completed = checklistSourceEntries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed).length;
+    const noStock = checklistSourceEntries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).hasStock === false).length;
+    const pending = checklistSourceEntries.filter((entry) => {
+      const state = getLocalItemState(items, entry.code, entry.periodKey);
+      return state.completed !== true && state.hasStock !== false;
+    }).length;
+
+    return { pending, completed, noStock, total };
+  }, [checklistSourceEntries, items]);
+
+  const visibleChecklistEntries = useMemo(() => {
+    const normalizedSearch = searchFilter.trim().toLowerCase();
+    let entries = [...checklistSourceEntries];
+
+    if (checklistViewFilter === 'pending') {
+      const rankEntry = (entry: ChecklistEntry) => {
+        const state = getLocalItemState(items, entry.code, entry.periodKey);
+        if (state.completed === true) return 2;
+        if (state.hasStock === false) return 1;
+        return 0;
+      };
+      entries.sort((a, b) => rankEntry(a) - rankEntry(b));
+    } else if (checklistViewFilter === 'completed') {
+      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed === true);
+    } else if (checklistViewFilter === 'noStock') {
+      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).hasStock === false);
+    }
+
+    if (!normalizedSearch) return entries;
+
+    return entries.filter((entry) => {
+      const code = entry.code.toLowerCase();
+      const displayCode = getChecklistDisplayCode(entry.code).toLowerCase();
+      return code.includes(normalizedSearch) || displayCode.includes(normalizedSearch);
+    });
+  }, [checklistSourceEntries, checklistViewFilter, searchFilter, items]);
 
   return (
     <div className="space-y-4 sm:space-y-8">
@@ -705,6 +778,12 @@ export default function Home() {
         )}
       </div>
 
+      {isFirebaseReadOnly && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Modo solo lectura local activo: se leen datos reales de Firebase, pero toda escritura está bloqueada.
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center p-8">
           <LoadingMascot message="Actualizando datos..." />
@@ -724,41 +803,25 @@ export default function Home() {
                 <div className="space-y-4">
                   {/* Encabezado con título */}
                   <div className="bg-yellow-300 p-2 sm:p-3 rounded-lg" data-testid="header-calendario">
-                    <h3 className="text-sm sm:text-lg font-bold text-gray-800">{calendarioSemanal.totalItems} Items sobrestock y sin rotación</h3>
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-800">{activeChecklistEntries.length} Artículos solicitados para realizar inventario</h3>
                     <p className="text-xs sm:text-sm text-gray-600">Selecciona los items que vayas completando - {selectedBranch}</p>
                   </div>
 
                   {/* Objetivos mensuales - el usuario elige cuáles items completar */}
                   {(() => {
-                    // Obtener todos los códigos del calendario
-                    const todosLosCodigos = calendarioSemanal.semanas.flatMap(s => s.items);
-                    const itemsCompletados = todosLosCodigos.filter(code => items[sanitizeCode(code)]?.completed);
+                    const todosLosCodigos = activeChecklistEntries;
+                    const itemsCompletados = todosLosCodigos.filter(entry => getLocalItemState(items, entry.code, entry.periodKey).completed);
                     const totalCompletados = itemsCompletados.length;
-                    
-                    // Calcular objetivos dinámicamente desde el calendario
-                    const mesesMap: { [key: string]: number } = {};
-                    calendarioSemanal.semanas.forEach(s => {
-                      mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
-                    });
-                    
-                    let acumuladoCalc = 0;
-                    const objetivosMensuales = Object.entries(mesesMap).map(([mes, objetivo]) => {
-                      acumuladoCalc += objetivo;
-                      return { mes, objetivo, acumulado: acumuladoCalc };
-                    });
+                    const objetivosMensuales = progresoMensual;
                     
                     return (
                       <>
-                        {/* Sección fija: objetivos y progreso */}
+                        {/* Secci?n fija: objetivos y progreso */}
                         <div className="pb-3 pt-2 space-y-3">
                         {/* Resumen de objetivos por mes */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3" data-testid="objetivos-mensuales">
-                          {objetivosMensuales.map(({ mes, objetivo, acumulado }) => {
-                            // Calcular cuántos items corresponden a este mes
-                            const acumuladoAnterior = acumulado - objetivo;
-                            const completadosParaEsteMes = Math.min(Math.max(totalCompletados - acumuladoAnterior, 0), objetivo);
-                            const porcentajeMes = (completadosParaEsteMes / objetivo) * 100;
-                            const mesCompleto = completadosParaEsteMes >= objetivo;
+                          {objetivosMensuales.map(({ mes, objetivo, completados: completadosParaEsteMes, cumplido: mesCompleto }) => {
+                            const porcentajeMes = objetivo > 0 ? (completadosParaEsteMes / objetivo) * 100 : 0;
                             
                             return (
                               <div 
@@ -787,7 +850,7 @@ export default function Home() {
                                     <Progress value={porcentajeMes} className="h-1.5 mt-1 sm:hidden [&>div]:bg-green-500" />
                                     <div className="hidden sm:block">
                                       <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg shadow">
-                                        ✓ CUMPLIDO
+                                        ? CUMPLIDO
                                       </div>
                                       <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
                                       <div className="font-bold text-lg text-green-700">{mes}</div>
@@ -827,31 +890,74 @@ export default function Home() {
                           <Progress value={(totalCompletados / todosLosCodigos.length) * 100} className="h-2" />
                         </div>
                         
-                        {/* Buscador rápido - también fijo */}
-                        <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                              type="text"
-                              placeholder="Buscar código..."
-                              value={searchFilter}
-                              onChange={(e) => setSearchFilter(e.target.value)}
-                              className="w-full pl-9 pr-9 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            />
-                            {searchFilter && (
+                        {/* Barra de acciones y buscador */}
+                        <div className="space-y-3" data-testid="acciones-checklist">
+                          <div className="flex flex-wrap gap-2">
+                            {([
+                              { key: 'pending', label: '\u{1F7E2} Pendientes' },
+                              { key: 'completed', label: '\u{1F535} Completados' },
+                              { key: 'noStock', label: '\u{1F7E0} Sin Stock' },
+                              { key: 'all', label: '⚪ Todos' },
+                            ] as { key: ChecklistViewFilter; label: string }[]).map((option) => (
                               <button
-                                onClick={() => setSearchFilter('')}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                key={option.key}
+                                type="button"
+                                onClick={() => setChecklistViewFilter(option.key)}
+                                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                  checklistViewFilter === option.key
+                                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary/5'
+                                }`}
                               >
-                                <X className="h-4 w-4" />
+                                {option.label}
                               </button>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 md:grid-cols-4" data-testid="resumen-checklist">
+                            <div className="rounded-lg border bg-white px-3 py-2">
+                              <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
+                              <div className="text-xl font-bold text-gray-900">{checklistSummary.pending}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white px-3 py-2">
+                              <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
+                              <div className="text-xl font-bold text-green-600">{checklistSummary.completed}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white px-3 py-2">
+                              <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
+                              <div className="text-xl font-bold text-orange-500">{checklistSummary.noStock}</div>
+                            </div>
+                            <div className="rounded-lg border bg-white px-3 py-2">
+                              <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
+                              <div className="text-xl font-bold text-gray-900">{checklistSummary.total}</div>
+                            </div>
+                          </div>
+
+                          <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder={`Buscar en ${checklistFilterLabels[checklistViewFilter].toLowerCase()}...`}
+                                value={searchFilter}
+                                onChange={(e) => setSearchFilter(e.target.value)}
+                                className="w-full pl-9 pr-9 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                              {searchFilter && (
+                                <button
+                                  onClick={() => setSearchFilter('')}
+                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                            {(searchFilter || checklistViewFilter !== 'pending') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {visibleChecklistEntries.length} resultados en {checklistFilterLabels[checklistViewFilter].toLowerCase()}
+                              </p>
                             )}
                           </div>
-                          {searchFilter && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {todosLosCodigos.filter(c => c.toLowerCase().includes(searchFilter.toLowerCase())).length} resultados
-                            </p>
-                          )}
                         </div>
                         </div>
 
@@ -860,32 +966,42 @@ export default function Home() {
                           <div className="bg-yellow-200 p-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
-                              <span className="font-semibold">Todos los Items</span>
+                              <span className="font-semibold">{checklistFilterLabels[checklistViewFilter]}</span>
                             </div>
-                            <span className="text-sm font-bold">{totalCompletados}/{todosLosCodigos.length} completados</span>
+                            <span className="text-sm font-bold">{visibleChecklistEntries.length} visibles · {checklistSummary.completed}/{checklistSummary.total} completados</span>
                           </div>
                           
                           <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-h-[60vh] overflow-y-auto">
-                            {todosLosCodigos
-                              .filter(code => code.toLowerCase().includes(searchFilter.toLowerCase()))
-                              .map(code => {
-                              const isCompleted = items[sanitizeCode(code)]?.completed;
+                            {visibleChecklistEntries.map(entry => {
+                              const state = getLocalItemState(items, entry.code, entry.periodKey);
+                              const isCompleted = state.completed === true;
+                              const isNoStock = state.hasStock === false;
+                              const itemStatusLabel = isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente';
                               return (
                                 <div
-                                  key={code}
-                                  onClick={() => handleToggle(code, 'completed')}
-                                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
+                                  key={getChecklistEntryKey(entry.code, entry.periodKey)}
+                                  onClick={() => handleToggle(entry.code, 'completed', entry.periodKey)}
+                                  className={`flex items-center justify-between gap-2 p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
                                     isCompleted 
                                       ? 'bg-green-100 border border-green-300' 
-                                      : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
+                                      : isNoStock
+                                        ? 'bg-orange-50 border border-orange-200'
+                                        : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
                                   }`}
                                 >
-                                  <span className="font-mono text-sm">{code}</span>
+                                  <div className="min-w-0">
+                                    <span className="block font-mono text-sm">{getChecklistDisplayCode(entry.code)}</span>
+                                    <span className={`text-[11px] font-medium ${
+                                      isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-gray-500'
+                                    }`}>
+                                      {itemStatusLabel}
+                                    </span>
+                                  </div>
                                   <Checkbox
                                     checked={isCompleted || false}
-                                    onCheckedChange={() => handleToggle(code, 'completed')}
-                                    disabled={loading}
-                                    className="h-4 w-4"
+                                    onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
+                                    disabled={loading || isFirebaseReadOnly}
+                                    className="h-4 w-4 shrink-0"
                                   />
                                 </div>
                               );
@@ -917,7 +1033,7 @@ export default function Home() {
                       onKeyDown={(e) => { if (e.key === 'Enter') handleAddItem(); }}
                       className="flex-1 min-w-0 px-2 sm:px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
-                    <Button size="sm" onClick={handleAddItem} disabled={!newItemCode.trim()} className="shrink-0 gap-1 bg-blue-600 hover:bg-blue-700 px-2 sm:px-3">
+                    <Button size="sm" onClick={handleAddItem} disabled={isFirebaseReadOnly || !newItemCode.trim()} className="shrink-0 gap-1 bg-blue-600 hover:bg-blue-700 px-2 sm:px-3">
                       <Plus className="h-4 w-4" />
                       <span className="hidden sm:inline">Agregar</span>
                     </Button>
@@ -948,35 +1064,116 @@ export default function Home() {
 
               {/* Lista completa de items (para sucursales sin calendario) */}
               {!calendarioSemanal && (
-                <div className="space-y-2">
-                  {CODES.map((code) => (
-                    <div
-                      key={code}
-                      className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
-                        items[sanitizeCode(code)]?.completed ? 'bg-primary/10' : ''
-                      }`}
-                    >
-                      <span className="flex-1 font-mono">{code}</span>
-                      <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Completado</span>
-                          <Checkbox
-                            checked={items[sanitizeCode(code)]?.completed || false}
-                            onCheckedChange={() => handleToggle(code, 'completed')}
-                            disabled={loading}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Sin Stock</span>
-                          <Checkbox
-                            checked={!items[sanitizeCode(code)]?.hasStock}
-                            onCheckedChange={() => handleToggle(code, 'hasStock')}
-                            disabled={loading}
-                          />
-                        </div>
+                <div className="space-y-3">
+                  <div className="space-y-3" data-testid="acciones-checklist">
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { key: 'pending', label: '\u{1F7E2} Pendientes' },
+                        { key: 'completed', label: '\u{1F535} Completados' },
+                        { key: 'noStock', label: '\u{1F7E0} Sin Stock' },
+                        { key: 'all', label: '⚪ Todos' },
+                      ] as { key: ChecklistViewFilter; label: string }[]).map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setChecklistViewFilter(option.key)}
+                          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                            checklistViewFilter === option.key
+                              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary/5'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4" data-testid="resumen-checklist">
+                      <div className="rounded-lg border bg-white px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
+                        <div className="text-xl font-bold text-gray-900">{checklistSummary.pending}</div>
+                      </div>
+                      <div className="rounded-lg border bg-white px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
+                        <div className="text-xl font-bold text-green-600">{checklistSummary.completed}</div>
+                      </div>
+                      <div className="rounded-lg border bg-white px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
+                        <div className="text-xl font-bold text-orange-500">{checklistSummary.noStock}</div>
+                      </div>
+                      <div className="rounded-lg border bg-white px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
+                        <div className="text-xl font-bold text-gray-900">{checklistSummary.total}</div>
                       </div>
                     </div>
-                  ))}
+
+                    <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder={`Buscar en ${checklistFilterLabels[checklistViewFilter].toLowerCase()}...`}
+                          value={searchFilter}
+                          onChange={(e) => setSearchFilter(e.target.value)}
+                          className="w-full pl-9 pr-9 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                        {searchFilter && (
+                          <button
+                            onClick={() => setSearchFilter('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {(searchFilter || checklistViewFilter !== 'pending') && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {visibleChecklistEntries.length} resultados en {checklistFilterLabels[checklistViewFilter].toLowerCase()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {visibleChecklistEntries.map((entry) => {
+                      const state = getLocalItemState(items, entry.code, entry.periodKey);
+                      const isCompleted = state.completed === true;
+                      const isNoStock = state.hasStock === false;
+                      return (
+                        <div
+                          key={getChecklistEntryKey(entry.code, entry.periodKey)}
+                          className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
+                            isCompleted ? 'bg-primary/10' : isNoStock ? 'bg-orange-50' : ''
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="block font-mono">{getChecklistDisplayCode(entry.code)}</span>
+                            <span className={`text-xs ${isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                              {isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Completado</span>
+                              <Checkbox
+                                checked={isCompleted}
+                                onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
+                                disabled={loading || isFirebaseReadOnly}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Sin Stock</span>
+                              <Checkbox
+                                checked={isNoStock}
+                                onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
+                                disabled={loading || isFirebaseReadOnly}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -998,3 +1195,4 @@ export default function Home() {
     </div>
   );
 }
+

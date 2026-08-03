@@ -8,7 +8,11 @@ import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { ReportsView } from "@/components/reports-view";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { getCalendarioSucursal } from "@/lib/calendario-semanal";
+import {
+  getCalendarioSucursal,
+  getChecklistEntriesForMonth,
+  getChecklistItemState,
+} from "@/lib/calendario-semanal";
 
 interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
@@ -37,7 +41,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="hidden sm:block text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos sin rotacion y sobre stock</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos solicitados para realizar inventario</h1>
           <p className="text-muted-foreground text-sm">Sistema de Seguimiento — Grupo Crisa</p>
         </div>
         <div className="rounded-lg border bg-card overflow-hidden">
@@ -146,6 +150,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       addedItemsPercentage,
       totalItems,
       items: branchData?.items || {},
+      branchData,
       lastUpdated: branchData?.lastUpdated || 0
     };
   });
@@ -155,63 +160,69 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="hidden sm:block text-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos sin rotacion y sobre stock</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos solicitados para realizar inventario</h1>
         <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
       {selectedView === 'ranking' && (
-        <div className="mb-2 sm:mb-4">
-          <div className="flex items-center gap-2 mb-0.5 sm:mb-2">
-            <LineChart className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
-            <h2 className="text-base sm:text-2xl font-bold">Ranking de Sucursales</h2>
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:mb-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Ranking de Sucursales</h2>
+              <p className="text-[11px] sm:text-sm text-slate-500">
+                Elegí una sucursal para abrir su checklist y revisar el avance actual.
+              </p>
+            </div>
           </div>
-          <p className="text-[11px] sm:text-sm text-muted-foreground">
-            Seleccione su sucursal para ver los articulos solicitados:
-          </p>
         </div>
       )}
 
       {selectedView === 'ranking' ? (
-        <div className="rounded-md border bg-card overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[36px] sm:w-[80px] text-xs sm:text-sm text-center p-2 sm:p-4">Pos.</TableHead>
-                  <TableHead className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm p-2 sm:p-4">Sucursal</TableHead>
-                  <TableHead className="text-right min-w-[140px] sm:min-w-[120px] text-xs sm:text-sm p-2 sm:p-4">Progreso</TableHead>
+                <TableRow className="bg-slate-50/90">
+                  <TableHead className="w-[44px] sm:w-[88px] px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Pos.</TableHead>
+                  <TableHead className="min-w-[120px] px-3 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Sucursal</TableHead>
+                  <TableHead className="min-w-[220px] px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Progreso</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
               {sortedBranches.map((branch, index) => (
                 <TableRow
                   key={`branch-${branch.id}-${branch.lastUpdated || index}`}
-                  className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                    index === 0 ? 'bg-yellow-50 dark:bg-yellow-950/10' :
-                    index === 1 ? 'bg-gray-50 dark:bg-gray-950/10' :
-                    index === 2 ? 'bg-amber-50 dark:bg-amber-950/10' : ''
+                  className={`cursor-pointer border-b border-slate-100 transition-colors hover:bg-slate-50/70 ${
+                    index === 0 ? 'bg-amber-50/40' :
+                    index === 1 ? 'bg-slate-50/70' :
+                    index === 2 ? 'bg-orange-50/40' : 'bg-white'
                   }`}
                   onClick={() => onBranchSelect?.(branch.id)}
                 >
-                  <TableCell className="text-sm sm:text-sm p-2 sm:p-4 text-center">
+                  <TableCell className="px-3 py-4 text-center align-middle sm:px-4 sm:py-5">
                     {index < 3 ? (
-                      <Trophy 
-                        className={`h-4 w-4 sm:h-5 sm:w-5 mx-auto ${
+                      <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200 sm:h-9 sm:w-9">
+                        <Trophy 
+                        className={`h-4 w-4 sm:h-5 sm:w-5 ${
                           index === 0 ? 'text-yellow-500' :
                           index === 1 ? 'text-gray-400' :
                           'text-amber-600'
                         }`} 
                       />
+                      </div>
                     ) : (
-                      <span className="text-sm sm:text-sm font-medium">{index + 1}</span>
+                      <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2 text-sm font-semibold text-slate-700 sm:h-9">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm sm:text-sm font-medium p-2 sm:p-4">{branch.id}</TableCell>
-                  <TableCell className="text-right p-2 sm:p-4">
-                    <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-                      <div className="relative w-20 sm:w-24 h-2.5 sm:h-2.5 bg-green-100 dark:bg-green-900/20 rounded-full overflow-hidden">
+                  <TableCell className="px-3 py-4 align-middle sm:px-4 sm:py-5"><div className="flex flex-col gap-0.5"><span className="text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="text-[11px] text-slate-500">Checklist y progreso de muestreo</span></div></TableCell>
+                  <TableCell className="px-3 py-4 text-right align-middle sm:px-4 sm:py-5">
+                    <div className="flex items-center justify-end gap-2 sm:gap-3">
+                      <div className="relative h-2.5 w-24 overflow-hidden rounded-full bg-emerald-100 sm:w-28">
                         <motion.div 
-                          className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                           initial={{ width: 0 }}
                           animate={{ width: `${branch.totalCompleted}%` }}
                           transition={{ 
@@ -222,7 +233,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="text-xs sm:text-sm min-w-[32px] sm:min-w-[35px] font-semibold text-green-600"
+                        className="min-w-[38px] text-xs font-semibold text-emerald-600 sm:min-w-[42px] sm:text-sm"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.5 }}
@@ -230,12 +241,12 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
-                    <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1 sm:mt-1">
-                      <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Sin Stock</span>
-                      <span className="text-[9px] text-gray-400 whitespace-nowrap sm:hidden">S/S</span>
-                      <div className="relative w-16 sm:w-24 h-1.5 sm:h-1.5 bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
+                    <div className="mt-1.5 flex items-center justify-end gap-1.5 sm:gap-2">
+                      <span className="hidden whitespace-nowrap text-[10px] text-slate-400 sm:inline">Sin Stock</span>
+                      <span className="whitespace-nowrap text-[10px] text-slate-400 sm:hidden">S/S</span>
+                      <div className="relative h-1.5 w-16 overflow-hidden rounded-full bg-orange-100 sm:w-24">
                         <motion.div 
-                          className="h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full"
+                          className="h-full rounded-full bg-gradient-to-r from-orange-300 to-orange-500"
                           initial={{ width: 0 }}
                           animate={{ width: `${branch.noStockPercentage}%` }}
                           transition={{ 
@@ -246,7 +257,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="text-[10px] sm:text-[10px] min-w-[24px] sm:min-w-[35px] font-medium text-orange-500"
+                        className="min-w-[24px] text-[10px] font-medium text-orange-500 sm:min-w-[35px]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.7 }}
@@ -255,7 +266,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       </motion.span>
                     </div>
                     {branch.addedItemsCount > 0 && (
-                      <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1 sm:mt-1">
+                      <div className="mt-1.5 flex items-center justify-end gap-1.5 sm:gap-2">
                         <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
                         <span className="text-[9px] text-gray-400 whitespace-nowrap sm:hidden">+</span>
                         <div className="relative w-16 sm:w-24 h-1.5 sm:h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
@@ -280,12 +291,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         </motion.span>
                       </div>
                     )}
-                    {['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'].includes(branch.id) && (() => {
+                    {getCalendarioSucursal(branch.id) && (() => {
                       const calendario = getCalendarioSucursal(branch.id);
                       if (!calendario) return null;
-                      
-                      const codigosCalendario = calendario.semanas.flatMap(s => s.items);
-                      const completados = codigosCalendario.filter(code => findItemByCode(branch.items, code)?.completed).length;
                       
                       const mesesMap: { [key: string]: { corto: string, items: number } } = {
                         'DICIEMBRE': { corto: 'Dic', items: 0 },
@@ -293,7 +301,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         'FEBRERO': { corto: 'Feb', items: 0 },
                         'MARZO': { corto: 'Mar', items: 0 },
                         'ABRIL': { corto: 'Abr', items: 0 },
-                        'MAYO': { corto: 'May', items: 0 }
+                        'MAYO': { corto: 'May', items: 0 },
+                        'AGOSTO': { corto: 'Ago', items: 0 }
                       };
                       calendario.semanas.forEach(s => {
                         if (mesesMap[s.mes]) {
@@ -301,29 +310,34 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         }
                       });
                       
-                      let acumulado = 0;
                       const objetivos = Object.entries(mesesMap)
-                        .filter(([_, v]) => v.items > 0)
-                        .map(([mes, v]) => {
-                          acumulado += v.items;
-                          return { mes: v.corto, obj: v.items, acum: acumulado };
+                        .filter(([_, value]) => value.items > 0)
+                        .map(([mes, value]) => {
+                          const entriesMes = getChecklistEntriesForMonth(calendario, mes);
+                          const completadosMes = entriesMes.filter((entry) =>
+                            getChecklistItemState(branch.branchData, entry.code, entry.periodKey)?.completed === true
+                          ).length;
+
+                          return {
+                            mes: value.corto,
+                            obj: value.items,
+                            completadosMes,
+                            cumplido: completadosMes >= value.items,
+                          };
                         });
                       
                       return (
-                        <div className="flex gap-0.5 sm:gap-1 mt-1 sm:mt-1 justify-end flex-wrap max-w-full" data-testid="indicadores-meses-ranking">
-                          {objetivos.map(({ mes, obj, acum }) => {
-                            const acumAnterior = acum - obj;
-                            const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
-                            const cumplido = completadosMes >= obj;
+                        <div className="mt-2 flex max-w-full flex-wrap justify-end gap-1.5 sm:gap-2" data-testid="indicadores-meses-ranking">
+                          {objetivos.map(({ mes, obj, completadosMes, cumplido }) => {
                             return (
                               <span 
                                 key={mes}
-                                className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 sm:py-0.5 rounded whitespace-nowrap leading-tight ${
+                                className={`rounded-full px-2 py-1 text-[10px] leading-tight whitespace-nowrap sm:px-2.5 sm:text-[11px] ${
                                   cumplido 
-                                    ? 'bg-green-500 text-white' 
+                                    ? 'bg-emerald-500 text-white shadow-sm' 
                                     : completadosMes > 0 
-                                      ? 'bg-blue-100 text-blue-700' 
-                                      : 'bg-gray-100 text-gray-500'
+                                      ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-200' 
+                                      : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
                                 }`}
                                 title={`${mes}: ${completadosMes}/${obj}`}
                               >

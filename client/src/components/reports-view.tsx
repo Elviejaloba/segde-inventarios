@@ -21,7 +21,7 @@ import {
   Lock,
   Mail
 } from "lucide-react";
-import { getCalendarioSucursal } from "@/lib/calendario-semanal";
+import { getCalendarioSucursal, getChecklistEntriesForMonth, getChecklistItemState, getMesActualCalendario } from "@/lib/calendario-semanal";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { AjustesDashboard } from "@/components/ajustes-dashboard";
@@ -166,7 +166,7 @@ const sanitizeCode = (code: string): string => {
 };
 
 // Sucursales con calendario
-const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2'];
+const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2', 'T.S.Martin', 'T.Tunuyan', 'T.Lujan', 'T.Maipu', 'T.Srafael', 'T.GLLEN'];
 
 const SUCURSALES_PREMIUM: string[] = ['T.Srafael', 'T.Maipu', 'T.S.Martin', 'T.Lujan', 'T.Tunuyan'];
 
@@ -185,7 +185,8 @@ const MESES_MAP: { [key: string]: string } = {
   'FEBRERO': 'Feb',
   'MARZO': 'Mar',
   'ABRIL': 'Abr',
-  'MAYO': 'May'
+  'MAYO': 'May',
+  'AGOSTO': 'Ago'
 };
 
 export function ReportsView() {
@@ -196,6 +197,8 @@ export function ReportsView() {
   const [premiumCode, setPremiumCode] = useState("");
   const [premiumCodeError, setPremiumCodeError] = useState(false);
   const [unlockedBranches, setUnlockedBranches] = useState<string[]>([]);
+  const activeMonth = useMemo(() => getMesActualCalendario(), []);
+
   const { metrics, loading } = useAjustesData(
     selectedBranch === "Todas las Sucursales" ? undefined : selectedBranch,
     selectedSeason
@@ -249,52 +252,52 @@ export function ReportsView() {
     let totalItems = 0;
     let totalCompletados = 0;
     let sucursalesCompletas = 0;
-    
+
     SUCURSALES_CALENDARIO.forEach(sucId => {
       const calendario = getCalendarioSucursal(sucId);
       if (calendario) {
         const branchData = branchesData?.find(b => b.id === sucId);
-        const codigos = calendario.semanas.flatMap(s => s.items);
-        totalItems += codigos.length;
-        const completados = codigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
+        const codigosActivos = getChecklistEntriesForMonth(calendario, activeMonth);
+        const entries = codigosActivos.length > 0
+          ? codigosActivos
+          : calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey })));
+        totalItems += entries.length;
+        const completados = entries.filter(entry => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
         totalCompletados += completados;
-        if (completados >= codigos.length) sucursalesCompletas++;
+        if (entries.length > 0 && completados >= entries.length) sucursalesCompletas++;
       }
     });
-    
+
     const porcentajeGlobal = totalItems > 0 ? Math.round((totalCompletados / totalItems) * 100) : 0;
-    
+
     return { totalItems, totalCompletados, sucursalesCompletas, porcentajeGlobal };
-  }, [branchesData]);
+  }, [branchesData, activeMonth]);
 
   // Memoizar datos de sucursales para tarjetas
   const sucursalesData = useMemo(() => {
     return SUCURSALES_CALENDARIO.map(sucursalId => {
       const calendario = getCalendarioSucursal(sucursalId);
       if (!calendario) return null;
-      
+
       const branchData = branchesData?.find(b => b.id === sucursalId);
-      const todosLosCodigos = calendario.semanas.flatMap(s => s.items);
-      const completados = todosLosCodigos.filter(code => branchData?.items?.[sanitizeCode(code)]?.completed).length;
-      const porcentaje = Math.round((completados / todosLosCodigos.length) * 100);
-      
-      const mesesMap: { [key: string]: number } = {};
-      calendario.semanas.forEach(s => {
-        mesesMap[s.mes] = (mesesMap[s.mes] || 0) + s.items.length;
+      const entriesActivos = getChecklistEntriesForMonth(calendario, activeMonth);
+      const entriesRanking = entriesActivos.length > 0
+        ? entriesActivos
+        : calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey })));
+      const completados = entriesRanking.filter(entry => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
+      const porcentaje = entriesRanking.length > 0 ? Math.round((completados / entriesRanking.length) * 100) : 0;
+
+      const meses = Array.from(new Set(calendario.semanas.map((semana) => semana.mes)));
+      const objetivosMes = meses.map((mes) => {
+        const entriesMes = getChecklistEntriesForMonth(calendario, mes);
+        const completadosMes = entriesMes.filter((entry) => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
+        const cumplido = entriesMes.length > 0 && completadosMes >= entriesMes.length;
+        return { mes: MESES_MAP[mes] || mes.slice(0,3), obj: entriesMes.length, completadosMes, cumplido };
       });
-      
-      let acumulado = 0;
-      const objetivosMes = Object.entries(mesesMap).map(([mes, obj]) => {
-        acumulado += obj;
-        const acumAnterior = acumulado - obj;
-        const completadosMes = Math.min(Math.max(completados - acumAnterior, 0), obj);
-        const cumplido = completadosMes >= obj;
-        return { mes: MESES_MAP[mes] || mes.slice(0,3), obj, completadosMes, cumplido };
-      });
-      
-      return { sucursalId, completados, total: todosLosCodigos.length, porcentaje, objetivosMes };
+
+      return { sucursalId, completados, total: entriesRanking.length, porcentaje, objetivosMes };
     }).filter(Boolean);
-  }, [branchesData]);
+  }, [branchesData, activeMonth]);
 
   if (loading) {
     return (
