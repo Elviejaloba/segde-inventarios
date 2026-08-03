@@ -34,10 +34,10 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
       {/* Desktop: Select normal */}
       <div className="hidden sm:block">
         <Select value={value} onValueChange={handleChange}>
-          <SelectTrigger className="w-[200px]" data-testid="select-branch">
+          <SelectTrigger className="h-12 w-[280px] min-w-[280px] rounded-xl border-2 border-primary/25 bg-white px-4 text-[15px] font-medium shadow-sm transition-colors hover:border-primary/40 focus:ring-2 focus:ring-primary/20" data-testid="select-branch">
             <SelectValue placeholder="Selecciona Sucursal" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="min-w-[320px] rounded-xl border border-primary/15 shadow-lg">
             {AVAILABLE_BRANCHES.map((branch) => (
               <SelectItem key={branch} value={branch}>
                 {branch}
@@ -88,7 +88,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
                 }`}
               >
                 <MapPin className={`h-5 w-5 shrink-0 ${value === branch ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="text-base">{branch}</span>
+                <span className="text-base whitespace-nowrap">{branch}</span>
                 {value === branch && (
                   <span className="ml-auto text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Actual</span>
                 )}

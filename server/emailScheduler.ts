@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { getCalendarioSucursal } from '@shared/calendario-semanal';
+import { getCalendarioSucursal, getChecklistEntriesForMonth, getChecklistItemState, getMesActualCalendario } from '@shared/calendario-semanal';
 
 const DESTINATARIOS_REPORTE = [
   "adolfotripodi@textilcrisa.com",
@@ -483,10 +483,6 @@ const MESES_DISPLAY: Record<number, string> = {
   9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
 };
 
-function sanitizarCodigo(code: string): string {
-  return code.toLowerCase().replace(/[/.#$[\]]/g, '-');
-}
-
 async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
   try {
     const res = await fetch('https://check-d1753-default-rtdb.firebaseio.com/branches.json', {
@@ -497,7 +493,7 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
     if (!data) return [];
 
     const now = new Date();
-    const mesActualKey = MESES_ES[now.getMonth() + 1];
+    const mesActualKey = getMesActualCalendario(now);
     const nombreMes = MESES_DISPLAY[now.getMonth() + 1];
     const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const diasRestantes = ultimoDia - now.getDate();
@@ -513,7 +509,8 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
       if (sucursal.includes('Ctro') || sucursal.includes('Centro') || sucursal.includes('Distribucion') || sucursal === 'T.Luis') continue;
 
       const items: Record<string, any> = branchData.items || {};
-      if (Object.keys(items).length === 0) continue;
+      const periodItems = branchData.periods || {};
+      if (Object.keys(items).length === 0 && Object.keys(periodItems).length === 0) continue;
 
       const calendario = getCalendarioSucursal(sucursal);
       let totalCodigos: number;
@@ -524,22 +521,13 @@ async function obtenerRendimientoMensual(): Promise<RendimientoSucursal[]> {
       const tieneCalendario: boolean = !!calendario;
 
       if (calendario) {
-        // === TOTAL TEMPORADA: todos los items del calendario ===
-        const codigosCalendario = calendario.semanas.flatMap(s => s.items);
-        totalCodigos = codigosCalendario.length;
-        codigosVerificados = codigosCalendario.filter(code => {
-          const s = sanitizarCodigo(code);
-          return items[s]?.completed === true || items[code]?.completed === true;
-        }).length;
+        const entriesTemporada = calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey })));
+        totalCodigos = entriesTemporada.length;
+        codigosVerificados = entriesTemporada.filter(entry => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
 
-        // === MES ACTUAL: solo items de las semanas del mes en curso ===
-        const semanasMesActual = calendario.semanas.filter(s => s.mes === mesActualKey);
-        const codigosMesActual = semanasMesActual.flatMap(s => s.items);
-        totalCodigosMes = codigosMesActual.length;
-        codigosVerificadosMes = codigosMesActual.filter(code => {
-          const s = sanitizarCodigo(code);
-          return items[s]?.completed === true || items[code]?.completed === true;
-        }).length;
+        const entriesMesActual = getChecklistEntriesForMonth(calendario, mesActualKey);
+        totalCodigosMes = entriesMesActual.length;
+        codigosVerificadosMes = entriesMesActual.filter(entry => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
       } else {
         // Sin calendario: % de cumplimiento desde Firebase + % sin stock
         totalCodigos = 0;

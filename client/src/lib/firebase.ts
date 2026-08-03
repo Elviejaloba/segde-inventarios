@@ -4,6 +4,9 @@ import { connectDatabaseEmulator } from "firebase/database";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 
+export const FIREBASE_USING_EMULATOR =
+  import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true';
+
 console.log('Environment check:', {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   hasApiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
@@ -34,7 +37,7 @@ const db = getDatabase(app);
 const storage = getStorage(app);
 const firestore = getFirestore(app);
 
-if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR) {
+if (FIREBASE_USING_EMULATOR) {
   connectDatabaseEmulator(db, 'localhost', 9000);
   console.log('Connected to Firebase emulator');
 } else {

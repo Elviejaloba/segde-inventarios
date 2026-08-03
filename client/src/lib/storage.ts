@@ -2,11 +2,31 @@ import { ref, set, onValue, get } from 'firebase/database';
 import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES, Season, SEASON_CODES_TEMPORADA_VERANO } from './store';
 
+const FIREBASE_READ_ONLY = import.meta.env.DEV && import.meta.env.VITE_FIREBASE_READONLY === 'true';
+
+function ensureWritable() {
+  if (FIREBASE_READ_ONLY) {
+    throw new Error('Modo solo lectura local activado');
+  }
+}
+
+interface ChecklistItemData {
+  completed: boolean;
+  hasStock: boolean;
+  lastUpdated?: number;
+}
+
+interface ChecklistPeriodData {
+  items: Record<string, ChecklistItemData>;
+  lastUpdated?: number;
+}
+
 interface BranchData {
   id: string;
   totalCompleted: number;
   noStock: number;
-  items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  items: Record<string, ChecklistItemData>;
+  periods?: Record<string, ChecklistPeriodData>;
   addedItems?: Record<string, { code: string; addedAt: number; month?: string }>;
   lastUpdated?: number;
 }
@@ -32,6 +52,10 @@ class FirebaseStorage {
 
   async initializeData() {
     try {
+      if (FIREBASE_READ_ONLY) {
+        return;
+      }
+
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
@@ -185,6 +209,7 @@ class FirebaseStorage {
 
   async updateBranch(branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
+      ensureWritable();
       const snapshot = await get(this.dbRef);
 
       if (!snapshot.exists()) {
@@ -222,6 +247,37 @@ class FirebaseStorage {
           });
         }
         
+        const mergedPeriods = { ...(existingBranch.periods || {}) } as Record<string, ChecklistPeriodData>;
+
+        if (data.periods) {
+          Object.entries(data.periods).forEach(([periodKey, periodData]) => {
+            const existingPeriod = existingBranch.periods?.[periodKey] || { items: {} };
+            const mergedPeriodItems: Record<string, ChecklistItemData> = {
+              ...(existingPeriod.items || {}),
+              ...(periodData?.items || {})
+            };
+
+            if (periodData?.items) {
+              Object.entries(periodData.items).forEach(([code, newState]) => {
+                const existing = existingPeriod.items?.[code];
+                if (!existing || existing.completed !== newState.completed || existing.hasStock !== newState.hasStock) {
+                  mergedPeriodItems[code] = {
+                    ...newState,
+                    lastUpdated: timestamp
+                  };
+                }
+              });
+            }
+
+            mergedPeriods[periodKey] = {
+              ...existingPeriod,
+              ...periodData,
+              items: mergedPeriodItems,
+              lastUpdated: timestamp
+            };
+          });
+        }
+
         const finalAddedItems = data.addedItems !== undefined
           ? data.addedItems
           : existingBranch.addedItems;
@@ -230,6 +286,7 @@ class FirebaseStorage {
           ...existingBranch,
           ...data,
           items: mergedItems,
+          ...(Object.keys(mergedPeriods).length > 0 && { periods: mergedPeriods }),
           ...(finalAddedItems !== undefined && { addedItems: finalAddedItems }),
           lastUpdated: timestamp
         };
@@ -243,6 +300,7 @@ class FirebaseStorage {
             totalCompleted: 0,
             noStock: 0,
             items: {},
+            periods: data.periods,
             ...data,
             lastUpdated: timestamp
           }
@@ -260,6 +318,7 @@ class FirebaseStorage {
 
   async updateAjustes(ajustes: AjusteData[]) {
     try {
+      ensureWritable();
       console.log('Actualizando datos de ajustes...', ajustes);
       await set(this.ajustesRef, ajustes);
       console.log('Datos de ajustes actualizados exitosamente');
@@ -357,6 +416,7 @@ class FirebaseStorage {
 
   async resetAllData() {
     try {
+      ensureWritable();
       // Inicializar con códigos de temporada de verano - todos sin stock
       const initialData = AVAILABLE_BRANCHES.map(branch => {
         const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
@@ -392,6 +452,7 @@ class FirebaseStorage {
   // Función especial para migrar datos existentes a códigos de temporada de verano
   async migrateToSeasonCodes() {
     try {
+      ensureWritable();
       console.log('Migrando datos existentes a códigos de temporada de verano (sin stock)...');
       
       // Reinicializar completamente con códigos de verano - SIN STOCK
@@ -429,6 +490,7 @@ class FirebaseStorage {
   // Funciones para manejo de temporadas
   async initializeSeasonData(season: Season, codes: string[]) {
     try {
+      ensureWritable();
       console.log(`Inicializando temporada ${season}...`);
       const seasonRef = this.getSeasonRef(season);
       
@@ -468,6 +530,7 @@ class FirebaseStorage {
 
   async resetSeasonData(season: Season, codes: string[]) {
     try {
+      ensureWritable();
       console.log(`Reiniciando temporada ${season}...`);
       const seasonRef = this.getSeasonRef(season);
       
@@ -532,6 +595,7 @@ class FirebaseStorage {
 
   async updateSeasonBranch(season: Season, branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
+      ensureWritable();
       console.log(`Actualizando sucursal ${branchId} en temporada ${season}...`, data);
       const seasonRef = this.getSeasonRef(season);
       const snapshot = await get(seasonRef);

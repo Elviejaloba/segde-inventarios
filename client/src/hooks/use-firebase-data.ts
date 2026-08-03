@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 
+interface ChecklistItemData {
+  completed: boolean;
+  hasStock: boolean;
+  lastUpdated?: number;
+}
+
 interface BranchData {
   id: string;
   totalCompleted: number;
   noStock: number;
-  items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated?: number }>;
+  items: Record<string, ChecklistItemData>;
+  periods?: Record<string, {
+    items: Record<string, ChecklistItemData>;
+    lastUpdated?: number;
+  }>;
   addedItems?: Record<string, { code: string; addedAt: number; month?: string }>;
   lastUpdated?: number;
 }
