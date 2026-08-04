@@ -1,4 +1,5 @@
-import { neon } from "@neondatabase/serverless";
+import fs from "node:fs/promises";
+import { Client, neon } from "@neondatabase/serverless";
 import {
   checklistBranchPatchSchema,
   type ChecklistAddedItem,
@@ -39,8 +40,10 @@ const CHECKLIST_BRANCHES = [
 const BASE_PERIOD_SCOPE = "__base__";
 const BASE_PERIOD_PREFIX = "BASE-";
 const FIREBASE_BRANCHES_URL = "https://check-d1753-default-rtdb.firebaseio.com/branches.json";
+const MIGRATION_FILE_URL = new URL("../migrations/0001_checklist_postgres.sql", import.meta.url);
 
 let definitionsReadyPromise: Promise<void> | null = null;
+let runtimeReadyPromise: Promise<void> | null = null;
 
 function getPeriodScope(periodKey?: string | null) {
   return periodKey && periodKey.trim().length > 0 ? periodKey.trim() : BASE_PERIOD_SCOPE;
@@ -125,6 +128,19 @@ function computeBranchMetrics(branchData: ChecklistBranchState, periodKey?: stri
     totalCompleted: Math.round((completedCount / entries.length) * 100),
     noStock: noStockCount,
   };
+}
+
+async function applyChecklistMigration() {
+  if (!databaseUrl) return;
+
+  const migrationSql = await fs.readFile(MIGRATION_FILE_URL, "utf8");
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+  try {
+    await client.query(migrationSql);
+  } finally {
+    await client.end();
+  }
 }
 
 async function ensureChecklistBranchCatalog() {
@@ -228,6 +244,34 @@ async function ensureChecklistDefinitions() {
   await definitionsReadyPromise;
 }
 
+async function hasChecklistSeedData() {
+  if (!databaseUrl) return false;
+  const [stateRow] = await sql`SELECT COUNT(*)::int AS count FROM checklist_item_states`;
+  const [addedRow] = await sql`SELECT COUNT(*)::int AS count FROM checklist_added_items`;
+  return Number(stateRow?.count || 0) > 0 || Number(addedRow?.count || 0) > 0;
+}
+
+async function ensureChecklistRuntimeReady() {
+  if (!databaseUrl) return;
+  if (!runtimeReadyPromise) {
+    runtimeReadyPromise = (async () => {
+      await applyChecklistMigration();
+      await ensureChecklistDefinitions();
+      if (!(await hasChecklistSeedData())) {
+        await bootstrapChecklistPostgres({ importFirebase: true });
+      }
+    })().catch((error) => {
+      runtimeReadyPromise = null;
+      throw error;
+    });
+  }
+  await runtimeReadyPromise;
+}
+
+export async function primeChecklistRuntime() {
+  await ensureChecklistRuntimeReady();
+}
+
 function deriveMonthKey(timestamp: number | string | undefined) {
   const date = timestamp ? new Date(Number(timestamp)) : new Date();
   const year = date.getFullYear();
@@ -312,6 +356,7 @@ export async function bootstrapChecklistPostgres(options?: { importFirebase?: bo
     throw new Error("DATABASE_URL es requerida para bootstrapChecklistPostgres");
   }
 
+  await applyChecklistMigration();
   await seedChecklistDefinitions();
 
   if (options?.importFirebase === false) {
@@ -377,7 +422,7 @@ export async function bootstrapChecklistPostgres(options?: { importFirebase?: bo
 }
 
 export async function getChecklistBranches(options?: { period?: string | null }): Promise<ChecklistBranchState[]> {
-  await ensureChecklistDefinitions();
+  await ensureChecklistRuntimeReady();
 
   const branchRows = await sql`
     SELECT branch_code, updated_at
@@ -476,7 +521,7 @@ export async function updateChecklistBranch(branchId: string, patch: ChecklistBr
   const branchCode = normalizeBranchId(branchId);
   const parsedPatch = checklistBranchPatchSchema.parse(patch);
 
-  await ensureChecklistDefinitions();
+  await ensureChecklistRuntimeReady();
 
   await sql`
     UPDATE checklist_branches
@@ -534,7 +579,7 @@ export async function updateChecklistItem(
 ) {
   const branchCode = normalizeBranchId(branchId);
   const periodKey = payload.period && payload.period.trim().length > 0 ? payload.period.trim() : null;
-  await ensureChecklistDefinitions();
+  await ensureChecklistRuntimeReady();
   await upsertChecklistState(branchCode, itemCode, periodKey, payload);
   return getChecklistBranch(branchCode, { period: periodKey });
 }
@@ -548,7 +593,7 @@ export async function addChecklistItem(
   const target = resolveAddedItemTarget(payload.period || payload.month);
   const addedAt = Number(payload.addedAt || Date.now());
 
-  await ensureChecklistDefinitions();
+  await ensureChecklistRuntimeReady();
   await upsertCatalogItem(itemCode);
   await upsertChecklistPeriod(target.periodKey, target.month);
 
@@ -577,7 +622,7 @@ export async function deleteChecklistAddedItem(branchId: string, itemCode: strin
   const branchCode = normalizeBranchId(branchId);
   const target = resolveAddedItemTarget(periodOrMonth);
 
-  await ensureChecklistDefinitions();
+  await ensureChecklistRuntimeReady();
   await sql`
     DELETE FROM checklist_added_items
     WHERE branch_code = ${branchCode}

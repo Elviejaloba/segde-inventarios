@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema } from "@shared/schema";
 import * as dropbox from './dropbox';
-import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
+import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, primeChecklistRuntime, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
 import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } from "./emailScheduler";
 
@@ -11,7 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
   dropbox.initializeDropbox();
 
-  // Rutas API bÃƒÂ¡sicas
+  // Rutas API bÃƒÆ’Ã‚Â¡sicas
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
   });
@@ -155,19 +155,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.json(analisis);
     } catch (error) {
-      console.error('Error getting anÃƒÂ¡lisis valorizado:', error);
+      console.error('Error getting anÃƒÆ’Ã‚Â¡lisis valorizado:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
 
-  // AnÃƒÂ¡lisis valorizado con costo de reposiciÃƒÂ³n
+  // AnÃƒÆ’Ã‚Â¡lisis valorizado con costo de reposiciÃƒÆ’Ã‚Â³n
   app.get('/api/ajustes/valorizado-costo', async (req, res) => {
     try {
       const { sucursal } = req.query;
       const analisis = await storage.getAnalisisValorizadoConCosto(sucursal as string);
       res.json(analisis);
     } catch (error) {
-      console.error('Error getting anÃƒÂ¡lisis valorizado con costo:', error);
+      console.error('Error getting anÃƒÆ’Ã‚Â¡lisis valorizado con costo:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -195,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Historial de ajustes por cÃƒÂ³digo
+  // Historial de ajustes por cÃƒÆ’Ã‚Â³digo
   app.get('/api/ajustes/historial/:codigo', async (req, res) => {
     try {
       const { codigo } = req.params;
@@ -305,21 +305,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = textoExtraido.split('\n');
       const codigosExtraidos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[] = [];
 
-      const articuloFullRegex = /^\s*Ã‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ã‚Â¦?\s*$/;
-      const articuloNumFullRegex = /^\s*Ã‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ã‚Â¦?\s*$/;
-      const articuloSimpleRegex = /^\s*Ã‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ã‚Â¦?\s*$/;
-      const articuloNumSimpleRegex = /^\s*Ã‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ã‚Â¦?\s*$/;
+      const articuloFullRegex = /^\s*Ãƒâ€šÃ‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ãƒâ€šÃ‚Â¦?\s*$/;
+      const articuloNumFullRegex = /^\s*Ãƒâ€šÃ‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ãƒâ€šÃ‚Â¦?\s*$/;
+      const articuloSimpleRegex = /^\s*Ãƒâ€šÃ‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ãƒâ€šÃ‚Â¦?\s*$/;
+      const articuloNumSimpleRegex = /^\s*Ãƒâ€šÃ‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ãƒâ€šÃ‚Â¦?\s*$/;
 
       const PREFIJO_DESC: Record<string, string> = {
         'TC': 'Cortes Listos',
-        'TA': 'Tela AlgodÃƒÂ³n',
-        'TF': 'Tul/FantasÃƒÂ­a',
-        'TD': 'Cuerina/DecoraciÃƒÂ³n',
+        'TA': 'Tela AlgodÃƒÆ’Ã‚Â³n',
+        'TF': 'Tul/FantasÃƒÆ’Ã‚Â­a',
+        'TD': 'Cuerina/DecoraciÃƒÆ’Ã‚Â³n',
         'TV': 'Tela Varios',
         'TI': 'Tela Interior',
-        'TM': 'Tela MantelerÃƒÂ­a',
+        'TM': 'Tela MantelerÃƒÆ’Ã‚Â­a',
         'BL': 'Blanco',
-        'ME': 'MercerÃƒÂ­a',
+        'ME': 'MercerÃƒÆ’Ã‚Â­a',
         'OT': 'Otros',
         'PV': 'Prenda Vestir',
         'AR': 'Aromatizante',
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (compMatch) comprobante = compMatch[1].trim();
 
       let observaciones: string | undefined;
-      const obsMatch = textoExtraido.match(/Observaciones\s*:\s*([^\nÃ‚Â¦]+)/i);
+      const obsMatch = textoExtraido.match(/Observaciones\s*:\s*([^\nÃƒâ€šÃ‚Â¦]+)/i);
       if (obsMatch) observaciones = obsMatch[1].trim().replace(/\s{2,}/g, ' ').replace(/\s*DEPOSITO.*/, '');
 
       res.json({
@@ -397,18 +397,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const apiKey = (req.headers['x-bridge-api-key'] as string) || req.headers['authorization']?.replace('Bearer ', '');
     const expectedKey = process.env.BRIDGE_API_KEY;
     
-    // Log mÃƒÂ¡s detallado para ver exactamente quÃƒÂ© estÃƒÂ¡ llegando
+    // Log mÃƒÆ’Ã‚Â¡s detallado para ver exactamente quÃƒÆ’Ã‚Â© estÃƒÆ’Ã‚Â¡ llegando
     console.log(`[Auth] Intento de sync. API Key recibida: "${apiKey ? apiKey.substring(0, 5) + '...' : 'NULA'}"`);
     
     if (!expectedKey) {
-      console.error('[Auth] ERROR: BRIDGE_API_KEY no estÃƒÂ¡ configurada en los secrets de Replit');
-      res.status(500).json({ error: 'ConfiguraciÃƒÂ³n de servidor incompleta' });
+      console.error('[Auth] ERROR: BRIDGE_API_KEY no estÃƒÆ’Ã‚Â¡ configurada en los secrets de Replit');
+      res.status(500).json({ error: 'ConfiguraciÃƒÆ’Ã‚Â³n de servidor incompleta' });
       return false;
     }
 
     if (!apiKey || apiKey.trim() !== expectedKey.trim()) {
       console.log(`[Auth] API Key rechazada. Comparando: "${apiKey?.trim()}" vs "${expectedKey.trim()}"`);
-      res.status(401).json({ error: 'API key invÃƒÂ¡lida o faltante' });
+      res.status(401).json({ error: 'API key invÃƒÆ’Ã‚Â¡lida o faltante' });
       return false;
     }
     return true;
@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint de prueba: manda mail a un destinatario especÃƒÂ­fico
+  // Endpoint de prueba: manda mail a un destinatario especÃƒÆ’Ã‚Â­fico
   app.post('/api/muestreo/enviar-prueba', async (req, res) => {
     try {
       const { destinatario, sucursal } = req.body;
@@ -467,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para envÃƒÂ­o manual de recordatorios de muestreo
+  // Endpoint para envÃƒÆ’Ã‚Â­o manual de recordatorios de muestreo
   app.post('/api/muestreo/enviar-recordatorios', async (req, res) => {
     try {
       console.log('[API] Enviando recordatorios de muestreo manualmente...');
@@ -487,15 +487,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/bridge/reporte-semanal', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
     // EMAILS DESACTIVADOS MANUALMENTE
-    console.log('[Bridge API] Reporte semanal recibido pero EMAILS DESACTIVADOS - no se enviarÃƒÂ¡ nada');
-    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÂ³ nada' });
+    console.log('[Bridge API] Reporte semanal recibido pero EMAILS DESACTIVADOS - no se enviarÃƒÆ’Ã‚Â¡ nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÆ’Ã‚Â³ nada' });
   });
 
   app.post('/api/bridge/recordatorios-muestreo', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
     // EMAILS DESACTIVADOS MANUALMENTE
-    console.log('[Bridge API] Recordatorios recibidos pero EMAILS DESACTIVADOS - no se enviarÃƒÂ¡ nada');
-    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÂ³ nada' });
+    console.log('[Bridge API] Recordatorios recibidos pero EMAILS DESACTIVADOS - no se enviarÃƒÆ’Ã‚Â¡ nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÆ’Ã‚Â³ nada' });
   });
 
   app.get('/api/ultima-actualizacion', async (req, res) => {
