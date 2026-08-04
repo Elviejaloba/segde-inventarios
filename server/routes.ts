@@ -1,8 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAjusteSchema } from "@shared/schema";
-import * as dropbox from "./dropbox";
+import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema } from "@shared/schema";
+import * as dropbox from './dropbox';
+import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
 import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } from "./emailScheduler";
 
@@ -10,9 +11,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
   dropbox.initializeDropbox();
 
-  // Rutas API básicas
+  // Rutas API bÃƒÂ¡sicas
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
+  });
+  app.get('/api/checklist/branches', async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+      const branches = await getChecklistBranches({ period });
+      res.json(branches);
+    } catch (error) {
+      console.error('Error getting checklist branches:', error);
+      res.status(500).json({ error: 'Failed to load checklist branches' });
+    }
+  });
+
+  app.get('/api/checklist/branches/:branchId', async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+      const branch = await getChecklistBranch(req.params.branchId, { period });
+      if (!branch) {
+        res.status(404).json({ error: 'Branch not found' });
+        return;
+      }
+      res.json(branch);
+    } catch (error) {
+      console.error('Error getting checklist branch:', error);
+      res.status(500).json({ error: 'Failed to load checklist branch' });
+    }
+  });
+
+  app.get('/api/checklist/:branchId', async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+      const branch = await getChecklistBranch(req.params.branchId, { period });
+      if (!branch) {
+        res.status(404).json({ error: 'Branch not found' });
+        return;
+      }
+      res.json(branch);
+    } catch (error) {
+      console.error('Error getting checklist branch:', error);
+      res.status(500).json({ error: 'Failed to load checklist branch' });
+    }
+  });
+
+  app.patch('/api/checklist/branches/:branchId', async (req, res) => {
+    try {
+      const patch = checklistBranchPatchSchema.parse(req.body);
+      const branch = await updateChecklistBranch(req.params.branchId, patch);
+      res.json(branch);
+    } catch (error) {
+      console.error('Error updating checklist branch:', error);
+      res.status(400).json({ error: 'Failed to update checklist branch' });
+    }
+  });
+
+  app.patch('/api/checklist/:branchId/items/:code', async (req, res) => {
+    try {
+      const payload = checklistSingleItemUpdateSchema.parse(req.body);
+      const branch = await updateChecklistItem(req.params.branchId, req.params.code, payload);
+      res.json(branch);
+    } catch (error) {
+      console.error('Error updating checklist item:', error);
+      res.status(400).json({ error: 'Failed to update checklist item' });
+    }
+  });
+
+  app.post('/api/checklist/:branchId/added-items', async (req, res) => {
+    try {
+      const payload = checklistAddedItemInputSchema.parse(req.body);
+      const branch = await addChecklistItem(req.params.branchId, payload);
+      res.status(201).json(branch);
+    } catch (error) {
+      console.error('Error adding checklist item:', error);
+      res.status(400).json({ error: 'Failed to add checklist item' });
+    }
+  });
+
+  app.delete('/api/checklist/:branchId/added-items/:code', async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : (typeof req.query.month === 'string' ? req.query.month : undefined);
+      const branch = await deleteChecklistAddedItem(req.params.branchId, req.params.code, period);
+      res.json(branch);
+    } catch (error) {
+      console.error('Error deleting checklist item:', error);
+      res.status(400).json({ error: 'Failed to delete checklist item' });
+    }
+  });
+
+  app.get('/api/ranking', async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+      const ranking = await getChecklistRanking(period);
+      res.json(ranking);
+    } catch (error) {
+      console.error('Error getting checklist ranking:', error);
+      res.status(500).json({ error: 'Failed to load checklist ranking' });
+    }
   });
 
   // Rutas para ajustes
@@ -59,19 +155,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.json(analisis);
     } catch (error) {
-      console.error('Error getting análisis valorizado:', error);
+      console.error('Error getting anÃƒÂ¡lisis valorizado:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
 
-  // Análisis valorizado con costo de reposición
+  // AnÃƒÂ¡lisis valorizado con costo de reposiciÃƒÂ³n
   app.get('/api/ajustes/valorizado-costo', async (req, res) => {
     try {
       const { sucursal } = req.query;
       const analisis = await storage.getAnalisisValorizadoConCosto(sucursal as string);
       res.json(analisis);
     } catch (error) {
-      console.error('Error getting análisis valorizado con costo:', error);
+      console.error('Error getting anÃƒÂ¡lisis valorizado con costo:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -99,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Historial de ajustes por código
+  // Historial de ajustes por cÃƒÂ³digo
   app.get('/api/ajustes/historial/:codigo', async (req, res) => {
     try {
       const { codigo } = req.params;
@@ -209,21 +305,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lines = textoExtraido.split('\n');
       const codigosExtraidos: { codigo: string; descripcion: string; cantidad?: string; saldo?: string; diferencia?: string }[] = [];
 
-      const articuloFullRegex = /^\s*¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
-      const articuloNumFullRegex = /^\s*¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*¦?\s*$/;
-      const articuloSimpleRegex = /^\s*¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*¦?\s*$/;
-      const articuloNumSimpleRegex = /^\s*¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*¦?\s*$/;
+      const articuloFullRegex = /^\s*Ã‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ã‚Â¦?\s*$/;
+      const articuloNumFullRegex = /^\s*Ã‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s{2,}(.+?)(?:\s+([\d.,]+)\s+([\d.,]+)\s+([-\d.,]+))?\s*Ã‚Â¦?\s*$/;
+      const articuloSimpleRegex = /^\s*Ã‚Â¦?\s*([A-Z]{2}[A-Z0-9][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ã‚Â¦?\s*$/;
+      const articuloNumSimpleRegex = /^\s*Ã‚Â¦?\s*(\d{2}[A-Z][A-Z0-9\s\-.]{2,}?[A-Z0-9])\s*Ã‚Â¦?\s*$/;
 
       const PREFIJO_DESC: Record<string, string> = {
         'TC': 'Cortes Listos',
-        'TA': 'Tela Algodón',
-        'TF': 'Tul/Fantasía',
-        'TD': 'Cuerina/Decoración',
+        'TA': 'Tela AlgodÃƒÂ³n',
+        'TF': 'Tul/FantasÃƒÂ­a',
+        'TD': 'Cuerina/DecoraciÃƒÂ³n',
         'TV': 'Tela Varios',
         'TI': 'Tela Interior',
-        'TM': 'Tela Mantelería',
+        'TM': 'Tela MantelerÃƒÂ­a',
         'BL': 'Blanco',
-        'ME': 'Mercería',
+        'ME': 'MercerÃƒÂ­a',
         'OT': 'Otros',
         'PV': 'Prenda Vestir',
         'AR': 'Aromatizante',
@@ -276,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (compMatch) comprobante = compMatch[1].trim();
 
       let observaciones: string | undefined;
-      const obsMatch = textoExtraido.match(/Observaciones\s*:\s*([^\n¦]+)/i);
+      const obsMatch = textoExtraido.match(/Observaciones\s*:\s*([^\nÃ‚Â¦]+)/i);
       if (obsMatch) observaciones = obsMatch[1].trim().replace(/\s{2,}/g, ' ').replace(/\s*DEPOSITO.*/, '');
 
       res.json({
@@ -301,18 +397,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const apiKey = (req.headers['x-bridge-api-key'] as string) || req.headers['authorization']?.replace('Bearer ', '');
     const expectedKey = process.env.BRIDGE_API_KEY;
     
-    // Log más detallado para ver exactamente qué está llegando
+    // Log mÃƒÂ¡s detallado para ver exactamente quÃƒÂ© estÃƒÂ¡ llegando
     console.log(`[Auth] Intento de sync. API Key recibida: "${apiKey ? apiKey.substring(0, 5) + '...' : 'NULA'}"`);
     
     if (!expectedKey) {
-      console.error('[Auth] ERROR: BRIDGE_API_KEY no está configurada en los secrets de Replit');
-      res.status(500).json({ error: 'Configuración de servidor incompleta' });
+      console.error('[Auth] ERROR: BRIDGE_API_KEY no estÃƒÂ¡ configurada en los secrets de Replit');
+      res.status(500).json({ error: 'ConfiguraciÃƒÂ³n de servidor incompleta' });
       return false;
     }
 
     if (!apiKey || apiKey.trim() !== expectedKey.trim()) {
       console.log(`[Auth] API Key rechazada. Comparando: "${apiKey?.trim()}" vs "${expectedKey.trim()}"`);
-      res.status(401).json({ error: 'API key inválida o faltante' });
+      res.status(401).json({ error: 'API key invÃƒÂ¡lida o faltante' });
       return false;
     }
     return true;
@@ -357,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint de prueba: manda mail a un destinatario específico
+  // Endpoint de prueba: manda mail a un destinatario especÃƒÂ­fico
   app.post('/api/muestreo/enviar-prueba', async (req, res) => {
     try {
       const { destinatario, sucursal } = req.body;
@@ -371,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para envío manual de recordatorios de muestreo
+  // Endpoint para envÃƒÂ­o manual de recordatorios de muestreo
   app.post('/api/muestreo/enviar-recordatorios', async (req, res) => {
     try {
       console.log('[API] Enviando recordatorios de muestreo manualmente...');
@@ -391,19 +487,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/bridge/reporte-semanal', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
     // EMAILS DESACTIVADOS MANUALMENTE
-    console.log('[Bridge API] Reporte semanal recibido pero EMAILS DESACTIVADOS - no se enviará nada');
-    return res.json({ success: true, message: 'Emails desactivados - no se envió nada' });
+    console.log('[Bridge API] Reporte semanal recibido pero EMAILS DESACTIVADOS - no se enviarÃƒÂ¡ nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÂ³ nada' });
   });
 
   app.post('/api/bridge/recordatorios-muestreo', async (req, res) => {
     if (!verificarBridgeApiKey(req, res)) return;
     // EMAILS DESACTIVADOS MANUALMENTE
-    console.log('[Bridge API] Recordatorios recibidos pero EMAILS DESACTIVADOS - no se enviará nada');
-    return res.json({ success: true, message: 'Emails desactivados - no se envió nada' });
+    console.log('[Bridge API] Recordatorios recibidos pero EMAILS DESACTIVADOS - no se enviarÃƒÂ¡ nada');
+    return res.json({ success: true, message: 'Emails desactivados - no se enviÃƒÂ³ nada' });
   });
 
   app.get('/api/ultima-actualizacion', async (req, res) => {
     try {
+      if (!process.env.DATABASE_URL) {
+        return res.json({
+          ajustes_fecha: null,
+          costos_fecha: null,
+          ventas_fecha: null,
+          ajustes_total: "0",
+          costos_total: "0",
+          ventas_total: "0",
+        });
+      }
+
       const { neon } = await import("@neondatabase/serverless");
       const sql = neon(process.env.DATABASE_URL!);
       const result = await sql`
