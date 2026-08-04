@@ -5,7 +5,7 @@ const importFirebase = !process.argv.includes("--definitions-only");
 bootstrapChecklistPostgres({ importFirebase })
   .then(() => {
     console.log(importFirebase
-      ? "Bootstrap checklist PostgreSQL completado con importación desde Firebase."
+      ? "Bootstrap checklist PostgreSQL completado con importaciÃ³n desde Firebase."
       : "Bootstrap checklist PostgreSQL completado solo con definiciones.");
     process.exit(0);
   })
