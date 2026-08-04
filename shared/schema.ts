@@ -61,7 +61,7 @@ export const ajusteSchema = z.object({
   Comprobante: z.string(),
   FechaMovimiento: z.string().optional(), // Date as string in DD/MM/YYYY format
   TipoMovimiento: z.string().optional(),
-  Codigo: z.string(), // Cód. Artículo
+  Codigo: z.string(), // CÃ³d. ArtÃ­culo
   Articulo: z.string().optional(), // Description of the article
   Diferencia: z.number() // Cantidad
 });
@@ -118,3 +118,68 @@ export const branchSummarySchema = z.object({
 });
 
 export type BranchSummary = z.infer<typeof branchSummarySchema>;
+export const checklistItemStateSchema = z.object({
+  completed: z.boolean().default(false),
+  hasStock: z.boolean().default(true),
+  lastUpdated: z.number().optional(),
+});
+
+export type ChecklistItemState = z.infer<typeof checklistItemStateSchema>;
+
+export const checklistPeriodStateSchema = z.object({
+  items: z.record(z.string(), checklistItemStateSchema).default({}),
+  lastUpdated: z.number().optional(),
+});
+
+export type ChecklistPeriodState = z.infer<typeof checklistPeriodStateSchema>;
+
+export const checklistAddedItemSchema = z.object({
+  code: z.string(),
+  addedAt: z.number(),
+  month: z.string().optional(),
+});
+
+export type ChecklistAddedItem = z.infer<typeof checklistAddedItemSchema>;
+
+export const checklistBranchStateSchema = z.object({
+  id: z.string(),
+  totalCompleted: z.number().default(0),
+  noStock: z.number().default(0),
+  items: z.record(z.string(), checklistItemStateSchema).default({}),
+  periods: z.record(z.string(), checklistPeriodStateSchema).optional(),
+  addedItems: z.record(z.string(), checklistAddedItemSchema).optional(),
+  lastUpdated: z.number().optional(),
+});
+
+export type ChecklistBranchState = z.infer<typeof checklistBranchStateSchema>;
+
+const checklistItemPatchSchema = z.object({
+  completed: z.boolean().optional(),
+  hasStock: z.boolean().optional(),
+  lastUpdated: z.number().optional(),
+});
+
+export const checklistSingleItemUpdateSchema = checklistItemPatchSchema.extend({
+  period: z.string().optional(),
+});
+
+export const checklistAddedItemInputSchema = z.object({
+  code: z.string().min(1),
+  month: z.string().optional(),
+  period: z.string().optional(),
+  addedAt: z.number().optional(),
+  createdBy: z.string().optional(),
+});
+
+export const checklistBranchPatchSchema = z.object({
+  items: z.record(z.string(), checklistItemPatchSchema).optional(),
+  periods: z.record(z.string(), z.object({
+    items: z.record(z.string(), checklistItemPatchSchema).optional(),
+    lastUpdated: z.number().optional(),
+  })).optional(),
+  addedItems: z.record(z.string(), checklistAddedItemSchema).optional(),
+  totalCompleted: z.number().optional(),
+  noStock: z.number().optional(),
+});
+
+export type ChecklistBranchPatch = z.infer<typeof checklistBranchPatchSchema>;
