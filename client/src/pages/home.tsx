@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingMascot } from "@/components/ui/loading-mascot";
 import { storage } from "@/lib/storage";
+import { buildApiUrl } from "@/lib/api";
 // @ts-ignore
 import confetti from 'canvas-confetti';
 import { analytics } from "@/lib/analytics";
@@ -62,27 +63,27 @@ const getLocalItemState = (localItems: Record<string, ItemState>, code: string, 
 
 const MOTIVATION_MESSAGES = {
   20: {
-    title: "¡Excelente inicio! 🌟",
+    title: "¡Excelente inicio! ??",
     description: "¡Sigue así, vas por buen camino!",
     variant: "success" as const
   },
   40: {
-    title: "¡Vas muy bien! 💪",
+    title: "¡Vas muy bien! ??",
     description: "¡Ya llevas casi la mitad!",
     variant: "success" as const
   },
   60: {
-    title: "¡Increíble progreso! 🚀",
+    title: "¡Increíble progreso! ??",
     description: "¡Mantén ese ritmo!",
     variant: "success" as const
   },
   80: {
-    title: "¡Casi llegas! 🎯",
+    title: "¡Casi llegas! ??",
     description: "¡Te falta muy poco!",
     variant: "success" as const
   },
   100: {
-    title: "¡FELICITACIONES! 🎉",
+    title: "¡FELICITACIONES! ??",
     description: "¡Has completado todos los ítems!",
     variant: "success" as const
   }
@@ -248,7 +249,7 @@ export default function Home() {
   const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
     queryKey: ['/api/ultima-actualizacion'],
     queryFn: async () => {
-      const response = await fetch('/api/ultima-actualizacion');
+      const response = await fetch(buildApiUrl('/api/ultima-actualizacion'));
       if (!response.ok) throw new Error('Error');
       return response.json();
     },
@@ -376,7 +377,7 @@ export default function Home() {
         
         // Mostrar toast de felicitación
         toast({
-          title: `�x}0 ¡Objetivo ${mes} Cumplido!`,
+          title: `?x}0 ¡Objetivo ${mes} Cumplido!`,
           description: `¡Excelente trabajo! Has completado todos los items del mes de ${mes}.`,
           duration: 5000,
         });
@@ -454,26 +455,29 @@ export default function Home() {
     if (isFirebaseReadOnly) {
       toast({
         title: 'Modo solo lectura',
-        description: 'La visual local está conectada a Firebase real en modo lectura. No se guardan cambios.',
+        description: 'Esta sesi?n local est? en modo solo lectura. No se guardan cambios.',
       });
       return;
     }
 
     const sanitizedCode = sanitizeCode(code);
     const itemKey = getChecklistEntryKey(code, periodKey);
+    const currentState = items[itemKey] || { completed: false, hasStock: true };
+    const nextState = field === 'completed'
+      ? {
+          ...currentState,
+          completed: !currentState.completed,
+          hasStock: true,
+        }
+      : {
+          ...currentState,
+          completed: false,
+          hasStock: currentState.hasStock === false,
+        };
 
     const newItems = {
       ...items,
-      [itemKey]: {
-        ...(items[itemKey] || { completed: false, hasStock: true }),
-        [field]: !items[itemKey]?.[field],
-        ...(field === 'completed'
-          ? { hasStock: true }
-          : field === 'hasStock'
-            ? { completed: !items[itemKey]?.hasStock }
-            : {}
-        )
-      }
+      [itemKey]: nextState,
     };
 
     setItems(newItems);
@@ -483,28 +487,6 @@ export default function Home() {
       const completedCount = activeChecklistEntries.filter((entry) => getLocalItemState(newItems, entry.code, entry.periodKey).completed).length;
       const noStockCount = activeChecklistEntries.filter((entry) => getLocalItemState(newItems, entry.code, entry.periodKey).hasStock === false).length;
       const completedPercentage = totalItemsActivos > 0 ? Math.round((completedCount / totalItemsActivos) * 100) : 0;
-
-      const payload = periodKey
-        ? {
-            periods: {
-              [periodKey]: {
-                items: {
-                  [sanitizedCode]: {
-                    ...newItems[itemKey],
-                    lastUpdated: Date.now()
-                  }
-                }
-              }
-            }
-          }
-        : {
-            items: {
-              [sanitizedCode]: {
-                ...newItems[itemKey],
-                lastUpdated: Date.now()
-              }
-            }
-          };
 
       for (const [threshold, message] of Object.entries(MOTIVATION_MESSAGES)) {
         const thresholdNum = parseInt(threshold);
@@ -523,17 +505,17 @@ export default function Home() {
         }
       }
 
-      await storage.updateBranch(selectedBranch, {
-        ...payload,
-        totalCompleted: completedPercentage,
-        noStock: noStockCount,
+      await storage.updateChecklistItem(selectedBranch, sanitizedCode, {
+        completed: nextState.completed === true,
+        hasStock: nextState.hasStock !== false,
+        periodKey,
       });
 
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
         code: itemKey,
         field,
-        newValue: !items[itemKey]?.[field]
+        newValue: field === 'completed' ? nextState.completed : nextState.hasStock,
       });
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -605,7 +587,7 @@ export default function Home() {
     } else {
       totalItems = CODES.length;
       completedCount = Math.min(
-        Object.values(items).filter(i => i.completed || i.hasStock === false).length,
+        Object.values(items).filter(i => i.completed === true).length,
         totalItems
       );
       noStockCount = Object.values(items).filter(i => i.hasStock === false).length;
@@ -780,7 +762,7 @@ export default function Home() {
 
       {isFirebaseReadOnly && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          Modo solo lectura local activo: se leen datos reales de Firebase, pero toda escritura está bloqueada.
+          Modo solo lectura local activo: se visualizan datos reales del checklist, pero toda escritura está bloqueada.
         </div>
       )}
 
@@ -797,7 +779,7 @@ export default function Home() {
                 {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
               {/* Calendario con objetivos mensuales para T.Mendoza */}
               {calendarioSemanal && (
                 <div className="space-y-4">
@@ -819,7 +801,7 @@ export default function Home() {
                         {/* Secci?n fija: objetivos y progreso */}
                         <div className="pb-3 pt-2 space-y-3">
                         {/* Resumen de objetivos por mes */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3" data-testid="objetivos-mensuales">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4" data-testid="objetivos-mensuales">
                           {objetivosMensuales.map(({ mes, objetivo, completados: completadosParaEsteMes, cumplido: mesCompleto }) => {
                             const porcentajeMes = objetivo > 0 ? (completadosParaEsteMes / objetivo) * 100 : 0;
                             
@@ -855,7 +837,7 @@ export default function Home() {
                                       <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
                                       <div className="font-bold text-lg text-green-700">{mes}</div>
                                       <div className="text-sm flex items-center gap-1">
-                                        <span className="text-xl font-bold text-green-600">{completadosParaEsteMes}</span>
+                                        <span className="text-lg font-bold text-green-600 sm:text-xl">{completadosParaEsteMes}</span>
                                         <span className="text-gray-400">/ {objetivo}</span>
                                         <Trophy className="h-5 w-5 text-yellow-500 ml-1" />
                                       </div>
@@ -897,13 +879,13 @@ export default function Home() {
                               { key: 'pending', label: '\u{1F7E2} Pendientes' },
                               { key: 'completed', label: '\u{1F535} Completados' },
                               { key: 'noStock', label: '\u{1F7E0} Sin Stock' },
-                              { key: 'all', label: '⚪ Todos' },
+                              { key: 'all', label: '\u26AA Todos' },
                             ] as { key: ChecklistViewFilter; label: string }[]).map((option) => (
                               <button
                                 key={option.key}
                                 type="button"
                                 onClick={() => setChecklistViewFilter(option.key)}
-                                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                className={`min-h-10 flex-1 rounded-full border px-3 py-2 text-sm font-medium transition-colors sm:min-h-0 sm:flex-none ${
                                   checklistViewFilter === option.key
                                     ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                                     : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary/5'
@@ -914,26 +896,26 @@ export default function Home() {
                             ))}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 md:grid-cols-4" data-testid="resumen-checklist">
-                            <div className="rounded-lg border bg-white px-3 py-2">
+                          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="resumen-checklist">
+                            <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
-                              <div className="text-xl font-bold text-gray-900">{checklistSummary.pending}</div>
+                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.pending}</div>
                             </div>
-                            <div className="rounded-lg border bg-white px-3 py-2">
+                            <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
-                              <div className="text-xl font-bold text-green-600">{checklistSummary.completed}</div>
+                              <div className="text-lg font-bold text-green-600 sm:text-xl">{checklistSummary.completed}</div>
                             </div>
-                            <div className="rounded-lg border bg-white px-3 py-2">
+                            <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
-                              <div className="text-xl font-bold text-orange-500">{checklistSummary.noStock}</div>
+                              <div className="text-lg font-bold text-orange-500 sm:text-xl">{checklistSummary.noStock}</div>
                             </div>
-                            <div className="rounded-lg border bg-white px-3 py-2">
+                            <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
-                              <div className="text-xl font-bold text-gray-900">{checklistSummary.total}</div>
+                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.total}</div>
                             </div>
                           </div>
 
-                          <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
+                          <div className="rounded-lg border bg-white p-2.5 dark:bg-background sm:p-3" data-testid="buscador-items">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                               <input
@@ -962,16 +944,16 @@ export default function Home() {
                         </div>
 
                         {/* Lista de todos los items para seleccionar */}
-                        <div id="items-lista" className="border rounded-lg overflow-hidden" data-testid="items-lista">
-                          <div className="bg-yellow-200 p-3 flex items-center justify-between">
+                        <div id="items-lista" className="overflow-hidden rounded-lg border" data-testid="items-lista">
+                          <div className="flex flex-col items-start justify-between gap-2 bg-yellow-200 p-3 sm:flex-row sm:items-center">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
                               <span className="font-semibold">{checklistFilterLabels[checklistViewFilter]}</span>
                             </div>
-                            <span className="text-sm font-bold">{visibleChecklistEntries.length} visibles · {checklistSummary.completed}/{checklistSummary.total} completados</span>
+                            <span className="text-xs font-bold sm:text-sm">{visibleChecklistEntries.length} visibles · {checklistSummary.completed}/{checklistSummary.total} completados</span>
                           </div>
                           
-                          <div className="p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-h-[60vh] overflow-y-auto">
+                          <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto p-2 sm:grid-cols-2 sm:p-3 md:grid-cols-3 lg:grid-cols-4">
                             {visibleChecklistEntries.map(entry => {
                               const state = getLocalItemState(items, entry.code, entry.periodKey);
                               const isCompleted = state.completed === true;
@@ -980,13 +962,12 @@ export default function Home() {
                               return (
                                 <div
                                   key={getChecklistEntryKey(entry.code, entry.periodKey)}
-                                  onClick={() => handleToggle(entry.code, 'completed', entry.periodKey)}
-                                  className={`flex items-center justify-between gap-2 p-2 rounded cursor-pointer transition-all hover:shadow-sm ${
-                                    isCompleted 
-                                      ? 'bg-green-100 border border-green-300' 
+                                  className={`flex min-h-[96px] flex-col gap-3 rounded border p-3 transition-all hover:shadow-sm ${
+                                    isCompleted
+                                      ? 'border-green-300 bg-green-100'
                                       : isNoStock
-                                        ? 'bg-orange-50 border border-orange-200'
-                                        : 'bg-white border border-gray-200 hover:border-primary hover:bg-primary/5'
+                                        ? 'border-orange-200 bg-orange-50'
+                                        : 'border-gray-200 bg-white hover:border-primary hover:bg-primary/5'
                                   }`}
                                 >
                                   <div className="min-w-0">
@@ -997,12 +978,26 @@ export default function Home() {
                                       {itemStatusLabel}
                                     </span>
                                   </div>
-                                  <Checkbox
-                                    checked={isCompleted || false}
-                                    onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
-                                    disabled={loading || isFirebaseReadOnly}
-                                    className="h-4 w-4 shrink-0"
-                                  />
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Checkbox
+                                        checked={isCompleted || false}
+                                        onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
+                                        disabled={loading || isFirebaseReadOnly}
+                                        className="h-4 w-4 shrink-0"
+                                      />
+                                      <span>Completado</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Checkbox
+                                        checked={isNoStock || false}
+                                        onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
+                                        disabled={loading || isFirebaseReadOnly}
+                                        className="h-4 w-4 shrink-0"
+                                      />
+                                      <span>Sin Stock</span>
+                                    </label>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1071,13 +1066,13 @@ export default function Home() {
                         { key: 'pending', label: '\u{1F7E2} Pendientes' },
                         { key: 'completed', label: '\u{1F535} Completados' },
                         { key: 'noStock', label: '\u{1F7E0} Sin Stock' },
-                        { key: 'all', label: '⚪ Todos' },
+                              { key: 'all', label: '\u26AA Todos' },
                       ] as { key: ChecklistViewFilter; label: string }[]).map((option) => (
                         <button
                           key={option.key}
                           type="button"
                           onClick={() => setChecklistViewFilter(option.key)}
-                          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                          className={`min-h-10 flex-1 rounded-full border px-3 py-2 text-sm font-medium transition-colors sm:min-h-0 sm:flex-none ${
                             checklistViewFilter === option.key
                               ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                               : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary/5'
@@ -1088,26 +1083,26 @@ export default function Home() {
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4" data-testid="resumen-checklist">
-                      <div className="rounded-lg border bg-white px-3 py-2">
+                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="resumen-checklist">
+                      <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
-                        <div className="text-xl font-bold text-gray-900">{checklistSummary.pending}</div>
+                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.pending}</div>
                       </div>
-                      <div className="rounded-lg border bg-white px-3 py-2">
+                      <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
-                        <div className="text-xl font-bold text-green-600">{checklistSummary.completed}</div>
+                        <div className="text-lg font-bold text-green-600 sm:text-xl">{checklistSummary.completed}</div>
                       </div>
-                      <div className="rounded-lg border bg-white px-3 py-2">
+                      <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
-                        <div className="text-xl font-bold text-orange-500">{checklistSummary.noStock}</div>
+                        <div className="text-lg font-bold text-orange-500 sm:text-xl">{checklistSummary.noStock}</div>
                       </div>
-                      <div className="rounded-lg border bg-white px-3 py-2">
+                      <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
-                        <div className="text-xl font-bold text-gray-900">{checklistSummary.total}</div>
+                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.total}</div>
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-background p-2 rounded-lg border" data-testid="buscador-items">
+                    <div className="rounded-lg border bg-white p-2.5 dark:bg-background sm:p-3" data-testid="buscador-items">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
@@ -1182,7 +1177,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="icon"
-              className="fixed bottom-4 right-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-primary/10 hover:bg-primary/20 border-primary/20 hover:border-primary/30 h-12 w-12 hover:scale-110"
+              className="fixed bottom-20 right-4 h-12 w-12 rounded-full border-primary/20 bg-primary/10 shadow-lg transition-all duration-300 hover:scale-110 hover:border-primary/30 hover:bg-primary/20 hover:shadow-xl sm:bottom-4"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
               <ArrowUp className="h-6 w-6 text-primary animate-bounce" />
@@ -1195,4 +1190,5 @@ export default function Home() {
     </div>
   );
 }
+
 

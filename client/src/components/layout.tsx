@@ -19,7 +19,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b fixed top-0 left-0 right-0 bg-background z-50">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <div className="container flex min-h-14 items-center justify-between gap-2 px-3 py-2 sm:h-16 sm:px-4 sm:py-0">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-4">
             <img 
@@ -61,7 +61,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                       variant={location === "/reportes" ? "default" : "ghost"}
                       size="sm"
                       data-testid="nav-reportes"
-                      className={`px-3 ${location !== "/reportes" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600" : ""}`}
+                      className={`px-3 ${location !== "/reportes" ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm hover:from-violet-600 hover:to-indigo-600" : ""}`}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Reportes
@@ -133,36 +133,35 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
         </div>
       </header>
 
-      {/* Mobile bottom navigation */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur safe-area-bottom">
-        <div className="flex h-16 items-center justify-between gap-1 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+      <nav className="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-background/96 shadow-[0_-8px_24px_-18px_rgba(15,23,42,0.28)] backdrop-blur sm:hidden">
+        <div className="grid h-[4.5rem] grid-cols-5 items-center gap-1 px-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1">
           <Link href="/">
             <button
-              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
-                location === "/" ? "text-primary" : "text-muted-foreground"
+              className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 transition-all ${
+                location === "/" ? "bg-emerald-50 text-emerald-700 shadow-sm" : "text-slate-500 hover:bg-slate-100"
               }`}
             >
-              <Home className="h-5 w-5" />
+              <Home className="h-[18px] w-[18px]" />
               <span className="truncate text-[10px] font-medium leading-tight">Inicio</span>
             </button>
           </Link>
           <Link href="/reportes">
             <button
-              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
-                location === "/reportes" ? "text-primary" : "text-blue-600"
+              className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 transition-all ${
+                location === "/reportes" ? "bg-violet-50 text-violet-700 shadow-sm" : "text-violet-600 hover:bg-violet-50/70"
               }`}
             >
-              <FileText className="h-5 w-5" />
+              <FileText className="h-[18px] w-[18px]" />
               <span className="truncate text-[10px] font-medium leading-tight">Reportes</span>
             </button>
           </Link>
           <Link href="/muestreos">
             <button
-              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
-                location === "/muestreos" ? "text-primary" : "text-muted-foreground"
+              className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 transition-all ${
+                location === "/muestreos" ? "bg-emerald-50 text-emerald-700 shadow-sm" : "text-emerald-600 hover:bg-emerald-50/70"
               }`}
             >
-              <FileUp className="h-5 w-5" />
+              <FileUp className="h-[18px] w-[18px]" />
               <span className="truncate text-[10px] font-medium leading-tight">Muestreos</span>
             </button>
           </Link>
@@ -171,17 +170,17 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               const page = location === "/muestreos" ? "muestreos" : location === "/reportes" ? "reportes" : "home";
               startTour(page);
             }}
-            className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground relative"
+            className="relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 text-slate-500 transition-all hover:bg-slate-100"
           >
-            <HelpCircle className="h-5 w-5" />
+            <HelpCircle className="h-[18px] w-[18px]" />
             <span className="truncate text-[10px] font-medium leading-tight">Ayuda</span>
-            <span className="absolute top-1.5 right-3 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+            <span className="absolute right-3 top-2 h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
           </button>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground"
+            className="flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 text-slate-500 transition-all hover:bg-slate-100"
           >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             <span className="truncate text-[10px] font-medium leading-tight">{theme === "dark" ? "Claro" : "Oscuro"}</span>
           </button>
         </div>
