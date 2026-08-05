@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+﻿import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
 import { AVAILABLE_BRANCHES, Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
@@ -41,7 +41,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="hidden sm:block text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Art?culos solicitados para realizar inventario</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Artículos solicitados para realizar inventario</h1>
           <p className="text-muted-foreground text-sm">{"Sistema de Seguimiento — Grupo Crisa"}</p>
         </div>
         <div className="rounded-lg border bg-card overflow-hidden">
@@ -82,16 +82,16 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
-  // Helper para sanitizar cÃ³digos (DEBE coincidir exactamente con home.tsx)
+  // Helper para sanitizar cÃƒÂ³digos (DEBE coincidir exactamente con home.tsx)
   const sanitizeCode = (code: string) => code.toLowerCase().replace(/[/.#$[\]]/g, '-');
   
-  // Helper para buscar item por cÃ³digo - busca tanto el cÃ³digo original como el sanitizado
+  // Helper para buscar item por cÃƒÂ³digo - busca tanto el cÃƒÂ³digo original como el sanitizado
   // porque Firebase puede tener datos guardados con cualquiera de los dos formatos
   const findItemByCode = (items: Record<string, any>, code: string) => {
-    // Primero intentar con el cÃ³digo sanitizado (formato actual)
+    // Primero intentar con el cÃƒÂ³digo sanitizado (formato actual)
     const sanitized = sanitizeCode(code);
     if (items[sanitized]) return items[sanitized];
-    // Luego intentar con el cÃ³digo original
+    // Luego intentar con el cÃƒÂ³digo original
     if (items[code]) return items[code];
     return null;
   };
@@ -159,7 +159,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="hidden sm:block text-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Art?culos solicitados para realizar inventario</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Artículos solicitados para realizar inventario</h1>
         <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
@@ -360,3 +360,4 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     </div>
   );
 }
+

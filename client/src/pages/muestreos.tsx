@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -180,7 +180,7 @@ export default function MuestreosPage() {
     } catch (error) {
       toast({
         title: "No se pudo abrir el archivo",
-        description: "Volvé a intentarlo en unos segundos.",
+        description: ">Volvé a intentarlo en unos segundos.",
         variant: "destructive",
       });
     } finally {
@@ -224,12 +224,14 @@ export default function MuestreosPage() {
       setUploadProgress(100);
       toast({
         title: "Archivo subido correctamente",
-        description: `El muestreo se cargó correctamente para ${selectedBranch}.`,
+        description: `El muestreo se >cargó correctamente para ${selectedBranch}.`,
         variant: "success",
+        duration: 3200,
       });
       setSelectedFile(null);
       setUploadProgress(0);
       queryClient.invalidateQueries({ queryKey: ['/api/muestreos'] });
+      refetchFiles();
     },
     onError: (error: Error) => {
       setUploadProgress(0);
@@ -410,7 +412,7 @@ export default function MuestreosPage() {
             >
               {uploadMutation.isPending ? (
                 <>
-                  <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
                   Subiendo archivo...
                 </>
               ) : (
@@ -652,6 +654,10 @@ export default function MuestreosPage() {
     </TooltipProvider>
   );
 }
+
+
+
+
 
 
 
