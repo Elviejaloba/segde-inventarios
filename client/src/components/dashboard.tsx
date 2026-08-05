@@ -41,8 +41,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="hidden sm:block text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos solicitados para realizar inventario</h1>
-          <p className="text-muted-foreground text-sm">Sistema de Seguimiento — Grupo Crisa</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Art?culos solicitados para realizar inventario</h1>
+          <p className="text-muted-foreground text-sm">{"Sistema de Seguimiento — Grupo Crisa"}</p>
         </div>
         <div className="rounded-lg border bg-card overflow-hidden">
           <div className="p-3 sm:p-4 border-b bg-muted/30">
@@ -82,16 +82,16 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     );
   }
 
-  // Helper para sanitizar códigos (DEBE coincidir exactamente con home.tsx)
+  // Helper para sanitizar cÃ³digos (DEBE coincidir exactamente con home.tsx)
   const sanitizeCode = (code: string) => code.toLowerCase().replace(/[/.#$[\]]/g, '-');
   
-  // Helper para buscar item por código - busca tanto el código original como el sanitizado
+  // Helper para buscar item por cÃ³digo - busca tanto el cÃ³digo original como el sanitizado
   // porque Firebase puede tener datos guardados con cualquiera de los dos formatos
   const findItemByCode = (items: Record<string, any>, code: string) => {
-    // Primero intentar con el código sanitizado (formato actual)
+    // Primero intentar con el cÃ³digo sanitizado (formato actual)
     const sanitized = sanitizeCode(code);
     if (items[sanitized]) return items[sanitized];
-    // Luego intentar con el código original
+    // Luego intentar con el cÃ³digo original
     if (items[code]) return items[code];
     return null;
   };
@@ -108,24 +108,23 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     
     if (calendario) {
       // Usar los items del calendario (260 para T.Mendoza)
-      const codigosCalendario = calendario.semanas.flatMap(s => s.items);
-      totalItems = codigosCalendario.length;
-      const completados = codigosCalendario.filter(code => findItemByCode(items, code)?.completed).length;
+      const checklistEntries = calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey })));
+      totalItems = checklistEntries.length;
+      const completados = checklistEntries.filter((entry) => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     } else {
       // Para sucursales sin calendario: cuenta items procesados (completado O sin stock), cap 100%
       totalItems = SEASON_CODES_TEMPORADA_VERANO.length;
       const completados = Math.min(
-        Object.values(items).filter(i => i.completed || i.hasStock === false).length,
+        Object.values(items).filter(i => i.completed === true).length,
         totalItems
       );
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
     }
     
-    const referenciaCodigos = calendario
-      ? calendario.semanas.flatMap(s => s.items)
-      : SEASON_CODES_TEMPORADA_VERANO;
-    const noStockItems = referenciaCodigos.filter(code => findItemByCode(items, code)?.hasStock === false).length;
+    const noStockItems = calendario
+      ? calendario.semanas.flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey }))).filter((entry) => getChecklistItemState(branchData, entry.code, entry.periodKey)?.hasStock === false).length
+      : SEASON_CODES_TEMPORADA_VERANO.filter(code => findItemByCode(items, code)?.hasStock === false).length;
     const noStockPercentage = totalItems > 0 ? (noStockItems / totalItems) * 100 : 0;
     
     const now = new Date();
@@ -160,7 +159,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="hidden sm:block text-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Articulos solicitados para realizar inventario</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-primary mb-1">Art?culos solicitados para realizar inventario</h1>
         <p className="text-sm text-muted-foreground italic">a realizar muestreo paleta completa</p>
       </div>
       
@@ -173,7 +172,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
             <div>
               <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Ranking de Sucursales</h2>
               <p className="text-[11px] sm:text-sm text-slate-500">
-                Elegí una sucursal para abrir su checklist y revisar el avance actual.
+                {"Elegí una sucursal para abrir su checklist y revisar el avance actual."}
               </p>
             </div>
           </div>
@@ -181,14 +180,14 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       )}
 
       {selectedView === 'ranking' ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="mx-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl">
+          <div className="overflow-x-auto sm:overflow-x-visible">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/90">
-                  <TableHead className="w-[44px] sm:w-[88px] px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Pos.</TableHead>
-                  <TableHead className="min-w-[120px] px-3 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Sucursal</TableHead>
-                  <TableHead className="min-w-[220px] px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Progreso</TableHead>
+                  <TableHead className="w-[42px] sm:w-[88px] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Pos.</TableHead>
+                  <TableHead className="min-w-0 w-[34%] px-2 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:min-w-[120px] sm:px-4 sm:text-xs">Sucursal</TableHead>
+                  <TableHead className="min-w-0 w-[66%] px-2 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:min-w-[220px] sm:px-4 sm:text-xs">Progreso</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -202,7 +201,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   }`}
                   onClick={() => onBranchSelect?.(branch.id)}
                 >
-                  <TableCell className="px-3 py-4 text-center align-middle sm:px-4 sm:py-5">
+                  <TableCell className="px-2 py-4 text-center align-middle sm:px-4 sm:py-5">
                     {index < 3 ? (
                       <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200 sm:h-9 sm:w-9">
                         <Trophy 
@@ -217,10 +216,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2 text-sm font-semibold text-slate-700 sm:h-9">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-3 py-4 align-middle sm:px-4 sm:py-5"><div className="flex flex-col gap-0.5"><span className="text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="text-[11px] text-slate-500">Checklist y progreso de muestreo</span></div></TableCell>
-                  <TableCell className="px-3 py-4 text-right align-middle sm:px-4 sm:py-5">
-                    <div className="flex items-center justify-end gap-2 sm:gap-3">
-                      <div className="relative h-2.5 w-24 overflow-hidden rounded-full bg-emerald-100 sm:w-28">
+                  <TableCell className="px-2 py-4 align-middle sm:px-4 sm:py-5"><div className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="hidden text-[11px] leading-tight text-slate-500 sm:block">Checklist y progreso de muestreo</span></div></TableCell>
+                  <TableCell className="px-2 py-4 text-right align-middle sm:px-4 sm:py-5">
+                    <div className="ml-auto flex w-full max-w-[220px] flex-col items-end gap-1.5 sm:max-w-[260px] sm:gap-2.5">
+                      <div className="relative h-2.5 w-[92px] overflow-hidden rounded-full bg-emerald-100 sm:w-28">
                         <motion.div 
                           className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                           initial={{ width: 0 }}
@@ -233,7 +232,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="min-w-[38px] text-xs font-semibold text-emerald-600 sm:min-w-[42px] sm:text-sm"
+                        className="min-w-[40px] text-[11px] font-semibold text-emerald-600 sm:min-w-[42px] sm:text-sm"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.5 }}
@@ -241,10 +240,10 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         {Math.round(branch.totalCompleted)}%
                       </motion.span>
                     </div>
-                    <div className="mt-1.5 flex items-center justify-end gap-1.5 sm:gap-2">
+                    <div className="mt-2 ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
                       <span className="hidden whitespace-nowrap text-[10px] text-slate-400 sm:inline">Sin Stock</span>
                       <span className="whitespace-nowrap text-[10px] text-slate-400 sm:hidden">S/S</span>
-                      <div className="relative h-1.5 w-16 overflow-hidden rounded-full bg-orange-100 sm:w-24">
+                      <div className="relative h-1.5 w-[74px] overflow-hidden rounded-full bg-orange-100 sm:w-24">
                         <motion.div 
                           className="h-full rounded-full bg-gradient-to-r from-orange-300 to-orange-500"
                           initial={{ width: 0 }}
@@ -257,7 +256,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         />
                       </div>
                       <motion.span 
-                        className="min-w-[24px] text-[10px] font-medium text-orange-500 sm:min-w-[35px]"
+                        className="min-w-[26px] text-[10px] font-medium text-orange-500 sm:min-w-[35px]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.1 + 0.7 }}
@@ -266,7 +265,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       </motion.span>
                     </div>
                     {branch.addedItemsCount > 0 && (
-                      <div className="mt-1.5 flex items-center justify-end gap-1.5 sm:gap-2">
+                      <div className="mt-2 ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
                         <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
                         <span className="text-[9px] text-gray-400 whitespace-nowrap sm:hidden">+</span>
                         <div className="relative w-16 sm:w-24 h-1.5 sm:h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
@@ -327,12 +326,12 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                         });
                       
                       return (
-                        <div className="mt-2 flex max-w-full flex-wrap justify-end gap-1.5 sm:gap-2" data-testid="indicadores-meses-ranking">
+                        <div className="mt-2.5 ml-auto flex w-full max-w-[220px] flex-wrap justify-end gap-1.5 sm:max-w-[320px] sm:gap-2" data-testid="indicadores-meses-ranking">
                           {objetivos.map(({ mes, obj, completadosMes, cumplido }) => {
                             return (
                               <span 
                                 key={mes}
-                                className={`rounded-full px-2 py-1 text-[10px] leading-tight whitespace-nowrap sm:px-2.5 sm:text-[11px] ${
+                                className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-tight whitespace-nowrap sm:px-3 sm:py-1.5 sm:text-[11px] ${
                                   cumplido 
                                     ? 'bg-emerald-500 text-white shadow-sm' 
                                     : completadosMes > 0 
@@ -341,7 +340,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                                 }`}
                                 title={`${mes}: ${completadosMes}/${obj}`}
                               >
-                                {mes} {cumplido ? '✓' : `${completadosMes}/${obj}`}
+                                {mes} {cumplido ? '\u2713' : `${completadosMes}/${obj}`}
                               </span>
                             );
                           })}

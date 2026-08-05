@@ -18,6 +18,7 @@ import {
   Building2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { buildApiUrl } from "@/lib/api";
 
 interface ResumenEquilibrio {
   sucursal: string;
@@ -77,7 +78,7 @@ export default function PuntoEquilibrioResumen() {
   const { data, isLoading } = useQuery<{ detalle: any[]; resumen: ResumenEquilibrio[] }>({
     queryKey: ['/api/ajustes/punto-equilibrio'],
     queryFn: async () => {
-      const response = await fetch('/api/ajustes/punto-equilibrio');
+      const response = await fetch(buildApiUrl('/api/ajustes/punto-equilibrio'));
       if (!response.ok) throw new Error('Error fetching data');
       return response.json();
     }

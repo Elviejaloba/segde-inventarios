@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
+import { buildApiUrl } from '@/lib/api';
 
 export type Temporada = 'todas' | 'invierno' | 'verano';
 
@@ -86,7 +87,7 @@ export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas'
         setLoading(true);
 
         // Cargar datos desde la API
-        const response = await fetch('/api/ajustes/stats');
+        const response = await fetch(buildApiUrl('/api/ajustes/stats'));
         if (!response.ok) {
           throw new Error('Error al cargar estadísticas');
         }
@@ -94,7 +95,7 @@ export function useAjustesData(sucursal?: string, temporada: Temporada = 'todas'
         const statsData = await response.json();
         
         // Cargar datos detallados
-        const ajustesResponse = await fetch(`/api/ajustes${sucursal && sucursal !== 'Todas las Sucursales' ? `?sucursal=${encodeURIComponent(sucursal)}` : ''}`);
+        const ajustesResponse = await fetch(buildApiUrl(`/api/ajustes${sucursal && sucursal !== 'Todas las Sucursales' ? `?sucursal=${encodeURIComponent(sucursal)}` : ''}`));
         if (!ajustesResponse.ok) {
           throw new Error('Error al cargar ajustes');
         }

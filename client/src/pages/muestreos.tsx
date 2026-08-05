@@ -6,15 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { API_BASE_URL, buildApiUrl } from "@/lib/api";
 import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp, Clock, Search, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV
-    ? 'https://tasktrackerpro-api-production.up.railway.app'
-    : '');
 
 interface DropboxFile {
   id: string;
@@ -29,11 +25,11 @@ interface DropboxFile {
 type FileStatus = "no_visto" | "visto" | "analizado" | "sin_diferencias" | "revisar";
 
 const STATUS_CONFIG: Record<FileStatus, { label: string; color: string; bgColor: string; icon: typeof Eye }> = {
-  no_visto: { label: "No visto", color: "text-gray-500", bgColor: "bg-gray-100 dark:bg-gray-800", icon: EyeOff },
-  visto: { label: "Visto", color: "text-blue-500", bgColor: "bg-blue-100 dark:bg-blue-900/30", icon: Eye },
-  analizado: { label: "Analizado", color: "text-green-500", bgColor: "bg-green-100 dark:bg-green-900/30", icon: CheckCircle2 },
-  sin_diferencias: { label: "Sin diferencias", color: "text-emerald-600", bgColor: "bg-emerald-100 dark:bg-emerald-900/30", icon: ThumbsUp },
-  revisar: { label: "Revisar", color: "text-red-600", bgColor: "bg-red-100 dark:bg-red-900/30", icon: AlertTriangle },
+  no_visto: { label: "Pendiente", color: "text-slate-600", bgColor: "bg-slate-100 border border-slate-200/80", icon: EyeOff },
+  visto: { label: "Visto", color: "text-sky-700", bgColor: "bg-sky-50 border border-sky-200/80", icon: Eye },
+  analizado: { label: "Analizado", color: "text-emerald-700", bgColor: "bg-emerald-50 border border-emerald-200/80", icon: CheckCircle2 },
+  sin_diferencias: { label: "Sin diferencias", color: "text-emerald-700", bgColor: "bg-emerald-100/80 border border-emerald-200/90", icon: ThumbsUp },
+  revisar: { label: "Revisar", color: "text-rose-700", bgColor: "bg-rose-50 border border-rose-200/80", icon: AlertTriangle },
 };
 
 function getFileStatuses(): Record<string, FileStatus> {
@@ -108,7 +104,7 @@ export default function MuestreosPage() {
   const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
     queryKey: ['/api/ultima-actualizacion'],
     queryFn: async () => {
-      const response = await fetch('/api/ultima-actualizacion');
+      const response = await fetch(buildApiUrl('/api/ultima-actualizacion'));
       if (!response.ok) throw new Error('Error');
       return response.json();
     },
@@ -183,8 +179,8 @@ export default function MuestreosPage() {
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "No se pudo obtener el enlace del archivo",
+        title: "No se pudo abrir el archivo",
+        description: "Volvé a intentarlo en unos segundos.",
         variant: "destructive",
       });
     } finally {
@@ -227,20 +223,19 @@ export default function MuestreosPage() {
     onSuccess: (data) => {
       setUploadProgress(100);
       toast({
-        title: "Archivo subido exitosamente",
-        description: `${data.name} se ha guardado correctamente`,
+        title: "Archivo subido correctamente",
+        description: `El muestreo se cargó correctamente para ${selectedBranch}.`,
         variant: "success",
       });
       setSelectedFile(null);
-      setSelectedBranch("");
       setUploadProgress(0);
       queryClient.invalidateQueries({ queryKey: ['/api/muestreos'] });
     },
     onError: (error: Error) => {
       setUploadProgress(0);
       toast({
-        title: "Error al subir archivo",
-        description: error.message,
+        title: "No se pudo subir el archivo",
+        description: "Revisá el archivo y volvé a intentarlo.",
         variant: "destructive",
       });
     },
@@ -257,7 +252,7 @@ export default function MuestreosPage() {
     if (!selectedBranch) {
       toast({
         title: "Selecciona una sucursal",
-        description: "Debes seleccionar la sucursal antes de subir el archivo",
+        description: "Elegí la sucursal antes de cargar el archivo.",
         variant: "destructive",
       });
       return;
@@ -266,7 +261,7 @@ export default function MuestreosPage() {
     if (!selectedFile) {
       toast({
         title: "Selecciona un archivo",
-        description: "Debes seleccionar un archivo para subir",
+        description: "Elegí el archivo que querés subir.",
         variant: "destructive",
       });
       return;
@@ -296,7 +291,7 @@ export default function MuestreosPage() {
           </p>
         </div>
         {ultimaActualizacion && (
-          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 border shrink-0">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/85 px-2.5 py-1.5 shadow-sm shrink-0 sm:px-3.5 sm:py-2">
             <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
             <div className="flex flex-col">
               <span className="text-xs sm:text-sm font-semibold leading-tight">
@@ -327,13 +322,13 @@ export default function MuestreosPage() {
         )}
       </div>
 
-      <div className="rounded-xl border bg-muted/30 px-3 py-2 sm:px-4 sm:py-3">
+      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
         <p className="text-[11px] sm:text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{'C\u00f3mo usarlo:'}</span>{' eleg\u00ed la sucursal, adjunt\u00e1 el archivo del muestreo y luego revis\u00e1 o descarg\u00e1 los archivos ya cargados desde el panel de la derecha.'}
         </p>
       </div>
 
-      <div className="grid gap-3 sm:gap-6 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
             <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg">
@@ -376,7 +371,7 @@ export default function MuestreosPage() {
                 <Button
                   variant="outline"
                   onClick={() => document.getElementById('file-input')?.click()}
-                  className="flex-1 h-9 sm:h-10 text-xs sm:text-sm"
+                  className="flex-1 h-10 rounded-xl border-slate-200 bg-white text-xs shadow-sm transition-colors hover:bg-slate-50 sm:h-10 sm:text-sm"
                   disabled={!selectedBranch}
                   data-testid="button-select-file"
                 >
@@ -402,7 +397,7 @@ export default function MuestreosPage() {
               <div className="space-y-1.5">
                 <Progress value={uploadProgress} className="h-1.5 sm:h-2" />
                 <p className="text-[11px] sm:text-sm text-muted-foreground text-center">
-                  {uploadProgress < 100 ? 'Subiendo...' : 'Completado'}
+                  {uploadProgress < 100 ? 'Subiendo archivo...' : 'Carga completada'}
                 </p>
               </div>
             )}
@@ -410,18 +405,18 @@ export default function MuestreosPage() {
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || !selectedBranch || uploadMutation.isPending}
-              className="w-full h-9 sm:h-10 text-xs sm:text-sm"
+              className="h-10 w-full rounded-xl bg-emerald-500 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600 sm:text-sm"
               data-testid="button-upload-muestreo"
             >
               {uploadMutation.isPending ? (
                 <>
                   <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
-                  Subiendo...
+                  Subiendo archivo...
                 </>
               ) : (
                 <>
                   <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Adjunta Muestreo
+                  Subir muestreo
                 </>
               )}
             </Button>
@@ -439,7 +434,7 @@ export default function MuestreosPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+            <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:gap-2">
               <Select value={filterBranch || "all"} onValueChange={(v) => setFilterBranch(v === "all" ? "" : v)}>
                 <SelectTrigger className="flex-1 h-9 sm:h-10 text-xs sm:text-sm" data-testid="select-filter-branch">
                   <SelectValue placeholder="Filtrar por sucursal..." />
@@ -461,7 +456,7 @@ export default function MuestreosPage() {
                     onClick={() => refetchFiles()}
                     disabled={filesLoading}
                     data-testid="button-refresh-files"
-                    className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                    className="h-10 w-10 shrink-0 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${filesLoading ? 'animate-spin' : ''}`} />
                   </Button>
@@ -482,7 +477,7 @@ export default function MuestreosPage() {
                 <p className="text-xs sm:text-sm">{filterBranch ? 'No hay archivos de esta sucursal' : 'No hay archivos subidos'}</p>
               </div>
             ) : (
-              <div className="space-y-1.5 sm:space-y-2 max-h-[500px] overflow-y-auto">
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto sm:space-y-2">
                 {filteredFiles.map((file) => {
                   const status = fileStatuses[file.id] || "no_visto";
                   const statusConfig = STATUS_CONFIG[status];
@@ -495,10 +490,10 @@ export default function MuestreosPage() {
                   return (
                     <div
                       key={file.id}
-                      className="bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/80 transition-colors hover:bg-slate-100/80"
                       data-testid={`file-item-${file.id}`}
                     >
-                      <div className="flex items-center gap-1.5 sm:gap-2 p-2 sm:p-2.5">
+                      <div className="flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center sm:gap-2">
                         <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
@@ -518,7 +513,7 @@ export default function MuestreosPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                        <div className="flex items-center justify-end gap-1 self-end sm:shrink-0">
                           {isWord && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -554,7 +549,7 @@ export default function MuestreosPage() {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{statusConfig.label} — Clic para cambiar</p>
+                              <p>{statusConfig.label} — Tocá para cambiar</p>
                             </TooltipContent>
                           </Tooltip>
                           <Tooltip>
@@ -657,3 +652,7 @@ export default function MuestreosPage() {
     </TooltipProvider>
   );
 }
+
+
+
+

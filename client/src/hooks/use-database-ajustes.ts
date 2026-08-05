@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { buildApiUrl } from '@/lib/api';
 
 
 interface AjusteData {
@@ -23,7 +24,7 @@ export function useAjustesStats() {
   return useQuery({
     queryKey: ['/api/ajustes/stats'],
     queryFn: async (): Promise<StatsData> => {
-      const response = await fetch('/api/ajustes/stats', {
+      const response = await fetch(buildApiUrl('/api/ajustes/stats'), {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -55,7 +56,7 @@ export function useAjustesList(sucursal?: string) {
         ? `/api/ajustes?sucursal=${encodeURIComponent(sucursal)}` 
         : '/api/ajustes';
       
-      const response = await fetch(url, {
+      const response = await fetch(buildApiUrl(url), {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',

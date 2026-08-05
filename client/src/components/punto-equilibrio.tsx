@@ -20,6 +20,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { buildApiUrl } from "@/lib/api";
 
 interface ResumenEquilibrio {
   sucursal: string;
@@ -99,7 +100,7 @@ export default function PuntoEquilibrio({ sucursal }: PuntoEquilibrioProps) {
       const params = new URLSearchParams();
       if (sucursal) params.append('sucursal', sucursal);
       const url = `/api/ajustes/punto-equilibrio${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url);
+      const response = await fetch(buildApiUrl(url));
       if (!response.ok) throw new Error('Error fetching data');
       return response.json();
     },
