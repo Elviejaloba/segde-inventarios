@@ -10,6 +10,12 @@ import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, E
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV
+    ? 'https://tasktrackerpro-api-production.up.railway.app'
+    : '');
+
 interface DropboxFile {
   id: string;
   name: string;
@@ -139,7 +145,7 @@ export default function MuestreosPage() {
 
     setLoadingContenido(prev => ({ ...prev, [file.id]: true }));
     try {
-      const response = await fetch(`/api/muestreos/${file.id}/contenido?path=${encodeURIComponent(file.path)}`);
+      const response = await fetch(`${API_BASE_URL}/api/muestreos/${file.id}/contenido?path=${encodeURIComponent(file.path)}`);
       if (!response.ok) throw new Error('Error al analizar');
       const data: FileContenido = await response.json();
       setCachedContenido(prev => ({ ...prev, [file.id]: data }));
@@ -166,7 +172,7 @@ export default function MuestreosPage() {
 
     setLoadingLinks(prev => ({ ...prev, [file.id]: true }));
     try {
-      const response = await fetch(`/api/muestreos/${file.id}/link?path=${encodeURIComponent(file.path)}`);
+      const response = await fetch(`${API_BASE_URL}/api/muestreos/${file.id}/link?path=${encodeURIComponent(file.path)}`);
       if (!response.ok) throw new Error('Failed to get link');
       const { link } = await response.json();
       setCachedLinks(prev => ({ ...prev, [file.id]: link }));
@@ -189,7 +195,7 @@ export default function MuestreosPage() {
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<DropboxFile[]>({
     queryKey: ['/api/muestreos'],
     queryFn: async () => {
-      const response = await fetch('/api/muestreos');
+      const response = await fetch(`${API_BASE_URL}/api/muestreos`);
       if (!response.ok) throw new Error('Failed to fetch files');
       return response.json();
     },
@@ -207,7 +213,7 @@ export default function MuestreosPage() {
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       setUploadProgress(10);
-      const response = await fetch('/api/muestreos/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/muestreos/upload`, {
         method: 'POST',
         body: formData,
       });
