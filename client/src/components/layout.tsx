@@ -20,8 +20,8 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b fixed top-0 left-0 right-0 bg-background z-50">
-        <div className="container flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="container flex min-h-14 items-center justify-between gap-2 px-3 py-2 sm:h-16 sm:px-4 sm:py-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-4">
             <img 
               src="/assets/GRUPO CRISA.webp" 
               alt="GRUPO CRISA" 
@@ -29,7 +29,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               width="109"
               height="48"
             />
-            <h1 className="text-sm sm:text-xl font-bold hidden sm:block">
+            <h1 className="line-clamp-2 text-xs font-bold leading-tight sm:line-clamp-1 sm:text-xl">
               Seguimiento de Muestreos
             </h1>
           </div>
@@ -134,36 +134,36 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
       </header>
 
       {/* Mobile bottom navigation */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50 safe-area-bottom">
-        <div className="flex items-center justify-around h-14">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur safe-area-bottom">
+        <div className="flex h-16 items-center justify-between gap-1 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
           <Link href="/">
             <button
-              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
                 location === "/" ? "text-primary" : "text-muted-foreground"
               }`}
             >
               <Home className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Inicio</span>
+              <span className="truncate text-[10px] font-medium leading-tight">Inicio</span>
             </button>
           </Link>
           <Link href="/reportes">
             <button
-              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
                 location === "/reportes" ? "text-primary" : "text-blue-600"
               }`}
             >
               <FileText className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Reportes</span>
+              <span className="truncate text-[10px] font-medium leading-tight">Reportes</span>
             </button>
           </Link>
           <Link href="/muestreos">
             <button
-              className={`flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors ${
+              className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors ${
                 location === "/muestreos" ? "text-primary" : "text-muted-foreground"
               }`}
             >
               <FileUp className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Muestreos</span>
+              <span className="truncate text-[10px] font-medium leading-tight">Muestreos</span>
             </button>
           </Link>
           <button
@@ -174,7 +174,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
             className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground relative"
           >
             <HelpCircle className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Ayuda</span>
+            <span className="truncate text-[10px] font-medium leading-tight">Ayuda</span>
             <span className="absolute top-1.5 right-3 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
           </button>
           <button
@@ -182,12 +182,12 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
             className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground"
           >
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            <span className="text-[10px] font-medium">{theme === "dark" ? "Claro" : "Oscuro"}</span>
+            <span className="truncate text-[10px] font-medium leading-tight">{theme === "dark" ? "Claro" : "Oscuro"}</span>
           </button>
         </div>
       </nav>
 
-      <main className="container py-4 sm:py-8 mt-20 sm:mt-16 pb-20 sm:pb-8 px-2 sm:px-4">
+      <main className="container mt-16 max-w-screen-2xl px-3 py-3 pb-24 sm:mt-16 sm:px-4 sm:py-8 sm:pb-8">
         {children}
       </main>
       <ImportExcel isHidden={hideImport} />
