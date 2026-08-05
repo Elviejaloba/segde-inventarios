@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,10 +152,10 @@ interface MuestreoFile {
 
 const PERIODOS = [
   { value: 'todo', label: 'Todo el historial', description: 'Desde el inicio' },
-  { value: '2025', label: 'AÃ±o 2025', description: 'Ene - Dic 2025' },
-  { value: '2026', label: 'AÃ±o 2026', description: 'Ene 2026 en adelante' },
-  { value: 'ultimo-trimestre', label: 'Ãšltimo trimestre', description: 'Ãšltimos 3 meses' },
-  { value: 'ultimo-semestre', label: 'Ãšltimo semestre', description: 'Ãšltimos 6 meses' },
+  { value: '2025', label: 'Año 2025', description: 'Ene - Dic 2025' },
+  { value: '2026', label: 'Año 2026', description: 'Ene 2026 en adelante' },
+  { value: 'ultimo-trimestre', label: 'Último trimestre', description: 'Últimos 3 meses' },
+  { value: 'ultimo-semestre', label: 'Último semestre', description: 'Últimos 6 meses' },
 ];
 
 export default function ReportesPage() {
@@ -360,7 +360,7 @@ export default function ReportesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingMascot size="lg" message="Cargando anÃ¡lisis valorizado..." />
+        <LoadingMascot size="lg" message=">Cargando análisis valorizado..." />
       </div>
     );
   }
@@ -395,7 +395,7 @@ export default function ReportesPage() {
                   return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}${timeStr}`;
                 })()}
               </span>
-              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">Ãšlt. actualizaciÃ³n</span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">Últ. actualización</span>
             </div>
           </div>
         )}
@@ -419,7 +419,7 @@ export default function ReportesPage() {
           <Select value={selectedPeriodo} onValueChange={(v) => { setSelectedPeriodo(v); if (v !== 'custom') { setFechaDesde(''); setFechaHasta(''); } }}>
             <SelectTrigger className="h-10 w-full min-w-0 text-xs sm:text-sm">
               <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-600 shrink-0" />
-              <SelectValue placeholder="PerÃ­odo" />
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               {PERIODOS.map((p) => (
@@ -446,8 +446,8 @@ export default function ReportesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="valorizado">Mayor valor</SelectItem>
-              <SelectItem value="perdida">Mayor % pÃ©rdida</SelectItem>
-              <SelectItem value="unidades">MÃ¡s unidades</SelectItem>
+              <SelectItem value="perdida">Mayor % pérdida</SelectItem>
+              <SelectItem value="unidades">Más unidades</SelectItem>
             </SelectContent>
           </Select>
 
@@ -489,7 +489,7 @@ export default function ReportesPage() {
           </div>
           {fechaDesde && fechaHasta && (
             <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
-              {new Date(fechaDesde + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })} â†’ {new Date(fechaHasta + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+              {new Date(fechaDesde + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(fechaHasta + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
             </Badge>
           )}
           <Button 
@@ -507,7 +507,7 @@ export default function ReportesPage() {
         <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
           <Calendar className="h-4 w-4 text-blue-600" />
           <span className="text-sm text-blue-700 dark:text-blue-300">
-            PerÃ­odo seleccionado: <strong>{PERIODOS.find(p => p.value === selectedPeriodo)?.label}</strong>
+            Período seleccionado: <strong>{PERIODOS.find(p => p.value === selectedPeriodo)?.label}</strong>
           </span>
           <span className="text-xs text-blue-600 dark:text-blue-400">
             ({getPeriodoLabel()})
@@ -537,13 +537,13 @@ export default function ReportesPage() {
                 <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500 dark:text-gray-400" />
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">
-                InformaciÃ³n Premium
+                Información Premium
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-2 sm:mb-4">
-                Para acceder a este nivel de informaciÃ³n, comunicate con la administraciÃ³n para llegar a un acuerdo.
+                Para acceder a este nivel de información, comunicate con la administración para llegar a un acuerdo.
               </p>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3 sm:mb-4">
-                Si ya tenÃ©s el cÃ³digo enviado por administraciÃ³n, ingresalo a continuaciÃ³n:
+                Si ya tenés el código enviado por administración, ingresalo a continuación:
               </p>
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <input
@@ -551,7 +551,7 @@ export default function ReportesPage() {
                   maxLength={4}
                   value={premiumCode}
                   onChange={(e) => { setPremiumCode(e.target.value); setPremiumCodeError(false); }}
-                  placeholder="CÃ³digo"
+                  placeholder="Código"
                   className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border text-center text-base sm:text-lg tracking-widest font-mono ${premiumCodeError ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && premiumCode.length === 4) {
@@ -581,7 +581,7 @@ export default function ReportesPage() {
                 </button>
               </div>
               {premiumCodeError && (
-                <p className="text-xs text-red-500 mb-4">CÃ³digo incorrecto. VerificÃ¡ e intentÃ¡ de nuevo.</p>
+                <p className="text-xs text-red-500 mb-4">Código incorrecto. Verificá e intentá de nuevo.</p>
               )}
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
                 <a
@@ -591,7 +591,7 @@ export default function ReportesPage() {
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium text-sm transition-colors duration-200"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  Contactar AdministraciÃ³n
+                  Contactar Administración
                 </a>
                 <button
                   onClick={() => { setSelectedSucursal(""); setPremiumCode(""); setPremiumCodeError(false); }}
@@ -611,8 +611,8 @@ export default function ReportesPage() {
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
-                <span className="hidden sm:inline">Total PÃ©rdida Valorizada</span>
-                <span className="sm:hidden">PÃ©rdida</span>
+                <span className="hidden sm:inline">Total Pérdida Valorizada</span>
+                <span className="sm:hidden">Pérdida</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
@@ -651,7 +651,7 @@ export default function ReportesPage() {
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                <span className="hidden sm:inline">Total Ventas PerÃ­odo</span>
+                <span className="hidden sm:inline">Total Ventas Período</span>
                 <span className="sm:hidden">Ventas</span>
               </CardTitle>
             </CardHeader>
@@ -699,7 +699,7 @@ export default function ReportesPage() {
                 {articulosConAlerta}
               </div>
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                ArtÃ­culos con pÃ©rdida crÃ­tica
+                Artículos con pérdida crítica
               </p>
             </CardContent>
           </Card>
@@ -710,8 +710,8 @@ export default function ReportesPage() {
             <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
                 <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                <span className="hidden sm:inline">ArtÃ­culos Analizados</span>
-                <span className="sm:hidden">ArtÃ­culos</span>
+                <span className="hidden sm:inline">Artículos Analizados</span>
+                <span className="sm:hidden">Artículos</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
@@ -775,10 +775,10 @@ export default function ReportesPage() {
                 const tooltipText = data 
                   ? `${label}: ${data.totalAjustado.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'} ajustados en total.\n\n` +
                     `En 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}.\n\n` +
-                    (isUp ? `â†‘ Aumento del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (mÃ¡s pÃ©rdidas)` : 
-                     isDown ? `â†“ DisminuciÃ³n del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (menos pÃ©rdidas)` : 
-                     'Sin variaciÃ³n significativa respecto a 2025') +
-                    `\n\n${data.articulos} artÃ­culos diferentes afectados.`
+                    (isUp ? `↑ Aumento del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (más pérdidas)` : 
+                     isDown ? `↓ Disminución del ${Math.abs(variacion).toFixed(1)}% respecto a 2025 (menos pérdidas)` : 
+                     'Sin variación significativa respecto a 2025') +
+                    `\n\n${data.articulos} artículos diferentes afectados.`
                   : 'Sin datos para esta unidad de medida';
 
                 return (
@@ -795,7 +795,7 @@ export default function ReportesPage() {
                       {data && !isNeutral && (
                         <div 
                           className={`flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded w-fit ${isUp ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-green-600 bg-green-100 dark:bg-green-900/30'}`}
-                          title={isUp ? 'AumentÃ³ respecto a 2025 (mÃ¡s pÃ©rdidas)' : 'DisminuyÃ³ respecto a 2025 (menos pÃ©rdidas)'}
+                          title={isUp ? '>Aumentó respecto a 2025 (>más pérdidas)' : '>Disminuyó respecto a 2025 (menos pérdidas)'}
                         >
                           {isUp ? (
                             <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -808,7 +808,7 @@ export default function ReportesPage() {
                       {data && isNeutral && (
                         <div 
                           className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium text-gray-500 px-1 sm:px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 w-fit"
-                          title="Sin variaciÃ³n significativa respecto a 2025"
+                          title="Sin >variación significativa respecto a 2025"
                         >
                           <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span>0%</span>
@@ -825,7 +825,7 @@ export default function ReportesPage() {
                       {data && data.total2025 > 0 && (
                         <span 
                           className="text-[8px] sm:text-[9px] text-muted-foreground cursor-help"
-                          title={`Total ajustado en el aÃ±o 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}`}
+                          title={`Total ajustado en el >año 2025: ${data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 2 })} ${unidad === 'UN' ? 'unidades' : unidad === 'MTS' ? 'metros' : 'kilogramos'}`}
                         >
                           '25: {data.total2025.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
                         </span>
@@ -863,8 +863,8 @@ export default function ReportesPage() {
             </div>
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
               {showCostoReposicion 
-                ? "* Valores a COSTO DE REPOSICIÃ“N"
-                : "* Valores a precio pÃºblico"}
+                ? "* Valores a COSTO DE >REPOSICIÓN"
+                : "* Valores a precio >público"}
             </p>
           </CardHeader>
           <CardContent className="p-2 sm:p-6">
@@ -873,9 +873,9 @@ export default function ReportesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs sm:text-sm p-2 sm:p-4">Sucursal</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell" title="Cantidad de artÃ­culos diferentes con ajustes">
+                    <TableHead className="text-right hidden sm:table-cell" title="Cantidad de artículos diferentes con ajustes">
                       <div className="flex flex-col items-end">
-                        <span>ArtÃ­culos</span>
+                        <span>Artículos</span>
                         <span className="text-[10px] font-normal text-muted-foreground">Cant. ajuste</span>
                       </div>
                     </TableHead>
@@ -897,8 +897,8 @@ export default function ReportesPage() {
                         <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">PÃ©rdida $</TableHead>
-                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% PÃ©rd.</TableHead>
+                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">Pérdida $</TableHead>
+                    <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% Pérd.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -966,8 +966,8 @@ export default function ReportesPage() {
           </CardTitle>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
             {selectedSucursal 
-              ? `Datos de la sucursal ${selectedSucursal}. Valores a precio pÃºblico.`
-              : "Datos consolidados de todas las sucursales. Valores a precio pÃºblico."
+              ? `Datos de la sucursal ${selectedSucursal}. Valores a precio >público.`
+              : "Datos consolidados de todas las sucursales. Valores a precio >público."
             }
           </p>
         </CardHeader>
@@ -977,8 +977,8 @@ export default function ReportesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs sm:text-sm p-2 sm:p-4">CÃ³digo</TableHead>
-                  <TableHead className="hidden sm:table-cell">ArtÃ­culo</TableHead>
+                  <TableHead className="text-xs sm:text-sm p-2 sm:p-4">Código</TableHead>
+                  <TableHead className="hidden sm:table-cell">Artículo</TableHead>
                   <TableHead className="text-right text-purple-600 hidden md:table-cell" title="Unidades (UN)">
                     <div className="flex flex-col items-end">
                       <span>UN</span>
@@ -997,9 +997,9 @@ export default function ReportesPage() {
                       <span className="text-[10px] font-normal text-muted-foreground">Kilogramos</span>
                     </div>
                   </TableHead>
-                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">PÃ©rdida $</TableHead>
-                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% PÃ©rd.</TableHead>
-                  <TableHead className="text-center hidden xl:table-cell">Ãšltimo</TableHead>
+                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">Pérdida $</TableHead>
+                  <TableHead className="text-right text-[10px] sm:text-sm p-2 sm:p-4">% Pérd.</TableHead>
+                  <TableHead className="text-center hidden xl:table-cell">Último</TableHead>
                   <TableHead className="p-1 sm:p-4"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -1061,7 +1061,7 @@ export default function ReportesPage() {
           </div>
           {sortedData.length > 100 && (
             <p className="text-center text-sm text-muted-foreground mt-4">
-              Mostrando 100 de {sortedData.length} artÃ­culos
+              Mostrando 100 de {sortedData.length} artículos
             </p>
           )}
         </CardContent>
@@ -1090,14 +1090,14 @@ export default function ReportesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>CÃ³digo</TableHead>
+                    <TableHead>Código</TableHead>
                     <TableHead>Sucursal</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Diferencia</TableHead>
                     <TableHead className="text-right">Valor Ajuste</TableHead>
-                    <TableHead className="text-right">Ventas perÃ­odo</TableHead>
-                    <TableHead className="text-right">% PÃ©rdida</TableHead>
+                    <TableHead className="text-right">Ventas período</TableHead>
+                    <TableHead className="text-right">% Pérdida</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1180,14 +1180,14 @@ export default function ReportesPage() {
           ) : (
             <div className="text-center py-8 space-y-3">
               <div className="text-muted-foreground">
-                No se encontraron ajustes para el cÃ³digo <span className="font-mono font-bold">{selectedCodigo}</span>
+                No se encontraron ajustes para el código <span className="font-mono font-bold">{selectedCodigo}</span>
               </div>
               <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg max-w-md mx-auto">
                 <p className="font-medium mb-1">Posibles razones:</p>
                 <ul className="list-disc list-inside text-left space-y-1">
-                  <li>El cÃ³digo fue dado de baja o cambiÃ³ de nombre</li>
-                  <li>Los ajustes fueron registrados con un cÃ³digo diferente</li>
-                  <li>Este artÃ­culo no tiene ajustes en el sistema actual</li>
+                  <li>El código fue dado de baja o cambió de nombre</li>
+                  <li>Los ajustes fueron registrados con un código diferente</li>
+                  <li>Este artículo no tiene ajustes en el sistema actual</li>
                 </ul>
               </div>
             </div>
@@ -1206,7 +1206,7 @@ export default function ReportesPage() {
           
           {selectedCodigoDoc && (
             <div className="mb-4 p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Buscando cÃ³digo:</p>
+              <p className="text-sm text-muted-foreground mb-1">Buscando código:</p>
               <p className="font-mono font-bold text-lg">{selectedCodigoDoc.codigo}</p>
               <p className="text-sm text-muted-foreground">{selectedCodigoDoc.articulo}</p>
               <Badge variant="secondary" className="mt-2">
@@ -1217,7 +1217,7 @@ export default function ReportesPage() {
           )}
 
           <p className="text-sm text-muted-foreground mb-4">
-            Documentos de la sucursal donde puedes buscar este cÃ³digo:
+            Documentos de la sucursal donde puedes buscar este código:
           </p>
 
           {loadingMuestreos ? (
@@ -1244,7 +1244,7 @@ export default function ReportesPage() {
                           year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })} â€¢ {(file.size / 1024).toFixed(0)} KB
+                        })} • {(file.size / 1024).toFixed(0)} KB
                       </p>
                     </div>
                   </div>
@@ -1274,7 +1274,7 @@ export default function ReportesPage() {
           ) : muestreos && muestreos.length > 0 ? (
             <div className="space-y-4">
               <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
-                No hay documentos especÃ­ficos para {selectedCodigoDoc?.sucursal}. 
+                No hay documentos específicos para {selectedCodigoDoc?.sucursal}. 
                 Mostrando todos los documentos disponibles:
               </p>
               <div className="space-y-2">
@@ -1326,21 +1326,21 @@ export default function ReportesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Ver a Costo de ReposiciÃ³n
+              Ver a Costo de Reposición
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
               <p className="text-sm font-medium text-amber-800 text-center">
-                âš ï¸ De uso exclusivo para el Directorio
+                ⚠️ De uso exclusivo para el Directorio
               </p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Ingrese la contraseÃ±a para ver los valores a costo de reposiciÃ³n
+              Ingrese la contraseña para ver los valores a costo de reposición
             </p>
             <Input
               type="password"
-              placeholder="ContraseÃ±a"
+              placeholder=">Contraseña"
               value={passwordInput}
               onChange={(e) => {
                 setPasswordInput(e.target.value);
@@ -1352,7 +1352,7 @@ export default function ReportesPage() {
               className={passwordError ? "border-red-500" : ""}
             />
             {passwordError && (
-              <p className="text-sm text-red-500">ContraseÃ±a incorrecta</p>
+              <p className="text-sm text-red-500">Contraseña incorrecta</p>
             )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => {
@@ -1385,3 +1385,7 @@ export default function ReportesPage() {
     </div>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
@@ -26,15 +26,15 @@ import { analytics } from "@/lib/analytics";
 
 
 
-// Lista de códigos para temporada de verano
+// Lista de >códigos para temporada de verano
 const CODES = SEASON_CODES_TEMPORADA_VERANO;
 
-// Función para sanitizar códigos al guardar
+// FunciÃ³n para sanitizar >códigos al guardar
 const sanitizeCode = (code: string) => {
   return code.toLowerCase().replace(/[/.#$[\]]/g, '-');
 };
 
-// Función para desanitizar códigos al mostrar
+// FunciÃ³n para desanitizar >códigos al mostrar
 const desanitizeCode = (code: string) => {
   return CODES.find(originalCode => sanitizeCode(originalCode) === code) || code;
 };
@@ -63,28 +63,28 @@ const getLocalItemState = (localItems: Record<string, ItemState>, code: string, 
 
 const MOTIVATION_MESSAGES = {
   20: {
-    title: "¡Excelente inicio! ??",
-    description: "¡Sigue así, vas por buen camino!",
+    title: ">¡Excelente inicio!",
+    description: ">¡Sigue así, vas por muy buen camino.",
     variant: "success" as const
   },
   40: {
-    title: "¡Vas muy bien! ??",
-    description: "¡Ya llevas casi la mitad!",
+    title: ">¡Vas muy bien!",
+    description: ">¡Ya llevas casi la mitad!",
     variant: "success" as const
   },
   60: {
-    title: "¡Increíble progreso! ??",
-    description: "¡Mantén ese ritmo!",
+    title: ">¡Increíble progreso!",
+    description: ">¡Mantené ese ritmo!",
     variant: "success" as const
   },
   80: {
-    title: "¡Casi llegas! ??",
-    description: "¡Te falta muy poco!",
+    title: ">¡Casi llegás!",
+    description: ">¡Te falta muy poco!",
     variant: "success" as const
   },
   100: {
-    title: "¡FELICITACIONES! ??",
-    description: "¡Has completado todos los ítems!",
+    title: ">¡Felicitaciones!",
+    description: ">¡Has completado todos los ítems!",
     variant: "success" as const
   }
 };
@@ -375,10 +375,10 @@ export default function Home() {
         // Mostrar confetti
         celebrateProgress(100);
         
-        // Mostrar toast de felicitación
+        // Mostrar toast de felicitaciÃ³n
         toast({
-          title: `?x}0 ¡Objetivo ${mes} Cumplido!`,
-          description: `¡Excelente trabajo! Has completado todos los items del mes de ${mes}.`,
+          title: `>¡Objetivo ${mes} Cumplido!`,
+          description: `Completaste todos los ítems del mes de=>¡Excelente trabajo! Completaste todos los ítems del mes de>Completaste todos los ítems del mes de ${mes}.`,
           duration: 5000,
         });
       }
@@ -441,7 +441,7 @@ export default function Home() {
     } catch (error) {
       console.error("Error al cargar datos:", error);
       toast({
-        title: "Error de conexión",
+        title: ">Error de conexión",
         description: "No se pudieron cargar los datos. Intente nuevamente.",
         variant: "destructive",
       });
@@ -531,7 +531,7 @@ export default function Home() {
 
   const handleAddItem = async () => {
     if (isFirebaseReadOnly) {
-      toast({ title: 'Modo solo lectura', description: 'No se pueden agregar artículos en esta sesión local.' });
+      toast({ title: 'Modo solo lectura', description: '>No se pueden agregar artículos en esta sesión local.' });
       return;
     }
     if (!selectedBranch || !newItemCode.trim()) return;
@@ -557,7 +557,7 @@ export default function Home() {
 
   const handleRemoveAddedItem = async (key: string) => {
     if (isFirebaseReadOnly) {
-      toast({ title: 'Modo solo lectura', description: 'No se pueden eliminar artículos en esta sesión local.' });
+      toast({ title: 'Modo solo lectura', description: '>No se pueden eliminar artículos en esta sesión local.' });
       return;
     }
     if (!selectedBranch) return;
@@ -696,7 +696,7 @@ export default function Home() {
             Esta herramienta actúa como recordatorio y facilita el seguimiento del progreso de cada sucursal
           </p>
         </div>
-        {/* Fecha actualización - mobile: fija arriba, chica | desktop: normal */}
+        {/* Fecha actualizaciÃ³n - mobile: fija arriba, chica | desktop: normal */}
         {ultimaActualizacion && (
           <>
             {/* Mobile: barra fija arriba debajo del header */}
@@ -783,13 +783,13 @@ export default function Home() {
               {/* Calendario con objetivos mensuales para T.Mendoza */}
               {calendarioSemanal && (
                 <div className="space-y-4">
-                  {/* Encabezado con título */}
+                  {/* Encabezado con tÃ­tulo */}
                   <div className="bg-yellow-300 p-2 sm:p-3 rounded-lg" data-testid="header-calendario">
                     <h3 className="text-sm sm:text-lg font-bold text-gray-800">{activeChecklistEntries.length} Artículos solicitados para realizar inventario</h3>
-                    <p className="text-xs sm:text-sm text-gray-600">Selecciona los items que vayas completando - {selectedBranch}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Selecciona los ítems que vayas completando - {selectedBranch}</p>
                   </div>
 
-                  {/* Objetivos mensuales - el usuario elige cuáles items completar */}
+                  {/* Objetivos mensuales - el usuario elige cuÃ¡les items completar */}
                   {(() => {
                     const todosLosCodigos = activeChecklistEntries;
                     const itemsCompletados = todosLosCodigos.filter(entry => getLocalItemState(items, entry.code, entry.periodKey).completed);
@@ -1009,7 +1009,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Sección Items Agregados */}
+              {/* SecciÃ³n Items Agregados */}
               <div className="border-2 border-dashed border-blue-300 rounded-lg overflow-hidden" data-testid="items-agregados">
                 <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-2 sm:p-3 flex items-center justify-between gap-1">
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -1190,5 +1190,8 @@ export default function Home() {
     </div>
   );
 }
+
+
+
 
 
