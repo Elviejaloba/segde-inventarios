@@ -47,16 +47,16 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
         </Select>
       </div>
 
-      {/* Mobile: Botón que abre panel fullscreen */}
+      {/* Mobile: BotÃ³n que abre panel fullscreen */}
       <div className="sm:hidden w-full">
         <button
           onClick={() => setMobileOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-card border-2 border-primary/20 rounded-xl text-left shadow-sm active:scale-[0.98] transition-transform"
+          className="w-full rounded-xl border-2 border-primary/20 bg-card px-4 py-3 text-left shadow-sm transition-transform active:scale-[0.98]"
           data-testid="select-branch-mobile"
         >
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <span className="text-base font-medium">
+            <span className="min-w-0 truncate text-base font-medium">
               {value || "Selecciona Sucursal"}
             </span>
           </div>
@@ -64,9 +64,9 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
         </button>
       </div>
 
-      {/* Mobile: Panel fullscreen de selección */}
+      {/* Mobile: Panel fullscreen de selecciÃ³n */}
       {mobileOpen && (
-        <div className="sm:hidden fixed inset-0 z-[100] bg-background flex flex-col animate-in slide-in-from-bottom duration-200">
+        <div className="sm:hidden fixed inset-0 z-[100] flex flex-col bg-background animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <h2 className="text-lg font-bold">Seleccionar Sucursal</h2>
             <button
@@ -76,7 +76,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2">
+          <div className="flex-1 overflow-y-auto px-3 py-2 pb-24">
             {AVAILABLE_BRANCHES.map((branch) => (
               <button
                 key={branch}
@@ -88,7 +88,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
                 }`}
               >
                 <MapPin className={`h-5 w-5 shrink-0 ${value === branch ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="text-base whitespace-nowrap">{branch}</span>
+                <span className="min-w-0 break-words text-base leading-tight">{branch}</span>
                 {value === branch && (
                   <span className="ml-auto text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Actual</span>
                 )}
