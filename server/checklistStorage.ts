@@ -256,7 +256,9 @@ async function ensureChecklistRuntimeReady() {
     runtimeReadyPromise = (async () => {
       await applyChecklistMigration();
       await ensureChecklistDefinitions();
-      if (!(await hasChecklistSeedData())) {
+
+      const shouldBootstrapFromFirebase = process.env.CHECKLIST_FIREBASE_BOOTSTRAP === "true";
+      if (shouldBootstrapFromFirebase && !(await hasChecklistSeedData())) {
         await bootstrapChecklistPostgres({ importFirebase: true });
       }
     })().catch((error) => {
