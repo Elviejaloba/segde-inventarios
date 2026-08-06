@@ -70,7 +70,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/checklist/:branchId/items/:code', async (req, res) => {
     try {
-      const payload = checklistSingleItemUpdateSchema.parse(req.body);
+      const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+      const payload = checklistSingleItemUpdateSchema.parse({
+        ...req.body,
+        period: req.body?.period ?? period,
+      });
       const branch = await updateChecklistItem(req.params.branchId, req.params.code, payload);
       res.json(branch);
     } catch (error) {
