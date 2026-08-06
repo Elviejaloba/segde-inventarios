@@ -1,6 +1,7 @@
 import { ref, set, onValue, get } from 'firebase/database';
 import { db } from './firebase';
 import { Branch, AVAILABLE_BRANCHES, Season, SEASON_CODES_TEMPORADA_VERANO } from './store';
+import { buildApiUrl } from './api';
 
 const FIREBASE_READ_ONLY = import.meta.env.DEV && import.meta.env.VITE_FIREBASE_READONLY === 'true';
 
@@ -44,6 +45,23 @@ interface AjusteData {
 class FirebaseStorage {
   private dbRef = ref(db, 'branches');
   private ajustesRef = ref(db, 'ajustes');
+
+  private async fetchChecklistBranches() {
+    if (import.meta.env.DEV) {
+      const snapshot = await get(this.dbRef);
+      if (!snapshot.exists()) {
+        return [];
+      }
+      const data = snapshot.val();
+      return Array.isArray(data) ? data : [];
+    }
+
+    const response = await fetch(buildApiUrl('/api/checklist/branches'));
+    if (!response.ok) {
+      throw new Error('Error al cargar checklist');
+    }
+    return response.json();
+  }
   
   // Referencias para temporadas
   private getSeasonRef(season: Season) {
@@ -52,141 +70,38 @@ class FirebaseStorage {
 
   async initializeData() {
     try {
-      if (FIREBASE_READ_ONLY) {
-        return;
-      }
-
-      const snapshot = await get(this.dbRef);
-
-      if (!snapshot.exists()) {
-        const initialData = AVAILABLE_BRANCHES.map(branch => {
-          const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
-          
-          // Inicializar todos los códigos de temporada de verano
-          SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
-            items[code] = {
-              completed: false,
-              hasStock: true,
-              lastUpdated: Date.now()
-            };
-          });
-
-          return {
-            id: branch,
-            totalCompleted: 0,
-            noStock: 0,
-            items,
-            lastUpdated: Date.now()
-          };
-        });
-        await set(this.dbRef, initialData);
-      } else {
-        
-        let currentData = snapshot.val();
-        let needsUpdate = false;
-        
-        // Verificar si falta la nueva sucursal y agregarla
-        const existingBranches = currentData.map((branch: any) => branch.id);
-        const missingBranches = AVAILABLE_BRANCHES.filter(branch => !existingBranches.includes(branch));
-        
-        if (missingBranches.length > 0) {
-          
-          const newBranches = missingBranches.map(branch => {
-            const items: Record<string, { completed: boolean; hasStock: boolean; lastUpdated: number }> = {};
-            
-            SEASON_CODES_TEMPORADA_VERANO.forEach(code => {
-              items[code] = {
-                completed: false,
-                hasStock: true,
-                lastUpdated: Date.now()
-              };
-            });
-
-            return {
-              id: branch,
-              totalCompleted: 0,
-              noStock: 0,
-              items,
-              lastUpdated: Date.now()
-            };
-          });
-          
-          currentData = [...currentData, ...newBranches];
-          needsUpdate = true;
-        }
-        
-        
-        let totalCodesAdded = 0;
-        
-        currentData = currentData.map((branch: any) => {
-          const existingCodes = Object.keys(branch.items || {});
-          const missingCodes = SEASON_CODES_TEMPORADA_VERANO.filter(code => !existingCodes.includes(code));
-          
-          if (missingCodes.length > 0) {
-            totalCodesAdded += missingCodes.length;
-            
-            const updatedItems = { ...branch.items };
-            missingCodes.forEach(code => {
-              updatedItems[code] = {
-                completed: false,
-                hasStock: true,
-                lastUpdated: Date.now()
-              };
-            });
-            
-            needsUpdate = true;
-            return {
-              ...branch,
-              items: updatedItems,
-              lastUpdated: Date.now()
-            };
-          }
-          return branch;
-        });
-        
-        if (needsUpdate) {
-          await set(this.dbRef, currentData);
-        }
-      }
-
-      // Inicializar datos de ajustes si no existen
-      const ajustesSnapshot = await get(this.ajustesRef);
-      if (!ajustesSnapshot.exists()) {
-        await set(this.ajustesRef, []);
-      }
+      await this.fetchChecklistBranches();
     } catch (error: any) {
-      console.error('Firebase Error:', error);
+      console.error('Checklist API Error:', error);
       throw new Error('Error al conectar con la base de datos');
     }
   }
 
   subscribeToData(callback: (data: BranchData[]) => void) {
-    
+    let active = true;
 
-    const unsubscribe = onValue(this.dbRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          if (Array.isArray(data)) {
-            callback(data);
-          } else {
-            console.error('Datos recibidos no son un array:', data);
-            callback([]);
-          }
-        } else {
-          console.log('No hay datos en Firebase');
+    const load = async () => {
+      try {
+        const data = await this.fetchChecklistBranches();
+        if (active) {
+          callback(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error en suscripci�n checklist API:', error);
+        if (active) {
           callback([]);
         }
-      },
-      (error) => {
-        console.error('Error en suscripción Firebase:', error);
-        callback([]);
       }
-    );
+    };
 
-    return unsubscribe;
+    load();
+    const intervalId = window.setInterval(load, 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
   }
-
   subscribeToAjustes(callback: (data: AjusteData[]) => void) {
     
     return onValue(this.ajustesRef,
@@ -210,108 +125,47 @@ class FirebaseStorage {
   async updateBranch(branchId: Branch, data: Partial<BranchData>): Promise<BranchData> {
     try {
       ensureWritable();
-      const snapshot = await get(this.dbRef);
+      const response = await fetch(buildApiUrl(`/api/checklist/branches/${encodeURIComponent(branchId)}`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (!snapshot.exists()) {
-        await this.initializeData();
-        return this.updateBranch(branchId, data);
+      if (!response.ok) {
+        throw new Error('No se pudieron guardar los cambios');
       }
 
-      const currentData = snapshot.val() || [];
-      const branchIndex = currentData.findIndex((b: BranchData) => b.id === branchId);
-      const timestamp = Date.now();
-
-      let updatedData;
-      if (branchIndex !== -1) {
-        const existingBranch = currentData[branchIndex];
-        updatedData = [...currentData];
-        
-        // Merge inteligente de items para evitar conflictos
-        const mergedItems = {
-          ...existingBranch.items,
-          ...data.items
-        };
-        
-        // Solo actualizar items que realmente cambiaron
-        if (data.items) {
-          Object.entries(data.items).forEach(([code, newState]) => {
-            const existing = existingBranch.items?.[code];
-            if (!existing || 
-                existing.completed !== newState.completed || 
-                existing.hasStock !== newState.hasStock) {
-              mergedItems[code] = {
-                ...newState,
-                lastUpdated: timestamp
-              };
-            }
-          });
-        }
-        
-        const mergedPeriods = { ...(existingBranch.periods || {}) } as Record<string, ChecklistPeriodData>;
-
-        if (data.periods) {
-          Object.entries(data.periods).forEach(([periodKey, periodData]) => {
-            const existingPeriod = existingBranch.periods?.[periodKey] || { items: {} };
-            const mergedPeriodItems: Record<string, ChecklistItemData> = {
-              ...(existingPeriod.items || {}),
-              ...(periodData?.items || {})
-            };
-
-            if (periodData?.items) {
-              Object.entries(periodData.items).forEach(([code, newState]) => {
-                const existing = existingPeriod.items?.[code];
-                if (!existing || existing.completed !== newState.completed || existing.hasStock !== newState.hasStock) {
-                  mergedPeriodItems[code] = {
-                    ...newState,
-                    lastUpdated: timestamp
-                  };
-                }
-              });
-            }
-
-            mergedPeriods[periodKey] = {
-              ...existingPeriod,
-              ...periodData,
-              items: mergedPeriodItems,
-              lastUpdated: timestamp
-            };
-          });
-        }
-
-        const finalAddedItems = data.addedItems !== undefined
-          ? data.addedItems
-          : existingBranch.addedItems;
-
-        updatedData[branchIndex] = {
-          ...existingBranch,
-          ...data,
-          items: mergedItems,
-          ...(Object.keys(mergedPeriods).length > 0 && { periods: mergedPeriods }),
-          ...(finalAddedItems !== undefined && { addedItems: finalAddedItems }),
-          lastUpdated: timestamp
-        };
-        
-        
-      } else {
-        updatedData = [
-          ...currentData,
-          {
-            id: branchId,
-            totalCompleted: 0,
-            noStock: 0,
-            items: {},
-            periods: data.periods,
-            ...data,
-            lastUpdated: timestamp
-          }
-        ];
-        
-      }
-
-      await set(this.dbRef, updatedData);
-      return updatedData[branchIndex >= 0 ? branchIndex : updatedData.length - 1] as BranchData;
+      return response.json();
     } catch (error: any) {
       console.error('Error al actualizar sucursal:', error);
+      throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
+    }
+  }
+
+  async updateChecklistItem(branchId: Branch, code: string, data: { completed: boolean; hasStock: boolean; periodKey?: string }) {
+    try {
+      ensureWritable();
+      const query = data.periodKey ? `?period=${encodeURIComponent(data.periodKey)}` : '';
+      const response = await fetch(buildApiUrl(`/api/checklist/${encodeURIComponent(branchId)}/items/${encodeURIComponent(code)}${query}`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: data.completed,
+          hasStock: data.hasStock,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo guardar el estado del artículo');
+      }
+
+      return response.json();
+    } catch (error: any) {
+      console.error('Error al actualizar artículo checklist:', error);
       throw new Error('No se pudieron guardar los cambios. Por favor, intente nuevamente.');
     }
   }
@@ -643,3 +497,5 @@ class FirebaseStorage {
 }
 
 export const storage = new FirebaseStorage();
+
+
