@@ -460,7 +460,6 @@ export default function Home() {
       return;
     }
 
-    const sanitizedCode = sanitizeCode(code);
     const itemKey = getChecklistEntryKey(code, periodKey);
     const currentState = items[itemKey] || { completed: false, hasStock: true };
     const nextState = field === 'completed'
@@ -505,7 +504,7 @@ export default function Home() {
         }
       }
 
-      await storage.updateChecklistItem(selectedBranch, sanitizedCode, {
+      await storage.updateChecklistItem(selectedBranch, code, {
         completed: nextState.completed === true,
         hasStock: nextState.hasStock !== false,
         periodKey,
