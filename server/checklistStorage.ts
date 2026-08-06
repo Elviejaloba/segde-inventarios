@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { Client, neon } from "@neondatabase/serverless";
+import { pool } from "./db";
 import {
   checklistBranchPatchSchema,
   type ChecklistAddedItem,
@@ -20,9 +20,14 @@ import {
 } from "@shared/calendario-semanal";
 
 const databaseUrl = process.env.DATABASE_URL;
-const sql: any = databaseUrl
-  ? neon(databaseUrl)
-  : (async (..._args: any[]) => []);
+
+async function sql<T = Record<string, unknown>>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
+  if (!databaseUrl) return [];
+
+  const text = strings.reduce((acc, chunk, index) => acc + chunk + (index < values.length ? `$${index + 1}` : ""), "");
+  const result = await (pool as any).query(text, values);
+  return result.rows as T[];
+}
 
 const CHECKLIST_BRANCHES = [
   "T.Mendoza",
@@ -134,13 +139,7 @@ async function applyChecklistMigration() {
   if (!databaseUrl) return;
 
   const migrationSql = await fs.readFile(MIGRATION_FILE_URL, "utf8");
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  try {
-    await client.query(migrationSql);
-  } finally {
-    await client.end();
-  }
+  await (pool as any).query(migrationSql);
 }
 
 async function ensureChecklistBranchCatalog() {
