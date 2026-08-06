@@ -71,6 +71,19 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+const getToastDuration = (variant?: ToastProps["variant"]) => {
+  switch (variant) {
+    case "success":
+      return 1800
+    case "destructive":
+      return 2600
+    case "warning":
+      return 2400
+    default:
+      return 2200
+  }
+}
+
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -90,8 +103,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -154,6 +165,7 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
+      duration: props.duration ?? getToastDuration(props.variant),
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()

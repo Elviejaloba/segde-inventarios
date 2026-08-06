@@ -95,7 +95,7 @@ export function HandleAuth() {
         // Notificar éxito
         toast({
           title: "¡Bienvenido! 👋",
-          description: `Has iniciado sesión como ${role === "owner" ? "supervisor" : "sucursal"}`,
+          description: `Has iniciado sesi?n como ${role === "owner" ? "supervisor" : "sucursal"}`,
         });
 
         // Redirigir y limpiar URL
@@ -106,8 +106,8 @@ export function HandleAuth() {
         const errorMessage = error instanceof Error ? error.message : "Error desconocido";
         setError(errorMessage);
         toast({
-          title: "Error al iniciar sesión",
-          description: errorMessage,
+          title: "Error al iniciar sesi?n",
+          description: 'No se pudo completar el ingreso. Volv? a intentarlo.',
           variant: "destructive",
         });
       } finally {

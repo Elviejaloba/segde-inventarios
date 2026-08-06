@@ -53,6 +53,13 @@ interface ChecklistEntry {
 }
 
 type ChecklistViewFilter = 'pending' | 'completed' | 'noStock' | 'all';
+type ChecklistFeedbackStatus = 'saving' | 'success' | 'exiting';
+type ChecklistFeedbackAction = 'completed' | 'noStock';
+
+interface ChecklistFeedbackState {
+  status: ChecklistFeedbackStatus;
+  action: ChecklistFeedbackAction;
+}
 
 const buildFallbackEntries = (codes: string[]): ChecklistEntry[] => codes.map((code) => ({ code, mes: '', semana: '' }));
 
@@ -220,6 +227,8 @@ export default function Home() {
   const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
   const [addedItems, setAddedItems] = useState<Record<string, { code: string; addedAt: number; month?: string }>>({});
   const [newItemCode, setNewItemCode] = useState('');
+  const [itemFeedbackStates, setItemFeedbackStates] = useState<Record<string, ChecklistFeedbackState>>({});
+  const [animatedChecklistSummary, setAnimatedChecklistSummary] = useState({ pending: 0, completed: 0, noStock: 0, total: 0 });
 
   const currentMonth = useMemo(() => {
     const now = new Date();
@@ -461,6 +470,8 @@ export default function Home() {
     }
 
     const itemKey = getChecklistEntryKey(code, periodKey);
+    if (itemFeedbackStates[itemKey]?.status === 'saving') return;
+
     const currentState = items[itemKey] || { completed: false, hasStock: true };
     const nextState = field === 'completed'
       ? {
@@ -479,6 +490,11 @@ export default function Home() {
       [itemKey]: nextState,
     };
 
+    const feedbackAction: ChecklistFeedbackAction = field === 'completed' ? 'completed' : 'noStock';
+    setItemFeedbackStates((prev) => ({
+      ...prev,
+      [itemKey]: { status: 'saving', action: feedbackAction },
+    }));
     setItems(newItems);
 
     try {
@@ -510,20 +526,49 @@ export default function Home() {
         periodKey,
       });
 
+      setItemFeedbackStates((prev) => ({
+        ...prev,
+        [itemKey]: { status: 'success', action: feedbackAction },
+      }));
+
+      toast({
+        title: feedbackAction === 'completed' ? 'Art?culo completado' : 'Marcado sin stock',
+        description: 'El estado se guardó correctamente.',
+        variant: 'success',
+        duration: 1500,
+      });
+
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
         code: itemKey,
         field,
         newValue: field === 'completed' ? nextState.completed : nextState.hasStock,
       });
+
+      await new Promise((resolve) => window.setTimeout(resolve, 380));
+      setItemFeedbackStates((prev) => ({
+        ...prev,
+        [itemKey]: { status: 'exiting', action: feedbackAction },
+      }));
+      await new Promise((resolve) => window.setTimeout(resolve, 360));
+      setItemFeedbackStates((prev) => {
+        const next = { ...prev };
+        delete next[itemKey];
+        return next;
+      });
     } catch (error) {
       console.error("Error al guardar:", error);
       setItems(items);
+      setItemFeedbackStates((prev) => {
+        const next = { ...prev };
+        delete next[itemKey];
+        return next;
+      });
       toast({
-        title: "Error al guardar",
-        description: "Intente nuevamente",
+        title: "No se pudo guardar",
+        description: "Intentalo nuevamente.",
         variant: "destructive",
-        duration: 5000,
+        duration: 2200,
       });
     }
   };
@@ -537,7 +582,7 @@ export default function Home() {
     const code = newItemCode.trim().toUpperCase();
     const key = sanitizeCode(code);
     if (currentMonthAddedItems[key]) {
-      toast({ title: "Ya existe", description: `El item ${code} ya fue agregado este mes.`, variant: "destructive" });
+      toast({ title: "Art?culo ya agregado", description: `El art?culo ${code} ya fue agregado este mes.`, variant: 'warning' });
       return;
     }
     const now = new Date();
@@ -547,10 +592,10 @@ export default function Home() {
     setNewItemCode('');
     try {
       await storage.updateBranch(selectedBranch, { addedItems: newAddedItems });
-      toast({ title: "Item agregado", description: `${code} fue agregado a la lista.` });
+      toast({ title: "Art?culo ya agregado", description: `El art?culo ${code} ya fue agregado este mes.`, variant: 'warning' });
     } catch (error) {
       setAddedItems(addedItems);
-      toast({ title: "Error", description: "No se pudo guardar.", variant: "destructive" });
+      toast({ title: "No se pudo guardar", description: "Volv? a intentarlo en unos segundos.", variant: "destructive" });
     }
   };
 
@@ -566,7 +611,7 @@ export default function Home() {
       await storage.updateBranch(selectedBranch, { addedItems: Object.keys(rest).length > 0 ? rest : {} });
     } catch (error) {
       setAddedItems(addedItems);
-      toast({ title: "Error", description: "No se pudo eliminar.", variant: "destructive" });
+      toast({ title: "No se pudo eliminar", description: "Volv? a intentarlo en unos segundos.", variant: "destructive" });
     }
   };
 
@@ -614,6 +659,8 @@ export default function Home() {
     return activeChecklistEntries.length > 0 ? activeChecklistEntries : buildFallbackEntries(CODES);
   }, [activeChecklistEntries]);
 
+  const getItemFeedbackState = (code: string, periodKey?: string) => itemFeedbackStates[getChecklistEntryKey(code, periodKey)];
+
   const checklistSummary = useMemo(() => {
     const total = checklistSourceEntries.length;
     const completed = checklistSourceEntries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed).length;
@@ -625,6 +672,31 @@ export default function Home() {
 
     return { pending, completed, noStock, total };
   }, [checklistSourceEntries, items]);
+
+  useEffect(() => {
+    const target = checklistSummary;
+    const timer = window.setInterval(() => {
+      setAnimatedChecklistSummary((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        (Object.keys(target) as Array<keyof typeof target>).forEach((key) => {
+          const currentValue = current[key];
+          const targetValue = target[key];
+          if (currentValue === targetValue) return;
+
+          const distance = targetValue - currentValue;
+          const step = Math.max(1, Math.ceil(Math.abs(distance) / 4));
+          next[key] = currentValue + Math.sign(distance) * Math.min(Math.abs(distance), step);
+          changed = true;
+        });
+
+        return changed ? next : current;
+      });
+    }, 45);
+
+    return () => window.clearInterval(timer);
+  }, [checklistSummary]);
 
   const visibleChecklistEntries = useMemo(() => {
     const normalizedSearch = searchFilter.trim().toLowerCase();
@@ -639,9 +711,9 @@ export default function Home() {
       };
       entries.sort((a, b) => rankEntry(a) - rankEntry(b));
     } else if (checklistViewFilter === 'completed') {
-      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed === true);
+      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).completed === true || Boolean(getItemFeedbackState(entry.code, entry.periodKey)));
     } else if (checklistViewFilter === 'noStock') {
-      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).hasStock === false);
+      entries = entries.filter((entry) => getLocalItemState(items, entry.code, entry.periodKey).hasStock === false || Boolean(getItemFeedbackState(entry.code, entry.periodKey)));
     }
 
     if (!normalizedSearch) return entries;
@@ -651,7 +723,7 @@ export default function Home() {
       const displayCode = getChecklistDisplayCode(entry.code).toLowerCase();
       return code.includes(normalizedSearch) || displayCode.includes(normalizedSearch);
     });
-  }, [checklistSourceEntries, checklistViewFilter, searchFilter, items]);
+  }, [checklistSourceEntries, checklistViewFilter, searchFilter, items, itemFeedbackStates]);
 
   return (
     <div className="space-y-4 sm:space-y-8">
@@ -898,19 +970,19 @@ export default function Home() {
                           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="resumen-checklist">
                             <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
-                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.pending}</div>
+                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{animatedChecklistSummary.pending}</div>
                             </div>
                             <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
-                              <div className="text-lg font-bold text-green-600 sm:text-xl">{checklistSummary.completed}</div>
+                              <div className="text-lg font-bold text-green-600 sm:text-xl">{animatedChecklistSummary.completed}</div>
                             </div>
                             <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
-                              <div className="text-lg font-bold text-orange-500 sm:text-xl">{checklistSummary.noStock}</div>
+                              <div className="text-lg font-bold text-orange-500 sm:text-xl">{animatedChecklistSummary.noStock}</div>
                             </div>
                             <div className="rounded-lg border bg-white px-3 py-2.5">
                               <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
-                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.total}</div>
+                              <div className="text-lg font-bold text-gray-900 sm:text-xl">{animatedChecklistSummary.total}</div>
                             </div>
                           </div>
 
@@ -949,7 +1021,7 @@ export default function Home() {
                               <Calendar className="h-4 w-4" />
                               <span className="font-semibold">{checklistFilterLabels[checklistViewFilter]}</span>
                             </div>
-                            <span className="text-xs font-bold sm:text-sm">{visibleChecklistEntries.length} visibles · {checklistSummary.completed}/{checklistSummary.total} completados</span>
+                            <span className="text-xs font-bold sm:text-sm">{visibleChecklistEntries.length} visibles · {animatedChecklistSummary.completed}/{animatedChecklistSummary.total} completados</span>
                           </div>
                           
                           <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto p-2 sm:grid-cols-2 sm:p-3 md:grid-cols-3 lg:grid-cols-4">
@@ -957,32 +1029,49 @@ export default function Home() {
                               const state = getLocalItemState(items, entry.code, entry.periodKey);
                               const isCompleted = state.completed === true;
                               const isNoStock = state.hasStock === false;
+                              const feedbackState = getItemFeedbackState(entry.code, entry.periodKey);
+                              const isSaving = feedbackState?.status === 'saving';
+                              const isSuccess = feedbackState?.status === 'success';
+                              const isExiting = feedbackState?.status === 'exiting';
                               const itemStatusLabel = isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente';
                               return (
                                 <div
                                   key={getChecklistEntryKey(entry.code, entry.periodKey)}
-                                  className={`flex min-h-[96px] flex-col gap-3 rounded border p-3 transition-all hover:shadow-sm ${
+                                  className={`flex min-h-[96px] flex-col gap-3 rounded border p-3 transition-all duration-300 ${
                                     isCompleted
                                       ? 'border-green-300 bg-green-100'
                                       : isNoStock
                                         ? 'border-orange-200 bg-orange-50'
-                                        : 'border-gray-200 bg-white hover:border-primary hover:bg-primary/5'
-                                  }`}
+                                        : 'border-gray-200 bg-white hover:border-primary hover:bg-primary/5 hover:shadow-sm'
+                                  } ${isSaving ? 'cursor-progress opacity-90' : ''} ${isSuccess ? 'ring-2 ring-emerald-300/70 shadow-[0_0_0_1px_rgba(16,185,129,0.12)]' : ''} ${isExiting ? 'translate-y-1 scale-[0.985] opacity-0' : ''}`}
                                 >
-                                  <div className="min-w-0">
-                                    <span className="block font-mono text-sm">{getChecklistDisplayCode(entry.code)}</span>
-                                    <span className={`text-[11px] font-medium ${
-                                      isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-gray-500'
-                                    }`}>
-                                      {itemStatusLabel}
-                                    </span>
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <span className="block font-mono text-sm">{getChecklistDisplayCode(entry.code)}</span>
+                                      <span className={`text-[11px] font-medium ${
+                                        isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-gray-500'
+                                      }`}>
+                                        {itemStatusLabel}
+                                      </span>
+                                    </div>
+                                    {isSaving ? (
+                                      <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                                        <Clock className="h-3.5 w-3.5 animate-spin" />
+                                        <span>Guardando...</span>
+                                      </div>
+                                    ) : isSuccess ? (
+                                      <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        <span>Guardado</span>
+                                      </div>
+                                    ) : null}
                                   </div>
                                   <div className="flex flex-col gap-1.5">
                                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                                       <Checkbox
                                         checked={isCompleted || false}
                                         onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
-                                        disabled={loading || isFirebaseReadOnly}
+                                        disabled={loading || isFirebaseReadOnly || isSaving}
                                         className="h-4 w-4 shrink-0"
                                       />
                                       <span>Completado</span>
@@ -991,7 +1080,7 @@ export default function Home() {
                                       <Checkbox
                                         checked={isNoStock || false}
                                         onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
-                                        disabled={loading || isFirebaseReadOnly}
+                                        disabled={loading || isFirebaseReadOnly || isSaving}
                                         className="h-4 w-4 shrink-0"
                                       />
                                       <span>Sin Stock</span>
@@ -1085,19 +1174,19 @@ export default function Home() {
                     <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="resumen-checklist">
                       <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Pendientes</div>
-                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.pending}</div>
+                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{animatedChecklistSummary.pending}</div>
                       </div>
                       <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Completados</div>
-                        <div className="text-lg font-bold text-green-600 sm:text-xl">{checklistSummary.completed}</div>
+                        <div className="text-lg font-bold text-green-600 sm:text-xl">{animatedChecklistSummary.completed}</div>
                       </div>
                       <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Sin Stock</div>
-                        <div className="text-lg font-bold text-orange-500 sm:text-xl">{checklistSummary.noStock}</div>
+                        <div className="text-lg font-bold text-orange-500 sm:text-xl">{animatedChecklistSummary.noStock}</div>
                       </div>
                       <div className="rounded-lg border bg-white px-3 py-2.5">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Total</div>
-                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{checklistSummary.total}</div>
+                        <div className="text-lg font-bold text-gray-900 sm:text-xl">{animatedChecklistSummary.total}</div>
                       </div>
                     </div>
 
@@ -1136,23 +1225,36 @@ export default function Home() {
                       return (
                         <div
                           key={getChecklistEntryKey(entry.code, entry.periodKey)}
-                          className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-2 rounded hover:bg-accent transition-colors ${
-                            isCompleted ? 'bg-primary/10' : isNoStock ? 'bg-orange-50' : ''
-                          }`}
+                          className={`flex flex-col gap-3 rounded p-2 transition-all duration-300 sm:flex-row sm:items-center sm:gap-4 ${
+                            isCompleted ? 'bg-primary/10' : isNoStock ? 'bg-orange-50' : 'hover:bg-accent'
+                          } ${isSaving ? 'cursor-progress opacity-90' : ''} ${isSuccess ? 'ring-1 ring-emerald-300/70' : ''} ${isExiting ? 'translate-y-1 scale-[0.99] opacity-0' : ''}`}
                         >
-                          <div className="flex-1 min-w-0">
-                            <span className="block font-mono">{getChecklistDisplayCode(entry.code)}</span>
-                            <span className={`text-xs ${isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-muted-foreground'}`}>
-                              {isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente'}
-                            </span>
+                          <div className="flex flex-1 items-start justify-between gap-3 min-w-0">
+                            <div className="min-w-0">
+                              <span className="block font-mono">{getChecklistDisplayCode(entry.code)}</span>
+                              <span className={`text-xs ${isCompleted ? 'text-green-700' : isNoStock ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                                {isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente'}
+                              </span>
+                            </div>
+                            {isSaving ? (
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                                <Clock className="h-3.5 w-3.5 animate-spin" />
+                                <span>Guardando...</span>
+                              </div>
+                            ) : isSuccess ? (
+                              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span>Guardado</span>
+                              </div>
+                            ) : null}
                           </div>
-                          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                          <div className="flex flex-col gap-2 w-full sm:w-auto">
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-muted-foreground">Completado</span>
                               <Checkbox
                                 checked={isCompleted}
                                 onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
-                                disabled={loading || isFirebaseReadOnly}
+                                disabled={loading || isFirebaseReadOnly || isSaving}
                               />
                             </div>
                             <div className="flex items-center gap-2">
@@ -1160,7 +1262,7 @@ export default function Home() {
                               <Checkbox
                                 checked={isNoStock}
                                 onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
-                                disabled={loading || isFirebaseReadOnly}
+                                disabled={loading || isFirebaseReadOnly || isSaving}
                               />
                             </div>
                           </div>

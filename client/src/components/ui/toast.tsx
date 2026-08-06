@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
@@ -14,7 +14,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed left-1/2 top-[22vh] z-[120] flex w-[min(92vw,34rem)] -translate-x-1/2 flex-col gap-3 outline-none",
+      "fixed left-1/2 top-[20vh] z-[120] flex w-[min(calc(100vw-24px),30rem)] -translate-x-1/2 flex-col gap-3 outline-none sm:top-[18vh] sm:w-[min(calc(100vw-32px),28rem)]",
       className
     )}
     {...props}
@@ -23,13 +23,14 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-start gap-4 overflow-hidden rounded-3xl border px-5 py-4 pr-12 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-sm transition-all duration-300 data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-3 data-[state=closed]:slide-out-to-top-2",
+  "group pointer-events-auto relative flex w-full items-start gap-4 overflow-hidden rounded-[22px] border px-5 py-4 pr-12 shadow-[0_18px_48px_-26px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-all duration-300 data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2",
   {
     variants: {
       variant: {
-        default: "border-slate-200/90 bg-white/95 text-slate-900",
-        destructive: "destructive border-rose-200 bg-rose-50/95 text-rose-950 shadow-[0_20px_55px_-30px_rgba(225,29,72,0.35)]",
-        success: "success border-emerald-200 bg-emerald-50/95 text-emerald-950 shadow-[0_20px_55px_-30px_rgba(5,150,105,0.35)]",
+        default: "info border-sky-200/90 bg-sky-50/95 text-sky-950",
+        destructive: "destructive border-rose-200/90 bg-rose-50/95 text-rose-950",
+        success: "success border-emerald-200/90 bg-emerald-50/95 text-emerald-950",
+        warning: "warning border-amber-200/90 bg-amber-50/95 text-amber-950",
       },
     },
     defaultVariants: {
@@ -53,7 +54,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      "inline-flex h-9 shrink-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-rose-200 group-[.destructive]:text-rose-700 group-[.destructive]:hover:bg-rose-100 group-[.success]:border-emerald-200 group-[.success]:text-emerald-700 group-[.success]:hover:bg-emerald-100",
+      "inline-flex h-9 shrink-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-rose-200 group-[.destructive]:text-rose-700 group-[.destructive]:hover:bg-rose-100 group-[.success]:border-emerald-200 group-[.success]:text-emerald-700 group-[.success]:hover:bg-emerald-100 group-[.warning]:border-amber-200 group-[.warning]:text-amber-800 group-[.warning]:hover:bg-amber-100 group-[.info]:border-sky-200 group-[.info]:text-sky-700 group-[.info]:hover:bg-sky-100",
       className
     )}
     {...props}
@@ -68,7 +69,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-3 top-3 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 group-[.destructive]:text-rose-400 group-[.destructive]:hover:bg-rose-100 group-[.destructive]:hover:text-rose-700 group-[.success]:text-emerald-500 group-[.success]:hover:bg-emerald-100 group-[.success]:hover:text-emerald-700",
+      "absolute right-3 top-3 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 group-[.destructive]:text-rose-400 group-[.destructive]:hover:bg-rose-100 group-[.destructive]:hover:text-rose-700 group-[.success]:text-emerald-500 group-[.success]:hover:bg-emerald-100 group-[.success]:hover:text-emerald-700 group-[.warning]:text-amber-500 group-[.warning]:hover:bg-amber-100 group-[.warning]:hover:text-amber-800 group-[.info]:text-sky-500 group-[.info]:hover:bg-sky-100 group-[.info]:hover:text-sky-700",
       className
     )}
     toast-close=""
@@ -83,7 +84,7 @@ const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title ref={ref} className={cn("text-base font-semibold leading-5", className)} {...props} />
+  <ToastPrimitives.Title ref={ref} className={cn("text-[15px] font-semibold leading-5", className)} {...props} />
 ))
 ToastTitle.displayName = ToastPrimitives.Title.displayName
 
@@ -93,7 +94,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-sm leading-5 text-slate-600 group-[.destructive]:text-rose-800/90 group-[.success]:text-emerald-800/90", className)}
+    className={cn("text-sm leading-5 text-slate-600 group-[.destructive]:text-rose-800/90 group-[.success]:text-emerald-800/90 group-[.warning]:text-amber-900/90 group-[.info]:text-sky-800/90", className)}
     {...props}
   />
 ))

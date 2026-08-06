@@ -49,8 +49,8 @@ export function Checklist({ branch }: ChecklistProps) {
       });
     } catch (err) {
       toast({
-        title: "Error updating item",
-        description: "Please try again later",
+        title: "No se pudo actualizar el art?culo",
+        description: "Volv? a intentarlo en unos segundos.",
         variant: "destructive"
       });
     }
