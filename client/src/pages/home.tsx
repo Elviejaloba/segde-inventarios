@@ -222,6 +222,8 @@ export default function Home() {
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
+  const [expandedHistoricalMonths, setExpandedHistoricalMonths] = useState<Set<string>>(new Set());
+  const [showHistoricalMonths, setShowHistoricalMonths] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
   const [checklistViewFilter, setChecklistViewFilter] = useState<ChecklistViewFilter>('pending');
   const [celebratedMonths, setCelebratedMonths] = useState<Set<string>>(new Set());
@@ -355,6 +357,18 @@ export default function Home() {
     });
   };
 
+  const toggleHistoricalMonth = (monthKey: string) => {
+    setExpandedHistoricalMonths(prev => {
+      const next = new Set(prev);
+      if (next.has(monthKey)) {
+        next.delete(monthKey);
+      } else {
+        next.add(monthKey);
+      }
+      return next;
+    });
+  };
+
   // Calcular progreso por mes para detectar objetivos cumplidos
   const progresoMensual = useMemo(() => {
     if (!calendarioSemanal) return [];
@@ -386,9 +400,10 @@ export default function Home() {
         
         // Mostrar toast de felicitaciÃ³n
         toast({
-          title: `>¡Objetivo ${mes} Cumplido!`,
-          description: `Completaste todos los ítems del mes de=>¡Excelente trabajo! Completaste todos los ítems del mes de>Completaste todos los ítems del mes de ${mes}.`,
-          duration: 5000,
+          title: `Objetivo ${mes} cumplido`,
+          description: `Completaste todos los ?tems planificados para ${mes}.`,
+          variant: 'success',
+          duration: 2600,
         });
       }
     });
@@ -872,68 +887,116 @@ export default function Home() {
                         {/* Secci?n fija: objetivos y progreso */}
                         <div className="pb-3 pt-2 space-y-3">
                         {/* Resumen de objetivos por mes */}
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4" data-testid="objetivos-mensuales">
-                          {objetivosMensuales.map(({ mes, objetivo, completados: completadosParaEsteMes, cumplido: mesCompleto }) => {
-                            const porcentajeMes = objetivo > 0 ? (completadosParaEsteMes / objetivo) * 100 : 0;
-                            
-                            return (
-                              <div 
-                                key={mes}
-                                onClick={() => {
-                                  const element = document.getElementById(`items-lista`);
-                                  if (element) {
-                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                  }
-                                }}
-                                className={`${mesCompleto ? 'p-1.5 sm:p-3' : 'p-3'} rounded-lg border-2 cursor-pointer hover:shadow-md transition-all relative overflow-hidden ${
-                                  mesCompleto ? 'bg-green-100 border-green-500' :
-                                  completadosParaEsteMes > 0 ? 'bg-blue-50 border-blue-200' :
-                                  'bg-gray-50 border-gray-200'
-                                }`}
-                              >
-                                {mesCompleto ? (
-                                  <>
-                                    <div className="sm:hidden flex items-center justify-between gap-1">
-                                      <div className="flex items-center gap-1">
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                                        <span className="font-bold text-xs text-green-700">{mes}</span>
-                                      </div>
-                                      <span className="text-[10px] text-green-600 font-medium">{completadosParaEsteMes}/{objetivo}</span>
-                                    </div>
-                                    <Progress value={porcentajeMes} className="h-1.5 mt-1 sm:hidden [&>div]:bg-green-500" />
-                                    <div className="hidden sm:block">
-                                      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg shadow">
-                                        ? CUMPLIDO
-                                      </div>
-                                      <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
-                                      <div className="font-bold text-lg text-green-700">{mes}</div>
-                                      <div className="text-sm flex items-center gap-1">
-                                        <span className="text-lg font-bold text-green-600 sm:text-xl">{completadosParaEsteMes}</span>
-                                        <span className="text-gray-400">/ {objetivo}</span>
-                                        <Trophy className="h-5 w-5 text-yellow-500 ml-1" />
-                                      </div>
-                                      <Progress value={porcentajeMes} className="h-2 mt-2 [&>div]:bg-green-500" />
-                                      <div className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
-                                        <PartyPopper className="h-3 w-3" /> ¡Meta alcanzada!
-                                      </div>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-[10px] sm:text-xs text-gray-500">Objetivo: {objetivo} items</div>
-                                    <div className="font-bold text-sm sm:text-lg">{mes}</div>
-                                    <div className="text-xs sm:text-sm flex items-center gap-1">
-                                      <span className="text-base sm:text-xl font-bold text-gray-700">{completadosParaEsteMes}</span>
-                                      <span className="text-gray-400">/ {objetivo}</span>
-                                    </div>
-                                    <Progress value={porcentajeMes} className="h-2 mt-2" />
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <div className="space-y-3" data-testid="objetivos-mensuales">
+                          {(() => {
+                            const mesVigente = currentCalendarMonth;
+                            const mesActual = objetivosMensuales.find(({ mes }) => mes === mesVigente);
+                            const mesesHistoricos = objetivosMensuales.filter(({ mes }) => mes !== mesVigente);
 
+                            return (
+                              <>
+                                {mesActual && (() => {
+                                  const { mes, objetivo, completados: completadosParaEsteMes, cumplido: mesCompleto } = mesActual;
+                                  const porcentajeMes = objetivo > 0 ? (completadosParaEsteMes / objetivo) * 100 : 0;
+
+                                  return (
+                                    <div className={`rounded-xl border-2 p-3 sm:p-4 transition-all ${mesCompleto ? 'border-green-500 bg-green-100' : completadosParaEsteMes > 0 ? 'border-blue-300 bg-blue-50' : 'border-amber-300 bg-amber-50/80'}`}>
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">Mes vigente</div>
+                                          <div className="mt-1 flex items-center gap-2">
+                                            <span className="text-lg font-bold text-gray-900 sm:text-xl">{mes}</span>
+                                            {mesCompleto ? <Trophy className="h-4 w-4 text-yellow-500 sm:h-5 sm:w-5" /> : null}
+                                          </div>
+                                          <div className="mt-1 text-sm text-gray-600">{completadosParaEsteMes}/{objetivo} ? {porcentajeMes.toFixed(0)}%</div>
+                                        </div>
+                                        {mesCompleto ? (
+                                          <div className="rounded-full bg-green-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">Cumplido</div>
+                                        ) : (
+                                          <div className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-gray-600 shadow-sm">Visible</div>
+                                        )}
+                                      </div>
+                                      <Progress value={porcentajeMes} className={`mt-3 h-2.5 ${mesCompleto ? '[&>div]:bg-green-500' : '[&>div]:bg-amber-500'}`} />
+                                      <div className="mt-2 flex items-center justify-between text-xs sm:text-sm">
+                                        <span className="text-gray-500">Objetivo: {objetivo} items</span>
+                                        {mesCompleto ? (
+                                          <span className="flex items-center gap-1 font-medium text-green-700"><PartyPopper className="h-3.5 w-3.5" />Meta alcanzada</span>
+                                        ) : (
+                                          <span className="font-medium text-gray-700">AGOSTO queda siempre visible</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+
+                                {mesesHistoricos.length > 0 && (
+                                  <div className="space-y-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowHistoricalMonths((prev) => !prev)}
+                                      className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                                    >
+                                      <div>
+                                        <div className="text-sm font-semibold text-gray-900">Meses anteriores</div>
+                                        <div className="text-xs text-gray-500">Mostr? u ocult? el detalle hist?rico sin perder progreso.</div>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                                        <span>{showHistoricalMonths ? 'Ocultar meses anteriores' : 'Mostrar meses anteriores'}</span>
+                                        {showHistoricalMonths ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                      </div>
+                                    </button>
+
+                                    {showHistoricalMonths && (
+                                      <div className="space-y-2">
+                                        {mesesHistoricos.map(({ mes, objetivo, completados: completadosParaEsteMes, cumplido: mesCompleto }) => {
+                                          const porcentajeMes = objetivo > 0 ? (completadosParaEsteMes / objetivo) * 100 : 0;
+                                          const expanded = expandedHistoricalMonths.has(mes);
+
+                                          return (
+                                            <div key={mes} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                                              <button
+                                                type="button"
+                                                onClick={() => toggleHistoricalMonth(mes)}
+                                                className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-gray-50"
+                                              >
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm sm:text-base">
+                                                    <span className="font-bold text-gray-900">{mes}</span>
+                                                    <span className="text-gray-500">?</span>
+                                                    <span className="font-medium text-gray-700">{completadosParaEsteMes}/{objetivo}</span>
+                                                    <span className="text-gray-500">?</span>
+                                                    <span className={`font-semibold ${mesCompleto ? 'text-green-700' : 'text-gray-700'}`}>{porcentajeMes.toFixed(0)}%</span>
+                                                  </div>
+                                                </div>
+                                                {expanded ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-500" />}
+                                              </button>
+
+                                              {expanded && (
+                                                <div className="border-t border-gray-100 px-3 py-3 sm:px-4">
+                                                  <div className={`rounded-lg border p-3 ${mesCompleto ? 'border-green-300 bg-green-50' : completadosParaEsteMes > 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                                                    <div className="flex items-start justify-between gap-3">
+                                                      <div>
+                                                        <div className="text-xs text-gray-500">Objetivo: {objetivo} items</div>
+                                                        <div className="mt-1 text-base font-bold text-gray-900">{mes}</div>
+                                                        <div className="text-sm text-gray-700">{completadosParaEsteMes}/{objetivo} completados</div>
+                                                      </div>
+                                                      {mesCompleto ? <span className="rounded-full bg-green-500 px-2 py-1 text-[11px] font-semibold text-white">Cumplido</span> : null}
+                                                    </div>
+                                                    <Progress value={porcentajeMes} className={`mt-3 h-2 ${mesCompleto ? '[&>div]:bg-green-500' : '[&>div]:bg-blue-500'}`} />
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
                         {/* Indicador de progreso general */}
                         <div className="bg-gray-100 p-3 rounded-lg" data-testid="progreso-total">
                           <div className="flex items-center justify-between mb-2">
@@ -1066,24 +1129,24 @@ export default function Home() {
                                       </div>
                                     ) : null}
                                   </div>
-                                  <div className="flex flex-col gap-1.5">
-                                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:flex-col sm:items-start sm:gap-1.5">
+                                    <label className="flex min-h-8 items-center gap-2.5 text-sm font-medium text-muted-foreground">
                                       <Checkbox
                                         checked={isCompleted || false}
                                         onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
                                         disabled={loading || isFirebaseReadOnly || isSaving}
-                                        className="h-4 w-4 shrink-0"
+                                        className="h-5 w-5 shrink-0"
                                       />
-                                      <span>Completado</span>
+                                      <span className="leading-none">Completado</span>
                                     </label>
-                                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <label className="flex min-h-8 items-center gap-2.5 text-sm font-medium text-muted-foreground">
                                       <Checkbox
                                         checked={isNoStock || false}
                                         onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
                                         disabled={loading || isFirebaseReadOnly || isSaving}
-                                        className="h-4 w-4 shrink-0"
+                                        className="h-5 w-5 shrink-0"
                                       />
-                                      <span>Sin Stock</span>
+                                      <span className="leading-none">Sin Stock</span>
                                     </label>
                                   </div>
                                 </div>
@@ -1248,23 +1311,25 @@ export default function Home() {
                               </div>
                             ) : null}
                           </div>
-                          <div className="flex flex-col gap-2 w-full sm:w-auto">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Completado</span>
+                          <div className="flex w-full flex-wrap items-center gap-x-5 gap-y-2 sm:w-auto sm:flex-col sm:items-start sm:gap-2">
+                            <label className="flex min-h-8 items-center gap-2.5 text-sm font-medium text-muted-foreground">
                               <Checkbox
                                 checked={isCompleted}
                                 onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
                                 disabled={loading || isFirebaseReadOnly || isSaving}
+                                className="h-5 w-5 shrink-0"
                               />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Sin Stock</span>
+                              <span className="leading-none">Completado</span>
+                            </label>
+                            <label className="flex min-h-8 items-center gap-2.5 text-sm font-medium text-muted-foreground">
                               <Checkbox
                                 checked={isNoStock}
                                 onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
                                 disabled={loading || isFirebaseReadOnly || isSaving}
+                                className="h-5 w-5 shrink-0"
                               />
-                            </div>
+                              <span className="leading-none">Sin Stock</span>
+                            </label>
                           </div>
                         </div>
                       );

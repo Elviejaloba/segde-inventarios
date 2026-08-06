@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -150,6 +150,8 @@ interface MuestreoFile {
   sharedLink?: string;
 }
 
+const EXCLUDED_REPORT_BRANCHES = new Set(["TEST"]);
+
 const PERIODOS = [
   { value: 'todo', label: 'Todo el historial', description: 'Desde el inicio' },
   { value: '2025', label: 'Año 2025', description: 'Ene - Dic 2025' },
@@ -275,6 +277,15 @@ export default function ReportesPage() {
     }
   });
 
+  const sanitizedAnalisis = useMemo(() => {
+    if (!analisis) return { detalle: [], resumen: [] };
+
+    return {
+      detalle: (analisis.detalle || []).filter((item) => !EXCLUDED_REPORT_BRANCHES.has(String(item.sucursal || '').trim().toUpperCase())),
+      resumen: (analisis.resumen || []).filter((item) => !EXCLUDED_REPORT_BRANCHES.has(String(item.sucursal || '').trim().toUpperCase())),
+    };
+  }, [analisis]);
+
   const filteredMuestreos = muestreos?.filter(file => {
     if (!selectedCodigoDoc) return true;
     const sucursal = selectedCodigoDoc.sucursal.toLowerCase();
@@ -327,7 +338,7 @@ export default function ReportesPage() {
     setShowCostoReposicion(false);
   };
 
-  const filteredData = analisis?.detalle?.filter(item => {
+  const filteredData = sanitizedAnalisis.detalle.filter(item => {
     const matchesSearch = searchTerm === "" || 
       item.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.articulo?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -347,8 +358,8 @@ export default function ReportesPage() {
     }
   });
 
-  const totalValorizado = analisis?.resumen?.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
-  const totalVentas = analisis?.resumen?.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
+  const totalValorizado = sanitizedAnalisis.resumen.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
+  const totalVentas = sanitizedAnalisis.resumen.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
   const articulosConAlerta = (analisis as any)?.totales?.totalAlertas || 0;
   const totalArticulos = (analisis as any)?.totales?.totalArticulos || 0;
 
@@ -359,8 +370,11 @@ export default function ReportesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingMascot size="lg" message=">Cargando análisis valorizado..." />
+      <div className="flex min-h-[420px] items-center justify-center px-4">
+        <div className="w-full max-w-xl rounded-3xl border border-emerald-100 bg-white/95 px-6 py-8 text-center shadow-sm">
+          <LoadingMascot size="lg" message="Estamos preparando el reporte valorizado" />
+          <p className="mt-4 text-sm text-slate-500">Esto puede tardar unos segundos mientras consolidamos ventas, ajustes y sucursales.</p>
+        </div>
       </div>
     );
   }
@@ -410,7 +424,7 @@ export default function ReportesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas</SelectItem>
-              {analisis?.resumen?.map((item: any) => (
+              {sanitizedAnalisis.resumen.map((item: any) => (
                 <SelectItem key={item.sucursal} value={item.sucursal}>{item.sucursal}</SelectItem>
               ))}
             </SelectContent>
