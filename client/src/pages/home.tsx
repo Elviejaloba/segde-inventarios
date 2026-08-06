@@ -977,7 +977,7 @@ export default function Home() {
                                       {itemStatusLabel}
                                     </span>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-3">
+                                  <div className="flex flex-col gap-1.5">
                                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                                       <Checkbox
                                         checked={isCompleted || false}
