@@ -1,15 +1,26 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+const databaseUrl = process.env.DATABASE_URL;
+const runningWithoutDb = !databaseUrl;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+if (runningWithoutDb) {
+  console.warn("[DB] DATABASE_URL is not set. Running in no-DB mode for local preview.");
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+const ssl = databaseUrl
+  ? databaseUrl.includes("railway.internal")
+    ? false
+    : { rejectUnauthorized: false }
+  : false;
+
+export const pool: Pick<Pool, "query"> | Pool = databaseUrl
+  ? new Pool({ connectionString: databaseUrl, ssl })
+  : ({
+      query: async () => ({ rows: [] }),
+    } as any);
+
+export const db = databaseUrl
+  ? drizzle(pool as Pool, { schema })
+  : null;

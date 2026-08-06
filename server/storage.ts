@@ -1,5 +1,5 @@
 import { type Ajuste, type InsertAjuste } from "@shared/schema";
-import { neon } from "@neondatabase/serverless";
+import { pool } from "./db";
 
 const databaseUrl = process.env.DATABASE_URL;
 const runningWithoutDb = !databaseUrl;
@@ -8,9 +8,37 @@ if (runningWithoutDb) {
   console.warn("[Storage] DATABASE_URL is not set. Running in no-DB mode with empty results.");
 }
 
-const sql: any = databaseUrl
-  ? neon(databaseUrl)
-  : (async (..._args: any[]) => []);
+const buildTaggedQuery = (strings: TemplateStringsArray, values: any[]) => {
+  let text = "";
+  const params: any[] = [];
+
+  strings.forEach((part, index) => {
+    text += part;
+    if (index < values.length) {
+      params.push(values[index]);
+      text += `$${params.length}`;
+    }
+  });
+
+  return { text, params };
+};
+
+const sql: any = async (queryOrStrings: string | TemplateStringsArray, ...values: any[]) => {
+  if (runningWithoutDb) return [];
+
+  if (typeof queryOrStrings === "string") {
+    const params = values.length === 1 && Array.isArray(values[0])
+      ? values[0]
+      : values
+    ;
+    const result = await (pool as any).query(queryOrStrings, params);
+    return result.rows;
+  }
+
+  const { text, params } = buildTaggedQuery(queryOrStrings, values);
+  const result = await (pool as any).query(text, params);
+  return result.rows;
+};
 
 // modify the interface with any CRUD methods
 // you might need
