@@ -547,7 +547,7 @@ export default function Home() {
       }));
 
       toast({
-        title: feedbackAction === 'completed' ? 'Art?culo completado' : 'Marcado sin stock',
+        title: feedbackAction === 'completed' ? 'Artículo completado' : 'Marcado sin stock',
         description: 'El estado se guardó correctamente.',
         variant: 'success',
         duration: 1500,
@@ -597,7 +597,7 @@ export default function Home() {
     const code = newItemCode.trim().toUpperCase();
     const key = sanitizeCode(code);
     if (currentMonthAddedItems[key]) {
-      toast({ title: "Art?culo ya agregado", description: `El art?culo ${code} ya fue agregado este mes.`, variant: 'warning' });
+      toast({ title: "Artículo ya agregado", description: `El artículo ${code} ya forma parte del checklist de este mes.`, variant: 'warning' });
       return;
     }
     const now = new Date();
@@ -607,10 +607,10 @@ export default function Home() {
     setNewItemCode('');
     try {
       await storage.updateBranch(selectedBranch, { addedItems: newAddedItems });
-      toast({ title: "Art?culo ya agregado", description: `El art?culo ${code} ya fue agregado este mes.`, variant: 'warning' });
+      toast({ title: "Artículo agregado", description: `El artículo ${code} se agregó correctamente al checklist de este mes.`, variant: 'success' });
     } catch (error) {
       setAddedItems(addedItems);
-      toast({ title: "No se pudo guardar", description: "Volv? a intentarlo en unos segundos.", variant: "destructive" });
+      toast({ title: "No se pudo guardar", description: "Volvé a intentarlo en unos segundos.", variant: "destructive" });
     }
   };
 
