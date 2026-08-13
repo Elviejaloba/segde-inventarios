@@ -198,27 +198,27 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
 
       {selectedView === 'ranking' ? (
         <div className="mx-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl">
-          <div className="overflow-x-auto sm:overflow-x-visible">
-            <Table>
-              <TableHeader>
+          <div className="overflow-hidden">
+            <Table className="block w-full md:table">
+              <TableHeader className="hidden md:table-header-group">
                 <TableRow className="bg-slate-50/90">
-                  <TableHead className="w-[42px] sm:w-[88px] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:px-4 sm:text-xs">Pos.</TableHead>
-                  <TableHead className="min-w-0 w-[34%] px-2 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:min-w-[120px] sm:px-4 sm:text-xs">Sucursal</TableHead>
-                  <TableHead className="min-w-0 w-[66%] px-2 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:min-w-[220px] sm:px-4 sm:text-xs">Progreso</TableHead>
+                  <TableHead className="w-[88px] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Pos.</TableHead>
+                  <TableHead className="min-w-[120px] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Sucursal</TableHead>
+                  <TableHead className="min-w-[220px] px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Progreso</TableHead>
                 </TableRow>
               </TableHeader>
-            <TableBody>
+            <TableBody className="block md:table-row-group">
               {sortedBranches.map((branch, index) => (
                 <TableRow
                   key={`branch-${branch.id}-${branch.lastUpdated || index}`}
-                  className={`cursor-pointer border-b border-slate-100 transition-colors hover:bg-slate-50/70 ${
+                  className={`grid grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-2 border-b border-slate-100 p-3 transition-colors hover:bg-slate-50/70 md:table-row md:p-0 ${
                     index === 0 ? 'bg-amber-50/40' :
                     index === 1 ? 'bg-slate-50/70' :
                     index === 2 ? 'bg-orange-50/40' : 'bg-white'
                   }`}
                   onClick={() => onBranchSelect?.(branch.id)}
                 >
-                  <TableCell className="px-2 py-4 text-center align-middle sm:px-4 sm:py-5">
+                  <TableCell className="row-span-2 px-0 py-0 text-center align-top md:table-cell md:px-4 md:py-5 md:align-middle">
                     {index < 3 ? (
                       <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200 sm:h-9 sm:w-9">
                         <Trophy 
@@ -233,138 +233,138 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2 text-sm font-semibold text-slate-700 sm:h-9">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-2 py-4 align-middle sm:px-4 sm:py-5"><div className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="hidden text-[11px] leading-tight text-slate-500 sm:block">Checklist y progreso de muestreo</span></div></TableCell>
-                  <TableCell className="px-2 py-4 text-right align-middle sm:px-4 sm:py-5">
-                    <div className="ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
-                      <span className="whitespace-nowrap text-[10px] text-slate-400 sm:text-[11px]">Completados</span>
-                      <div className="relative h-2.5 w-[92px] overflow-hidden rounded-full bg-emerald-100 sm:w-28">
-                        <motion.div 
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${branch.totalCompleted}%` }}
-                          transition={{ 
-                            duration: 1,
-                            ease: "easeOut",
-                            delay: index * 0.1
-                          }}
-                        />
-                      </div>
-                      <motion.span 
-                        className="min-w-[40px] text-[11px] font-semibold text-emerald-600 sm:min-w-[42px] sm:text-sm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.5 }}
-                      >
-                        {Math.round(branch.totalCompleted)}%
-                      </motion.span>
-                    </div>
-                    <div className="mt-2 ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
-                      <span className="hidden whitespace-nowrap text-[10px] text-slate-400 sm:inline">Sin Stock</span>
-                      <span className="whitespace-nowrap text-[10px] text-slate-400 sm:hidden">S/S</span>
-                      <div className="relative h-1.5 w-[74px] overflow-hidden rounded-full bg-orange-100 sm:w-24">
-                        <motion.div 
-                          className="h-full rounded-full bg-gradient-to-r from-orange-300 to-orange-500"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${branch.noStockPercentage}%` }}
-                          transition={{ 
-                            duration: 1,
-                            ease: "easeOut",
-                            delay: index * 0.1 + 0.2
-                          }}
-                        />
-                      </div>
-                      <motion.span 
-                        className="min-w-[26px] text-[10px] font-medium text-orange-500 sm:min-w-[35px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.7 }}
-                      >
-                        {Math.round(branch.noStockPercentage)}%
-                      </motion.span>
-                    </div>
-                    {branch.addedItemsCount > 0 && (
-                      <div className="mt-2 ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
-                        <span className="text-[9px] sm:text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline">Agregados</span>
-                        <span className="text-[9px] text-gray-400 whitespace-nowrap sm:hidden">+</span>
-                        <div className="relative w-16 sm:w-24 h-1.5 sm:h-1.5 bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
+                  <TableCell className="min-w-0 px-0 py-0 align-top md:table-cell md:px-4 md:py-5 md:align-middle"><div className="flex min-w-0 flex-col gap-0.5 pt-0.5 md:pt-0"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="text-[11px] leading-tight text-slate-500">Checklist y progreso de muestreo</span></div></TableCell>
+                  <TableCell className="col-span-2 min-w-0 px-0 pb-0 pt-1 align-middle md:table-cell md:px-4 md:py-5 md:text-right">
+                    <div className="w-full space-y-2.5 md:space-y-2">
+                      <div className="flex w-full min-w-0 items-center gap-2 md:ml-auto md:max-w-[260px] md:justify-end">
+                        <span className="w-[78px] shrink-0 text-[10px] font-medium text-slate-500 sm:text-[11px] md:w-auto md:font-normal md:text-slate-400">Completados</span>
+                        <div className="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-emerald-100 md:w-28 md:flex-none">
                           <motion.div 
-                            className="h-full bg-gradient-to-r from-blue-300 to-blue-500 rounded-full"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                             initial={{ width: 0 }}
-                            animate={{ width: `${branch.addedItemsPercentage}%` }}
+                            animate={{ width: `${branch.totalCompleted}%` }}
                             transition={{ 
                               duration: 1,
                               ease: "easeOut",
-                              delay: index * 0.1 + 0.3
+                              delay: index * 0.1
                             }}
                           />
                         </div>
                         <motion.span 
-                          className="text-[10px] sm:text-[10px] min-w-[24px] sm:min-w-[35px] font-medium text-blue-500"
+                          className="min-w-[36px] text-right text-[11px] font-semibold text-emerald-600 sm:text-sm md:min-w-[42px]"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          transition={{ delay: index * 0.1 + 0.8 }}
+                          transition={{ delay: index * 0.1 + 0.5 }}
                         >
-                          {Math.round(branch.addedItemsPercentage)}%
+                          {Math.round(branch.totalCompleted)}%
                         </motion.span>
                       </div>
-                    )}
-                    {getCalendarioSucursal(branch.id) && (() => {
-                      const calendario = getCalendarioSucursal(branch.id);
-                      if (!calendario) return null;
-                      
-                      const mesesMap: { [key: string]: { corto: string, items: number } } = {
-                        'DICIEMBRE': { corto: 'Dic', items: 0 },
-                        'ENERO': { corto: 'Ene', items: 0 },
-                        'FEBRERO': { corto: 'Feb', items: 0 },
-                        'MARZO': { corto: 'Mar', items: 0 },
-                        'ABRIL': { corto: 'Abr', items: 0 },
-                        'MAYO': { corto: 'May', items: 0 },
-                        'AGOSTO': { corto: 'Ago', items: 0 }
-                      };
-                      calendario.semanas.forEach(s => {
-                        if (mesesMap[s.mes]) {
-                          mesesMap[s.mes].items += s.items.length;
-                        }
-                      });
-                      
-                      const objetivos = Object.entries(mesesMap)
-                        .filter(([_, value]) => value.items > 0)
-                        .map(([mes, value]) => {
-                          const entriesMes = getChecklistEntriesForMonth(calendario, mes);
-                          const completadosMes = entriesMes.filter((entry) =>
-                            getChecklistItemState(branch.branchData, entry.code, entry.periodKey)?.completed === true
-                          ).length;
-
-                          return {
-                            mes: value.corto,
-                            obj: value.items,
-                            completadosMes,
-                            cumplido: completadosMes >= value.items,
-                          };
-                        });
-                      
-                      return (
-                        <div className="mt-2.5 ml-auto flex w-full max-w-[220px] flex-wrap justify-end gap-1.5 sm:max-w-[320px] sm:gap-2" data-testid="indicadores-meses-ranking">
-                          {objetivos.map(({ mes, obj, completadosMes, cumplido }) => {
-                            return (
-                              <span 
-                                key={mes}
-                                className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-tight whitespace-nowrap sm:px-3 sm:py-1.5 sm:text-[11px] ${
-                                  cumplido 
-                                    ? 'bg-emerald-500 text-white shadow-sm' 
-                                    : completadosMes > 0 
-                                      ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-200' 
-                                      : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
-                                }`}
-                                title={`${mes}: ${completadosMes}/${obj}`}
-                              >
-                                {mes} {cumplido ? '\u2713' : `${completadosMes}/${obj}`}
-                              </span>
-                            );
-                          })}
+                      <div className="flex w-full min-w-0 items-center gap-2 md:ml-auto md:max-w-[260px] md:justify-end">
+                        <span className="w-[78px] shrink-0 text-[10px] font-medium text-slate-500 sm:text-[11px] md:w-auto md:font-normal md:text-slate-400">Sin Stock</span>
+                        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-orange-100 md:w-24 md:flex-none">
+                          <motion.div 
+                            className="h-full rounded-full bg-gradient-to-r from-orange-300 to-orange-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${branch.noStockPercentage}%` }}
+                            transition={{ 
+                              duration: 1,
+                              ease: "easeOut",
+                              delay: index * 0.1 + 0.2
+                            }}
+                          />
                         </div>
-                      );
-                    })()}
+                        <motion.span 
+                          className="min-w-[36px] text-right text-[10px] font-medium text-orange-500 md:min-w-[35px]"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.1 + 0.7 }}
+                        >
+                          {Math.round(branch.noStockPercentage)}%
+                        </motion.span>
+                      </div>
+                      {branch.addedItemsCount > 0 && (
+                        <div className="flex w-full min-w-0 items-center gap-2 md:ml-auto md:max-w-[260px] md:justify-end">
+                          <span className="w-[78px] shrink-0 text-[10px] font-medium text-slate-500 sm:text-[11px] md:w-auto md:font-normal md:text-gray-400">Agregados</span>
+                          <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/20 md:w-24 md:flex-none">
+                            <motion.div 
+                              className="h-full rounded-full bg-gradient-to-r from-blue-300 to-blue-500"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${branch.addedItemsPercentage}%` }}
+                              transition={{ 
+                                duration: 1,
+                                ease: "easeOut",
+                                delay: index * 0.1 + 0.3
+                              }}
+                            />
+                          </div>
+                          <motion.span 
+                            className="min-w-[36px] text-right text-[10px] font-medium text-blue-500 md:min-w-[35px]"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: index * 0.1 + 0.8 }}
+                          >
+                            {Math.round(branch.addedItemsPercentage)}%
+                          </motion.span>
+                        </div>
+                      )}
+                      {getCalendarioSucursal(branch.id) && (() => {
+                        const calendario = getCalendarioSucursal(branch.id);
+                        if (!calendario) return null;
+                        
+                        const mesesMap: { [key: string]: { corto: string, items: number } } = {
+                          'DICIEMBRE': { corto: 'Dic', items: 0 },
+                          'ENERO': { corto: 'Ene', items: 0 },
+                          'FEBRERO': { corto: 'Feb', items: 0 },
+                          'MARZO': { corto: 'Mar', items: 0 },
+                          'ABRIL': { corto: 'Abr', items: 0 },
+                          'MAYO': { corto: 'May', items: 0 },
+                          'AGOSTO': { corto: 'Ago', items: 0 }
+                        };
+                        calendario.semanas.forEach(s => {
+                          if (mesesMap[s.mes]) {
+                            mesesMap[s.mes].items += s.items.length;
+                          }
+                        });
+                        
+                        const objetivos = Object.entries(mesesMap)
+                          .filter(([_, value]) => value.items > 0)
+                          .map(([mes, value]) => {
+                            const entriesMes = getChecklistEntriesForMonth(calendario, mes);
+                            const completadosMes = entriesMes.filter((entry) =>
+                              getChecklistItemState(branch.branchData, entry.code, entry.periodKey)?.completed === true
+                            ).length;
+
+                            return {
+                              mes: value.corto,
+                              obj: value.items,
+                              completadosMes,
+                              cumplido: completadosMes >= value.items,
+                            };
+                          });
+                        
+                        return (
+                          <div className="flex w-full flex-wrap gap-1.5 md:ml-auto md:max-w-[320px] md:justify-end md:gap-2" data-testid="indicadores-meses-ranking">
+                            {objetivos.map(({ mes, obj, completadosMes, cumplido }) => {
+                              return (
+                                <span 
+                                  key={mes}
+                                  className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-tight whitespace-nowrap sm:px-3 sm:py-1.5 sm:text-[11px] ${
+                                    cumplido 
+                                      ? 'bg-emerald-500 text-white shadow-sm' 
+                                      : completadosMes > 0 
+                                        ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-200' 
+                                        : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
+                                  }`}
+                                  title={`${mes}: ${completadosMes}/${obj}`}
+                                >
+                                  {mes} {cumplido ? '\u2713' : `${completadosMes}/${obj}`}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
