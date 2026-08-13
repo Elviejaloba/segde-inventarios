@@ -96,6 +96,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     return null;
   };
   
+  const CURRENT_RANKING_PERIOD = '2026-08';
+
   const branches = AVAILABLE_BRANCHES.map(branchId => {
     const branchData = data?.find(d => d.id === branchId);
     const items = branchData?.items || {};
@@ -105,6 +107,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     
     let totalCompleted = 0;
     let totalItems = 0;
+    let augustCompleted = 0;
+    let augustTotal = 0;
+    let augustPercentage = 0;
     
     if (calendario) {
       // Usar los items del calendario (260 para T.Mendoza)
@@ -112,6 +117,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
       totalItems = checklistEntries.length;
       const completados = checklistEntries.filter((entry) => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
       totalCompleted = totalItems > 0 ? (completados / totalItems) * 100 : 0;
+
+      const augustEntries = checklistEntries.filter((entry) => entry.periodKey === CURRENT_RANKING_PERIOD);
+      augustTotal = augustEntries.length;
+      augustCompleted = augustEntries.filter((entry) => getChecklistItemState(branchData, entry.code, entry.periodKey)?.completed === true).length;
+      augustPercentage = augustTotal > 0 ? (augustCompleted / augustTotal) * 100 : 0;
     } else {
       // Para sucursales sin calendario: cuenta items procesados (completado O sin stock), cap 100%
       totalItems = SEASON_CODES_TEMPORADA_VERANO.length;
@@ -142,6 +152,9 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     return {
       id: branchId,
       totalCompleted,
+      augustCompleted,
+      augustTotal,
+      augustPercentage,
       noStock: branchData?.noStock || 0,
       noStockPercentage,
       noStockItems,
@@ -154,7 +167,11 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     };
   });
 
-  const sortedBranches = [...branches].sort((a, b) => b.totalCompleted - a.totalCompleted);
+  const sortedBranches = [...branches].sort((a, b) => {
+    if (b.augustCompleted !== a.augustCompleted) return b.augustCompleted - a.augustCompleted;
+    if (b.augustPercentage !== a.augustPercentage) return b.augustPercentage - a.augustPercentage;
+    return a.id.localeCompare(b.id, 'es-AR');
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
