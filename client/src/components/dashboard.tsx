@@ -235,7 +235,8 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                   </TableCell>
                   <TableCell className="px-2 py-4 align-middle sm:px-4 sm:py-5"><div className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="hidden text-[11px] leading-tight text-slate-500 sm:block">Checklist y progreso de muestreo</span></div></TableCell>
                   <TableCell className="px-2 py-4 text-right align-middle sm:px-4 sm:py-5">
-                    <div className="ml-auto flex w-full max-w-[220px] flex-col items-end gap-1.5 sm:max-w-[260px] sm:gap-2.5">
+                    <div className="ml-auto flex w-full max-w-[220px] items-center justify-end gap-2 sm:max-w-[260px]">
+                      <span className="whitespace-nowrap text-[10px] text-slate-400 sm:text-[11px]">Completados</span>
                       <div className="relative h-2.5 w-[92px] overflow-hidden rounded-full bg-emerald-100 sm:w-28">
                         <motion.div 
                           className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
