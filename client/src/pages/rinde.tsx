@@ -86,7 +86,7 @@ export default function RindePage() {
     metrosReferencia: "",
     activo: true,
   });
-  const [mobileSections, setMobileSections] = useState<string[]>(["articulo", "calculo"]);
+  const [mobileSections, setMobileSections] = useState<string[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -129,7 +129,6 @@ export default function RindePage() {
       metrosReferencia: String(rinde.metrosReferencia),
       activo: rinde.activo,
     });
-    setMobileSections((current) => (current.includes("referencia") ? current : [...current, "referencia"]));
   }, [rindeQuery.data]);
 
   const pesoReferencia = parseDecimal(form.pesoReferenciaKg);
@@ -243,7 +242,7 @@ export default function RindePage() {
   const handleSelectArticle = (article: Article) => {
     setSelectedArticle(article);
     setSearch(article.code);
-    setMobileSections(["calculo", "referencia"]);
+    setMobileSections([]);
   };
 
   const handleClear = () => {
@@ -313,15 +312,18 @@ export default function RindePage() {
                 <Calculator className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">Calculadora de Rinde de Telas (por Jony Caro)</h2>
-                <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
-                  Calculá metros estimados a partir del peso del rollo abierto y los rollos cerrados, usando el maestro de rinde definido por CDD.
+                <h2 className="hidden text-2xl font-bold tracking-tight text-slate-950 md:block md:text-3xl">Calculadora de Rinde de Telas (por Jony Caro)</h2>
+                <h2 className="text-xl font-bold tracking-tight text-slate-950 md:hidden">Calculadora de Rinde</h2>
+                <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-emerald-700 md:hidden">por Jony Caro</p>
+                <p className="mt-1 max-w-2xl text-sm text-slate-600 md:hidden">Calcul? los metros estimados de una tela seg?n su peso.</p>
+                <p className="mt-1 hidden max-w-2xl text-sm text-slate-600 sm:text-base md:block">
+                  Calcul? metros estimados a partir del peso del rollo abierto y los rollos cerrados, usando el maestro de rinde definido por CDD.
                 </p>
               </div>
             </div>
 
             <Card className="border-slate-200 shadow-none" data-tour="rinde-search">
-              <CardContent className="p-4 sm:p-5">
+              <CardContent className="p-3 sm:p-5">
                 <div className="relative">
                   <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
                     <Search className="h-4 w-4 text-emerald-600" />
@@ -331,7 +333,7 @@ export default function RindePage() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Código, sinónimo o descripción"
-                    className="h-12 rounded-2xl border-slate-200 bg-slate-50 text-base shadow-none"
+                    className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm shadow-none sm:h-12 sm:text-base"
                   />
                   {showSearchResults && articleSearch.data && articleSearch.data.length > 0 && (
                     <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
@@ -356,7 +358,7 @@ export default function RindePage() {
                   )}
                 </div>
 
-                <div data-tour="rinde-article">
+                <div data-tour="rinde-article" className="hidden md:block">
                   {selectedArticle ? (
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -437,16 +439,49 @@ export default function RindePage() {
 
       <section className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] md:items-start">
         <div className="space-y-4">
-          <div className="md:hidden">
+          <div className="space-y-3 md:hidden">
+            {selectedArticle ? (
+              <Card className="border-slate-200 shadow-none" data-tour="rinde-article">
+                <CardContent className="space-y-4 p-3">
+                  <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="bg-slate-900 text-white">{selectedArticle.code}</Badge>
+                      {selectedArticle.synonym ? <Badge variant="outline">Sinónimo: {selectedArticle.synonym}</Badge> : null}
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{selectedArticle.description || "Sin descripción disponible"}</p>
+                    {selectedArticle.descripcionBase ? <p className="text-xs text-slate-500">Base: {selectedArticle.descripcionBase}</p> : null}
+                  </div>
+
+                  <div className="grid gap-3 min-[390px]:grid-cols-2" data-tour="rinde-inputs-mobile">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto</label>
+                      <div className="relative">
+                        <Input value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="Ej. 6,00" className="h-11 rounded-2xl pr-12" />
+                        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-slate-500">kg</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">Rollos cerrados</label>
+                      <div className="relative">
+                        <Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="Ej. 2" className="h-11 rounded-2xl pr-16" />
+                        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-slate-500">rollos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={handleClear}>Limpiar cálculo</Button>
+                </CardContent>
+              </Card>
+            ) : null}
+
             <Accordion type="multiple" value={mobileSections} onValueChange={setMobileSections} className="rounded-[24px] border border-slate-200 bg-white px-4 shadow-sm">
-              <AccordionItem value="articulo">
-                <AccordionTrigger className="text-left text-base font-semibold text-slate-900 hover:no-underline">Artículo</AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-sm text-slate-600">Buscá una tela por código, sinónimo o descripción. Después podés cargar el peso y los rollos cerrados.</p>
-                </AccordionContent>
-              </AccordionItem>
               <AccordionItem value="referencia" data-tour="rinde-reference-mobile">
-                <AccordionTrigger className="text-left text-base font-semibold text-slate-900 hover:no-underline">Datos de referencia</AccordionTrigger>
+                <AccordionTrigger className="py-4 text-left text-sm font-semibold text-slate-900 hover:no-underline">
+                  <div className="min-w-0">
+                    <p>Datos de referencia</p>
+                    <p className="mt-1 truncate text-xs font-normal text-slate-500">{renderReferenceSummary()}</p>
+                  </div>
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                     <p>{renderReferenceSummary()}</p>
@@ -454,41 +489,24 @@ export default function RindePage() {
                   </div>
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="calculo" data-tour="rinde-inputs-mobile">
-                <AccordionTrigger className="text-left text-base font-semibold text-slate-900 hover:no-underline">Cálculo</AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid gap-3">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto (kg)</label>
-                      <Input value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="Ej. 6,00" className="h-12 rounded-2xl" />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-800">Cantidad de rollos cerrados</label>
-                      <Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="Ej. 2" className="h-12 rounded-2xl" />
-                    </div>
-                    <Button type="button" variant="outline" className="rounded-2xl" onClick={handleClear}>Limpiar cálculo</Button>
+              <AccordionItem value="maestro" data-tour="rinde-master-mobile">
+                <AccordionTrigger className="py-4 text-left text-sm font-semibold text-slate-900 hover:no-underline">
+                  <div>
+                    <p>Maestro de Rindes · Solo CDD</p>
+                    <p className="mt-1 text-xs font-normal text-slate-500">Acceso protegido para administrar parámetros.</p>
                   </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Administrar
+                  </Button>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           </div>
 
-          <Card className="border-slate-200 shadow-none md:hidden" data-tour="rinde-master-mobile">
-            <CardContent className="flex flex-col gap-3 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Maestro de Rindes</p>
-                  <p className="text-sm text-slate-500">Acceso protegido para CDD.</p>
-                </div>
-                <Button type="button" variant="outline" className="rounded-2xl" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}>
-                  <Lock className="mr-2 h-4 w-4" />
-                  Administrar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 shadow-sm" data-tour="rinde-inputs">
+          <Card className="hidden border-slate-200 shadow-sm md:block" data-tour="rinde-inputs">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Cálculo</CardTitle>
               <CardDescription>Ingresá el peso del rollo abierto y cuántos rollos cerrados tenés para estimar los metros totales.</CardDescription>
@@ -513,28 +531,24 @@ export default function RindePage() {
       </section>
 
       {selectedArticle ? (
-            <div className="md:hidden fixed inset-x-3 bottom-[5.35rem] z-40" data-tour="rinde-result-mobile">
-        <button
-          type="button"
-          onClick={() => setMobileSections((current) => current.includes("calculo") ? current : [...current, "calculo"])}
-          className="w-full rounded-[24px] border border-emerald-200 bg-white/95 px-4 py-3 text-left shadow-[0_18px_38px_-28px_rgba(5,150,105,0.45)] backdrop-blur"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Rinde estimado</p>
-              <p className="mt-1 text-lg font-bold text-slate-950">{resultSummary}</p>
+        <div className="fixed inset-x-3 bottom-[5.15rem] z-40 md:hidden" data-tour="rinde-result-mobile">
+          <div className="w-full rounded-[22px] border border-emerald-200 bg-white/95 px-4 py-3 shadow-[0_18px_38px_-28px_rgba(5,150,105,0.45)] backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">Rinde estimado</p>
+                <p className="mt-1 text-base font-bold text-slate-950">{resultSummary}</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-100 p-2 text-emerald-700">
+                <Ruler className="h-5 w-5" />
+              </div>
             </div>
-            <div className="rounded-2xl bg-emerald-100 p-2 text-emerald-700">
-              <Ruler className="h-5 w-5" />
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-slate-600">
+              <div className="rounded-2xl bg-slate-50 px-2 py-2">Abierto<br /><span className="font-semibold text-slate-900">{formatNumber(calculation.abierto)} m</span></div>
+              <div className="rounded-2xl bg-slate-50 px-2 py-2">Cerrados<br /><span className="font-semibold text-slate-900">{formatNumber(calculation.cerrados)} m</span></div>
+              <div className="rounded-2xl bg-slate-50 px-2 py-2">Total<br /><span className="font-semibold text-emerald-700">{formatNumber(calculation.total)} m</span></div>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-600">
-            <div className="rounded-2xl bg-slate-50 px-2 py-2">Abierto<br /><span className="font-semibold text-slate-900">{formatNumber(calculation.abierto)} m</span></div>
-            <div className="rounded-2xl bg-slate-50 px-2 py-2">Cerrados<br /><span className="font-semibold text-slate-900">{formatNumber(calculation.cerrados)} m</span></div>
-            <div className="rounded-2xl bg-slate-50 px-2 py-2">Total<br /><span className="font-semibold text-emerald-700">{formatNumber(calculation.total)} m</span></div>
-          </div>
-        </button>
-      </div>
+        </div>
       ) : null}
 
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
