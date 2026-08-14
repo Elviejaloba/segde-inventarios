@@ -1,12 +1,18 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema } from "@shared/schema";
+import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema, telaRindeAuthSchema, telaRindeUpsertSchema } from "@shared/schema";
 import * as dropbox from './dropbox';
 import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, primeChecklistRuntime, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
 import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } from "./emailScheduler";
 import { pool } from "./db";
+
+const hasValidRindePassword = (password: string | undefined) => {
+  const expected = process.env.RINDE_CDD_PASSWORD;
+  if (!expected) return false;
+  return password === expected;
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Pre-initialize Dropbox token on startup
@@ -16,6 +22,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
   });
+  app.get('/api/rinde-articulos', async (req, res) => {
+    try {
+      const query = typeof req.query.q === 'string' ? req.query.q : '';
+      const articles = await storage.searchRindeArticles(query);
+      res.json(articles);
+    } catch (error) {
+      console.error('Error searching rinde articles:', error);
+      res.status(500).json({ error: 'No se pudo buscar artículos.' });
+    }
+  });
+
+  app.get('/api/rindes/:articleCode', async (req, res) => {
+    try {
+      const data = await storage.getTelaRinde(req.params.articleCode);
+      if (!data) {
+        res.status(404).json({ error: 'Artículo no encontrado.' });
+        return;
+      }
+      res.json(data);
+    } catch (error) {
+      console.error('Error getting tela rinde:', error);
+      res.status(500).json({ error: 'No se pudo cargar el rinde del artículo.' });
+    }
+  });
+
+  app.post('/api/rindes/auth', async (req, res) => {
+    try {
+      const payload = telaRindeAuthSchema.parse(req.body);
+      if (!process.env.RINDE_CDD_PASSWORD) {
+        res.status(503).json({ error: 'La validación de rindes no está configurada.' });
+        return;
+      }
+      if (!hasValidRindePassword(payload.password)) {
+        res.status(401).json({ error: 'Contraseña incorrecta.' });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Error validating rinde password:', error);
+      res.status(400).json({ error: 'No se pudo validar la contraseña.' });
+    }
+  });
+
+  app.post('/api/rindes', async (req, res) => {
+    try {
+      if (!hasValidRindePassword(req.header('x-rinde-password') || undefined)) {
+        res.status(401).json({ error: 'No autorizado.' });
+        return;
+      }
+      const payload = telaRindeUpsertSchema.parse(req.body);
+      const saved = await storage.saveTelaRinde(payload);
+      res.status(201).json(saved);
+    } catch (error) {
+      console.error('Error creating tela rinde:', error);
+      res.status(400).json({ error: 'No se pudo guardar el rinde.' });
+    }
+  });
+
+  app.patch('/api/rindes/:articleCode', async (req, res) => {
+    try {
+      if (!hasValidRindePassword(req.header('x-rinde-password') || undefined)) {
+        res.status(401).json({ error: 'No autorizado.' });
+        return;
+      }
+      const payload = telaRindeUpsertSchema.parse({ ...req.body, articleCode: req.params.articleCode });
+      const saved = await storage.saveTelaRinde(payload);
+      res.json(saved);
+    } catch (error) {
+      console.error('Error updating tela rinde:', error);
+      res.status(400).json({ error: 'No se pudo actualizar el rinde.' });
+    }
+  });
+
   app.get('/api/checklist/branches', async (req, res) => {
     try {
       const period = typeof req.query.period === 'string' ? req.query.period : undefined;

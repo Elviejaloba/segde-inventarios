@@ -60,6 +60,9 @@ export interface IStorage {
   getAnalisisValorizadoConCosto(sucursal?: string): Promise<any>;
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
   getPuntoEquilibrio(sucursal?: string): Promise<any>;
+  searchRindeArticles(query: string): Promise<any[]>;
+  getTelaRinde(articleCode: string): Promise<any | null>;
+  saveTelaRinde(payload: any): Promise<any>;
   getCodigosArticulos(): Promise<string[]>;
 }
 
@@ -1133,6 +1136,183 @@ export class PostgreSQLStorage implements IStorage {
       return { detalle: [], resumen: [] };
     }
   }
+
+  async searchRindeArticles(query: string): Promise<any[]> {
+    try {
+      const search = query.trim();
+      if (!search) return [];
+
+      const normalized = search.toUpperCase();
+      const rows = await sql(`
+        SELECT
+          c."Codigo" as code,
+          c."Descripcion" as description,
+          c."Sinonimo" as synonym,
+          c."CodigoBase" as "codigoBase",
+          c."DescripcionBase" as "descripcionBase",
+          CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
+          COALESCE(tr.activo, FALSE) as active,
+          tr.ancho_cm as "anchoCm",
+          tr.metros_referencia as "metrosReferencia",
+          tr.kg_por_metro as "kgPorMetro"
+        FROM costos_articulos c
+        LEFT JOIN tela_rindes tr ON tr.article_code = c."Codigo"
+        WHERE (
+          UPPER(TRIM(c."Codigo")) = $1
+          OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1
+          OR UPPER(COALESCE(c."Descripcion", '')) LIKE $2
+          OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $2
+          OR UPPER(TRIM(c."Codigo")) LIKE $2
+        )
+        ORDER BY
+          CASE
+            WHEN UPPER(TRIM(c."Codigo")) = $1 THEN 0
+            WHEN UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1 THEN 1
+            WHEN UPPER(COALESCE(c."Descripcion", '')) LIKE $3 THEN 2
+            WHEN UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $3 THEN 3
+            WHEN UPPER(TRIM(c."Codigo")) LIKE $3 THEN 4
+            ELSE 5
+          END,
+          c."Descripcion" ASC NULLS LAST,
+          c."Codigo" ASC
+        LIMIT 12
+      `, [normalized, `%${normalized}%`, `${normalized}%`]);
+
+      return rows.map((row: any) => ({
+        code: row.code,
+        description: row.description ?? '',
+        synonym: row.synonym ?? '',
+        codigoBase: row.codigoBase ?? '',
+        descripcionBase: row.descripcionBase ?? '',
+        hasRinde: Boolean(row.hasRinde),
+        active: Boolean(row.active),
+        anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
+        metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
+        kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+      }));
+    } catch (error) {
+      console.error('Error searching rinde articles:', error);
+      return [];
+    }
+  }
+
+  async getTelaRinde(articleCode: string): Promise<any | null> {
+    try {
+      const code = articleCode.trim();
+      if (!code) return null;
+
+      const rows = await sql(`
+        SELECT
+          c."Codigo" as code,
+          c."Descripcion" as description,
+          c."Sinonimo" as synonym,
+          c."CodigoBase" as "codigoBase",
+          c."DescripcionBase" as "descripcionBase",
+          tr.id,
+          tr.article_code as "articleCode",
+          tr.ancho_cm as "anchoCm",
+          tr.peso_referencia_kg as "pesoReferenciaKg",
+          tr.metros_referencia as "metrosReferencia",
+          tr.kg_por_metro as "kgPorMetro",
+          tr.activo,
+          tr.updated_at as "updatedAt",
+          tr.updated_by as "updatedBy"
+        FROM costos_articulos c
+        LEFT JOIN tela_rindes tr ON tr.article_code = c."Codigo"
+        WHERE TRIM(c."Codigo") = $1
+        LIMIT 1
+      `, [code]);
+
+      const row = rows[0];
+      if (!row) return null;
+
+      return {
+        article: {
+          code: row.code,
+          description: row.description ?? '',
+          synonym: row.synonym ?? '',
+          codigoBase: row.codigoBase ?? '',
+          descripcionBase: row.descripcionBase ?? '',
+          hasRinde: row.id != null && Boolean(row.activo),
+          active: row.id != null ? Boolean(row.activo) : undefined,
+          anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
+          metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
+          kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+        },
+        rinde: row.id == null ? null : {
+          id: Number(row.id),
+          articleCode: row.articleCode,
+          anchoCm: Number(row.anchoCm),
+          pesoReferenciaKg: Number(row.pesoReferenciaKg),
+          metrosReferencia: Number(row.metrosReferencia),
+          kgPorMetro: Number(row.kgPorMetro),
+          activo: Boolean(row.activo),
+          updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+          updatedBy: row.updatedBy ?? null,
+        }
+      };
+    } catch (error) {
+      console.error('Error getting tela rinde:', error);
+      return null;
+    }
+  }
+
+  async saveTelaRinde(payload: any): Promise<any> {
+    const articleCode = String(payload.articleCode ?? '').trim();
+    const anchoCm = Number(payload.anchoCm);
+    const pesoReferenciaKg = Number(payload.pesoReferenciaKg);
+    const metrosReferencia = Number(payload.metrosReferencia);
+    const kgPorMetro = Number(payload.kgPorMetro);
+    const activo = payload.activo !== false;
+    const updatedBy = payload.updatedBy ? String(payload.updatedBy).trim() : null;
+
+    const result = await sql(`
+      INSERT INTO tela_rindes (
+        article_code,
+        ancho_cm,
+        peso_referencia_kg,
+        metros_referencia,
+        kg_por_metro,
+        activo,
+        updated_at,
+        updated_by
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+      ON CONFLICT (article_code)
+      DO UPDATE SET
+        ancho_cm = EXCLUDED.ancho_cm,
+        peso_referencia_kg = EXCLUDED.peso_referencia_kg,
+        metros_referencia = EXCLUDED.metros_referencia,
+        kg_por_metro = EXCLUDED.kg_por_metro,
+        activo = EXCLUDED.activo,
+        updated_at = NOW(),
+        updated_by = EXCLUDED.updated_by
+      RETURNING
+        id,
+        article_code as "articleCode",
+        ancho_cm as "anchoCm",
+        peso_referencia_kg as "pesoReferenciaKg",
+        metros_referencia as "metrosReferencia",
+        kg_por_metro as "kgPorMetro",
+        activo,
+        updated_at as "updatedAt",
+        updated_by as "updatedBy"
+    `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, activo, updatedBy]);
+
+    const row = result[0];
+    return {
+      id: Number(row.id),
+      articleCode: row.articleCode,
+      anchoCm: Number(row.anchoCm),
+      pesoReferenciaKg: Number(row.pesoReferenciaKg),
+      metrosReferencia: Number(row.metrosReferencia),
+      kgPorMetro: Number(row.kgPorMetro),
+      activo: Boolean(row.activo),
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+      updatedBy: row.updatedBy ?? null,
+    };
+  }
+
   async getCodigosArticulos(): Promise<string[]> {
     try {
       const rows = await sql`
