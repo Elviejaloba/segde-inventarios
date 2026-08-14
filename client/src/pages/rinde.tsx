@@ -183,6 +183,8 @@ export default function RindePage() {
     onSuccess: () => {
       setAdminUnlocked(true);
       setAdminPanelOpen(true);
+      setPassword("");
+      setMobileSections((current) => Array.from(new Set([...current, "maestro", "referencia"])));
       setAuthDialogOpen(false);
       toast({ variant: "success", title: "Acceso habilitado", description: "Ya podés administrar los parámetros de rinde de CDD." });
     },
@@ -242,7 +244,7 @@ export default function RindePage() {
   const handleSelectArticle = (article: Article) => {
     setSelectedArticle(article);
     setSearch(article.code);
-    setMobileSections([]);
+    setMobileSections((current) => Array.from(new Set([...current, "referencia", ...(adminUnlocked ? ["maestro"] : [])])));
   };
 
   const handleClear = () => {
@@ -256,8 +258,7 @@ export default function RindePage() {
       ? calculation.message
       : "Elegí una tela para empezar";
 
-  const showSearchResults = debouncedSearch.length >= 2
-    && Boolean(articleSearch.data?.length)
+  const shouldShowSearchPanel = debouncedSearch.length >= 2
     && selectedArticle?.code !== search.trim();
 
   const renderReferenceSummary = () => {
@@ -315,9 +316,9 @@ export default function RindePage() {
                 <h2 className="hidden text-2xl font-bold tracking-tight text-slate-950 md:block md:text-3xl">Calculadora de Rinde de Telas (por Jony Caro)</h2>
                 <h2 className="text-xl font-bold tracking-tight text-slate-950 md:hidden">Calculadora de Rinde</h2>
                 <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-emerald-700 md:hidden">por Jony Caro</p>
-                <p className="mt-1 max-w-2xl text-sm text-slate-600 md:hidden">Calcul? los metros estimados de una tela seg?n su peso.</p>
+                <p className="mt-1 max-w-2xl text-sm text-slate-600 md:hidden">Calculá los metros estimados de una tela según su peso.</p>
                 <p className="mt-1 hidden max-w-2xl text-sm text-slate-600 sm:text-base md:block">
-                  Calcul? metros estimados a partir del peso del rollo abierto y los rollos cerrados, usando el maestro de rinde definido por CDD.
+                  Calculá metros estimados a partir del peso del rollo abierto y los rollos cerrados, usando el maestro de rinde definido por CDD.
                 </p>
               </div>
             </div>
@@ -331,13 +332,25 @@ export default function RindePage() {
                   </label>
                   <Input
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSearch(value);
+                      if (selectedArticle && value !== selectedArticle.code) {
+                        setSelectedArticle(null);
+                        setAdminPanelOpen(false);
+                      }
+                    }}
                     placeholder="Código, sinónimo o descripción"
                     className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm shadow-none sm:h-12 sm:text-base"
                   />
-                  {showSearchResults && articleSearch.data && articleSearch.data.length > 0 && (
+                  {shouldShowSearchPanel && (
                     <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                      {articleSearch.data.map((article) => (
+                      {articleSearch.isFetching ? (
+                        <div className="px-3 py-4 text-sm text-slate-500">Buscando artículos...</div>
+                      ) : articleSearch.isError ? (
+                        <div className="px-3 py-4 text-sm text-rose-600">No pudimos consultar los artículos. Intentá nuevamente.</div>
+                      ) : articleSearch.data && articleSearch.data.length > 0 ? (
+                        articleSearch.data.map((article) => (
                         <button
                           key={article.code}
                           type="button"
@@ -353,7 +366,10 @@ export default function RindePage() {
                             {article.hasRinde ? "Con rinde" : "Pendiente"}
                           </Badge>
                         </button>
-                      ))}
+                        ))
+                      ) : (
+                        <div className="px-3 py-4 text-sm text-slate-500">No encontramos artículos con esa búsqueda.</div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -497,10 +513,42 @@ export default function RindePage() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Administrar
-                  </Button>
+                  <div className="space-y-3">
+                    <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}>
+                      <Lock className="mr-2 h-4 w-4" />
+                      {adminUnlocked ? (adminPanelOpen ? "Ocultar edición" : "Administrar") : "Administrar"}
+                    </Button>
+                    {adminUnlocked && adminPanelOpen && (
+                      <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                        <p className="text-sm font-medium text-emerald-900">Configuración del artículo seleccionado</p>
+                        {selectedArticle ? (
+                          <div className="space-y-1 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-3">
+                            <p className="text-sm font-semibold text-slate-900">{selectedArticle.code}</p>
+                            <p className="text-xs text-slate-600">{selectedArticle.description || "Sin descripción disponible"}</p>
+                            {selectedArticle.synonym ? <p className="text-[11px] text-slate-500">Sinónimo: {selectedArticle.synonym}</p> : null}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-600">Seleccioná un artículo para editar o configurar su rinde.</p>
+                        )}
+                        <div className="grid gap-3">
+                          <Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho (cm)" />
+                          <Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso referencia (kg)" />
+                          <Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros referencia" />
+                          <Input value={updatedBy} onChange={(event) => setUpdatedBy(event.target.value)} placeholder="Modificado por" />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
+                          <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2">
+                            <input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />
+                            Activo
+                          </label>
+                          <span className="rounded-full bg-white px-3 py-2 text-sm">kg/m automático: {Number.isFinite(kgPorMetro) ? formatNumber(kgPorMetro, 4) : "-"}</span>
+                        </div>
+                        <Button type="button" className="h-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedArticle || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                          {saveMutation.isPending ? "Guardando..." : "Guardar parámetros"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
