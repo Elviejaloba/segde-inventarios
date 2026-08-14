@@ -183,3 +183,57 @@ export const checklistBranchPatchSchema = z.object({
 });
 
 export type ChecklistBranchPatch = z.infer<typeof checklistBranchPatchSchema>;
+
+export const rindeArticleSchema = z.object({
+  code: z.string(),
+  description: z.string().nullable().optional(),
+  synonym: z.string().nullable().optional(),
+  codigoBase: z.string().nullable().optional(),
+  descripcionBase: z.string().nullable().optional(),
+  hasRinde: z.boolean().optional(),
+  active: z.boolean().optional(),
+  anchoCm: z.number().nullable().optional(),
+  metrosReferencia: z.number().nullable().optional(),
+  kgPorMetro: z.number().nullable().optional(),
+});
+
+export type RindeArticle = z.infer<typeof rindeArticleSchema>;
+
+export const telaRindeSchema = z.object({
+  id: z.number().optional(),
+  articleCode: z.string(),
+  anchoCm: z.number(),
+  pesoReferenciaKg: z.number(),
+  metrosReferencia: z.number(),
+  kgPorMetro: z.number(),
+  activo: z.boolean().default(true),
+  updatedAt: z.string().nullable().optional(),
+  updatedBy: z.string().nullable().optional(),
+});
+
+export type TelaRinde = z.infer<typeof telaRindeSchema>;
+
+export const telaRindeUpsertSchema = z.object({
+  articleCode: z.string().min(1),
+  anchoCm: z.coerce.number().positive(),
+  pesoReferenciaKg: z.coerce.number().positive(),
+  metrosReferencia: z.coerce.number().positive(),
+  kgPorMetro: z.coerce.number().positive(),
+  activo: z.boolean().default(true),
+  updatedBy: z.string().trim().max(120).optional().nullable(),
+});
+
+export type TelaRindeUpsertInput = z.infer<typeof telaRindeUpsertSchema>;
+
+export const telaRindeAuthSchema = z.object({
+  password: z.string().min(1),
+});
+
+export type TelaRindeAuthInput = z.infer<typeof telaRindeAuthSchema>;
+
+export const telaRindeResponseSchema = z.object({
+  article: rindeArticleSchema,
+  rinde: telaRindeSchema.nullable(),
+});
+
+export type TelaRindeResponse = z.infer<typeof telaRindeResponseSchema>;
