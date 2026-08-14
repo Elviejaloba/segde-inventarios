@@ -10,7 +10,7 @@ declare global {
 
 const isMobile = () => window.innerWidth < 640;
 
-export function startTour(page: 'home' | 'muestreos' | 'reportes') {
+export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
   if (typeof window.driver === 'undefined' || !window.driver.js) {
     console.error('Driver.js not loaded');
     return;
@@ -305,7 +305,77 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes') {
     }
   ];
 
-  const steps = page === 'home' ? homeSteps : page === 'reportes' ? reportesSteps : muestreosSteps;
+  const rindeSteps = [
+    {
+      popover: {
+        title: 'Calculadora de Rinde',
+        description: 'Te mostramos rápidamente cómo calcular metros estimados y dónde administrar los parámetros de referencia.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-search"]',
+      popover: {
+        title: 'Buscar artículo',
+        description: 'Buscá una tela por código, descripción o sinónimo.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: '[data-tour="rinde-article"]',
+      popover: {
+        title: 'Artículo seleccionado',
+        description: 'Verificá el código y la descripción del artículo antes de calcular.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-reference-mobile"]' : '[data-tour="rinde-reference"]',
+      popover: {
+        title: 'Datos de referencia',
+        description: 'Estos valores de referencia son administrados por el CDD y se usan para calcular los metros.',
+        side: mobile ? 'top' : 'left',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-inputs-mobile"]' : '[data-tour="rinde-inputs"]',
+      popover: {
+        title: 'Datos para cálculo',
+        description: 'Ingresá el peso actual del rollo abierto y la cantidad de rollos cerrados.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-result-mobile"]' : '[data-tour="rinde-result"]',
+      popover: {
+        title: 'Resultado',
+        description: 'El sistema calcula automáticamente los metros estimados disponibles.',
+        side: mobile ? 'top' : 'left',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-master-mobile"]' : '[data-tour="rinde-master"]',
+      popover: {
+        title: 'Maestro CDD',
+        description: 'El encargado del CDD puede administrar los parámetros de rinde de cada artículo.',
+        side: 'top',
+        align: 'center'
+      }
+    }
+  ];
+  const steps = page === 'home'
+    ? homeSteps
+    : page === 'reportes'
+      ? reportesSteps
+      : page === 'rinde'
+        ? rindeSteps
+        : muestreosSteps;
   const validSteps = steps.filter(step => !(step as any).element || document.querySelector((step as any).element));
   
   if (validSteps.length === 0) {

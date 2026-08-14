@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Home, Upload, BarChart3, FileUp, HelpCircle, FileText } from "lucide-react";
+import { Moon, Sun, Home, Upload, BarChart3, FileUp, HelpCircle, FileText, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -75,6 +75,24 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
 
               <Tooltip>
                 <TooltipTrigger asChild>
+                  <Link href="/rinde">
+                    <Button
+                      variant={location === "/rinde" ? "default" : "ghost"}
+                      size="sm"
+                      data-testid="nav-rinde"
+                      className={`px-3 ${location !== "/rinde" ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : ""}`}
+                    >
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Rinde
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Calculadora de rinde de telas</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Link href="/muestreos">
                     <Button
                       variant={location === "/muestreos" ? "default" : "ghost"}
@@ -98,7 +116,13 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      const page = location === "/muestreos" ? "muestreos" : location === "/reportes" ? "reportes" : "home";
+                      const page = location === "/muestreos"
+                        ? "muestreos"
+                        : location === "/reportes"
+                          ? "reportes"
+                          : location === "/rinde"
+                            ? "rinde"
+                            : "home";
                       startTour(page);
                     }}
                     data-testid="button-tour"
@@ -134,7 +158,7 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
       </header>
 
       <nav className="safe-area-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-background/96 shadow-[0_-8px_24px_-18px_rgba(15,23,42,0.28)] backdrop-blur sm:hidden">
-        <div className="grid h-[4.5rem] grid-cols-5 items-center gap-1 px-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1">
+        <div className="grid h-[4.5rem] grid-cols-6 items-center gap-1 px-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1">
           <Link href="/">
             <button
               className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 transition-all ${
@@ -155,6 +179,16 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
               <span className="truncate text-[10px] font-medium leading-tight">Reportes</span>
             </button>
           </Link>
+          <Link href="/rinde">
+            <button
+              className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 transition-all ${
+                location === "/rinde" ? "bg-emerald-50 text-emerald-700 shadow-sm" : "text-emerald-700 hover:bg-emerald-50/70"
+              }`}
+            >
+              <Calculator className="h-[18px] w-[18px]" />
+              <span className="truncate text-[10px] font-medium leading-tight">Rinde</span>
+            </button>
+          </Link>
           <Link href="/muestreos">
             <button
               className={`flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 transition-all ${
@@ -167,7 +201,13 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
           </Link>
           <button
             onClick={() => {
-              const page = location === "/muestreos" ? "muestreos" : location === "/reportes" ? "reportes" : "home";
+              const page = location === "/muestreos"
+                        ? "muestreos"
+                        : location === "/reportes"
+                          ? "reportes"
+                          : location === "/rinde"
+                            ? "rinde"
+                            : "home";
               startTour(page);
             }}
             className="relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 text-slate-500 transition-all hover:bg-slate-100"
@@ -193,3 +233,5 @@ export function Layout({ children, hideImport = false, hideBranchSelector = fals
     </div>
   );
 }
+
+

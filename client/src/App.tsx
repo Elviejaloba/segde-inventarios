@@ -12,6 +12,7 @@ const ImportacionInventario = lazy(() => import("@/pages/importacion-inventario"
 const Consolidado = lazy(() => import("@/pages/consolidado"));
 const Muestreos = lazy(() => import("@/pages/muestreos"));
 const Reportes = lazy(() => import("@/pages/reportes"));
+const Rinde = lazy(() => import("@/pages/rinde"));
 
 function PageLoader() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
               <Route path="/consolidado" component={Consolidado} />
               <Route path="/muestreos" component={Muestreos} />
               <Route path="/reportes" component={Reportes} />
+              <Route path="/rinde" component={Rinde} />
               <Route component={Home} />
             </Switch>
           </Suspense>
