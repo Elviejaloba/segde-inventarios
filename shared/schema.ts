@@ -184,6 +184,35 @@ export const checklistBranchPatchSchema = z.object({
 
 export type ChecklistBranchPatch = z.infer<typeof checklistBranchPatchSchema>;
 
+export const muestreoFileStatusSchema = z.enum([
+  "no_visto",
+  "visto",
+  "analizado",
+  "sin_diferencias",
+  "revisar",
+]);
+
+export type MuestreoFileStatus = z.infer<typeof muestreoFileStatusSchema>;
+
+export const muestreoFileStatusRecordSchema = z.object({
+  id: z.number().optional(),
+  fileId: z.string().min(1),
+  filePath: z.string().nullable().optional(),
+  status: muestreoFileStatusSchema,
+  updatedAt: z.string().optional(),
+  updatedBy: z.string().nullable().optional(),
+});
+
+export type MuestreoFileStatusRecord = z.infer<typeof muestreoFileStatusRecordSchema>;
+
+export const muestreoFileStatusUpdateSchema = z.object({
+  status: muestreoFileStatusSchema,
+  path: z.string().optional(),
+  updatedBy: z.string().trim().max(120).optional().nullable(),
+});
+
+export type MuestreoFileStatusUpdateInput = z.infer<typeof muestreoFileStatusUpdateSchema>;
+
 export const rindeArticleSchema = z.object({
   code: z.string(),
   description: z.string().nullable().optional(),

@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from "react";
+﻿import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,20 +32,7 @@ const STATUS_CONFIG: Record<FileStatus, { label: string; color: string; bgColor:
   revisar: { label: "Revisar", color: "text-rose-700", bgColor: "bg-rose-50 border border-rose-200/80", icon: AlertTriangle },
 };
 
-function getFileStatuses(): Record<string, FileStatus> {
-  try {
-    const stored = localStorage.getItem('muestreos_status');
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-function setFileStatus(fileId: string, status: FileStatus) {
-  const statuses = getFileStatuses();
-  statuses[fileId] = status;
-  localStorage.setItem('muestreos_status', JSON.stringify(statuses));
-}
+const STATUS_ORDER: FileStatus[] = ["no_visto", "visto", "analizado", "sin_diferencias", "revisar"];
 
 const BRANCHES = [
   "T.Mendoza",
@@ -89,13 +76,23 @@ interface FileContenido {
   error?: string;
 }
 
+interface MuestreoFileStatusRecord {
+  id?: number;
+  fileId: string;
+  filePath?: string | null;
+  status: FileStatus;
+  updatedAt?: string;
+  updatedBy?: string | null;
+}
+
 export default function MuestreosPage() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterBranch, setFilterBranch] = useState<string>("");
-  const [fileStatuses, setFileStatuses] = useState<Record<string, FileStatus>>(getFileStatuses);
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, FileStatus>>({});
+  const [savingStatuses, setSavingStatuses] = useState<Record<string, boolean>>({});
   const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
   const [cachedLinks, setCachedLinks] = useState<Record<string, string>>({});
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
@@ -111,15 +108,6 @@ export default function MuestreosPage() {
     },
     refetchInterval: 300000,
   });
-
-  const cycleStatus = (fileId: string) => {
-    const currentStatus = fileStatuses[fileId] || "no_visto";
-    const statusOrder: FileStatus[] = ["no_visto", "visto", "analizado", "sin_diferencias", "revisar"];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
-    setFileStatus(fileId, nextStatus);
-    setFileStatuses(prev => ({ ...prev, [fileId]: nextStatus }));
-  };
 
   const toggleContenido = useCallback(async (file: DropboxFile) => {
     if (expandedFile === file.id) {
@@ -181,7 +169,7 @@ export default function MuestreosPage() {
     } catch (error) {
       toast({
         title: "No se pudo abrir el archivo",
-        description: ">Volvé a intentarlo en unos segundos.",
+        description: "Volvé a intentarlo en unos segundos.",
         variant: "destructive",
       });
     } finally {
@@ -197,6 +185,101 @@ export default function MuestreosPage() {
       return response.json();
     },
   });
+
+  const { data: statusRecords = [] } = useQuery<MuestreoFileStatusRecord[]>({
+    queryKey: ['/api/muestreos/statuses'],
+    queryFn: async () => {
+      const response = await fetch(buildApiUrl('/api/muestreos/statuses'));
+      if (!response.ok) throw new Error('Failed to fetch file statuses');
+      return response.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const persistedStatuses = useMemo<Record<string, FileStatus>>(() => {
+    return statusRecords.reduce<Record<string, FileStatus>>((acc, record) => {
+      acc[record.fileId] = record.status;
+      return acc;
+    }, {});
+  }, [statusRecords]);
+
+  const effectiveStatuses = useMemo<Record<string, FileStatus>>(() => ({
+    ...persistedStatuses,
+    ...optimisticStatuses,
+  }), [persistedStatuses, optimisticStatuses]);
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ fileId, filePath, status }: { fileId: string; filePath: string; status: FileStatus }) => {
+      const response = await fetch(buildApiUrl(`/api/muestreos/${encodeURIComponent(fileId)}/status`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          path: filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo guardar el estado.');
+      }
+
+      return response.json() as Promise<MuestreoFileStatusRecord>;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<MuestreoFileStatusRecord[]>(['/api/muestreos/statuses'], (current = []) => {
+        const next = current.filter((record) => record.fileId !== data.fileId);
+        return [data, ...next];
+      });
+      setOptimisticStatuses((prev) => {
+        const next = { ...prev };
+        delete next[data.fileId];
+        return next;
+      });
+      setSavingStatuses((prev) => {
+        const next = { ...prev };
+        delete next[data.fileId];
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/muestreos/statuses'] });
+    },
+    onError: (_error, variables) => {
+      setOptimisticStatuses((prev) => {
+        const next = { ...prev };
+        delete next[variables.fileId];
+        return next;
+      });
+      setSavingStatuses((prev) => {
+        const next = { ...prev };
+        delete next[variables.fileId];
+        return next;
+      });
+      toast({
+        title: 'No se pudo guardar el estado.',
+        description: 'Volv\u00e9 a intentarlo en unos segundos.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cycleStatus = useCallback((file: DropboxFile) => {
+    if (savingStatuses[file.id]) return;
+
+    const currentStatus = effectiveStatuses[file.id] || "no_visto";
+    const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+    const nextStatus = STATUS_ORDER[(currentIndex + 1) % STATUS_ORDER.length];
+
+    setOptimisticStatuses((prev) => ({ ...prev, [file.id]: nextStatus }));
+    setSavingStatuses((prev) => ({ ...prev, [file.id]: true }));
+
+    statusMutation.mutate({
+      fileId: file.id,
+      filePath: file.path,
+      status: nextStatus,
+    });
+  }, [effectiveStatuses, savingStatuses, statusMutation]);
+
 
   const filesWithSucursal = files.map(file => ({
     ...file,
@@ -225,7 +308,7 @@ export default function MuestreosPage() {
       setUploadProgress(100);
       toast({
         title: "Archivo subido correctamente",
-        description: `El muestreo se >cargó correctamente para ${selectedBranch}.`,
+        description: `El muestreo se carg\u00f3 correctamente para ${selectedBranch}.`,
         variant: "success",
         duration: 3200,
       });
@@ -482,7 +565,7 @@ export default function MuestreosPage() {
             ) : (
               <div className="space-y-2 max-h-[60vh] overflow-y-auto sm:space-y-2">
                 {filteredFiles.map((file) => {
-                  const status = fileStatuses[file.id] || "no_visto";
+                  const status = effectiveStatuses[file.id] || "no_visto";
                   const statusConfig = STATUS_CONFIG[status];
                   const StatusIcon = statusConfig.icon;
                   const codigoNombre = extractCodigoFromName(file.name);
@@ -543,11 +626,16 @@ export default function MuestreosPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => cycleStatus(file.id)}
-                                className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 active:scale-95 ${statusConfig.bgColor} ${statusConfig.color}`}
+                                onClick={() => cycleStatus(file)}
+                                disabled={Boolean(savingStatuses[file.id])}
+                                className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 active:scale-95 disabled:cursor-not-allowed disabled:opacity-80 ${statusConfig.bgColor} ${statusConfig.color}`}
                                 data-testid={`button-status-${file.id}`}
                               >
-                                <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                {savingStatuses[file.id] ? (
+                                  <Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 animate-spin" />
+                                ) : (
+                                  <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                )}
                                 <span className="hidden sm:inline">{statusConfig.label}</span>
                               </button>
                             </TooltipTrigger>

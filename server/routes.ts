@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema, telaRindeAuthSchema, telaRindeUpsertSchema } from "@shared/schema";
+import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema, muestreoFileStatusUpdateSchema, telaRindeAuthSchema, telaRindeUpsertSchema } from "@shared/schema";
 import * as dropbox from './dropbox';
 import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, primeChecklistRuntime, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
@@ -307,6 +307,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = multer({ 
     storage: multer.memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  });
+
+  app.get('/api/muestreos/statuses', async (_req: Request, res: Response) => {
+    try {
+      const statuses = await storage.getMuestreosFileStatuses();
+      res.json(statuses);
+    } catch (error) {
+      console.error('Error getting muestreos statuses:', error);
+      res.status(500).json({ error: 'Failed to load file statuses' });
+    }
+  });
+
+  app.patch('/api/muestreos/:id/status', async (req: Request, res: Response) => {
+    try {
+      const payload = muestreoFileStatusUpdateSchema.parse(req.body);
+      const statusRecord = await storage.upsertMuestreoFileStatus(req.params.id, {
+        filePath: payload.path ?? null,
+        status: payload.status,
+        updatedBy: payload.updatedBy ?? null,
+      });
+      res.json(statusRecord);
+    } catch (error) {
+      console.error('Error updating muestreos status:', error);
+      res.status(400).json({ error: 'Failed to update file status' });
+    }
   });
 
   app.get('/api/muestreos', async (_req: Request, res: Response) => {
