@@ -58,6 +58,7 @@ const BRANCHES = [
   "T.Maipu",
   "T.Srafael",
   "T.GLLEN",
+  "MCD Ciudad",
   "Ctro. de Distribucion"
 ];
 

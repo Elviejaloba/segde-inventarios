@@ -51,6 +51,16 @@ export const AGOSTO_2026_CODES = [
   ...AGOSTO_2026_ADDITIONAL_CODES,
 ] as const;
 
+export const MCD_CIUDAD_CODES = [
+  "148510",
+  "170400",
+  "028504",
+  "028500",
+  "028510",
+] as const;
+
+const FORCE_COLOR_DISPLAY_CODES = new Set<string>(MCD_CIUDAD_CODES);
+
 const AGOSTO_2026_BASE_WEEK_SIZES = [22, 22, 21, 21] as const;
 const AGOSTO_2026_ADDITIONAL_WEEK_SIZES = [8, 8, 8, 8] as const;
 const AGOSTO_2026_BL_NO_COLOR_CODES = new Set<string>(
@@ -92,6 +102,7 @@ export function getChecklistEntryKey(code: string, periodKey?: string): string {
 
 export function getChecklistDisplayCode(code: string): string {
   if (AGOSTO_2026_BL_NO_COLOR_CODES.has(code)) return code;
+  if (FORCE_COLOR_DISPLAY_CODES.has(code)) return `${code} (Color)`;
   return code.endsWith('00') ? code : `${code} (Color)`;
 }
 
@@ -127,6 +138,17 @@ const buildAugustOnlyCalendar = (sucursal: string): CalendarioSucursal => ({
   sucursal,
   totalItems: AGOSTO_2026_CODES.length,
   semanas: [...AGOSTO_2026_WEEKS],
+});
+
+const buildCustomAugustCalendar = (sucursal: string, codes: readonly string[]): CalendarioSucursal => ({
+  sucursal,
+  totalItems: codes.length,
+  semanas: [{
+    mes: "AGOSTO",
+    semana: "1\u00B0 Semana",
+    periodKey: AGOSTO_2026_PERIOD_KEY,
+    items: [...codes],
+  }],
 });
 
 export const CALENDARIO_TTUNUYAN: CalendarioSucursal = {
@@ -740,6 +762,7 @@ export const CALENDARIO_TLUJAN = buildAugustOnlyCalendar("T.Lujan");
 export const CALENDARIO_TMAIPU = buildAugustOnlyCalendar("T.Maipu");
 export const CALENDARIO_TSRAFAEL = buildAugustOnlyCalendar("T.Srafael");
 export const CALENDARIO_TGGLLEN = buildAugustOnlyCalendar("T.GLLEN");
+export const CALENDARIO_MCDCIUDAD = buildCustomAugustCalendar("MCD Ciudad", MCD_CIUDAD_CODES);
 
 // Obtener el calendario por sucursal
 export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | null {
@@ -764,6 +787,8 @@ export function getCalendarioSucursal(sucursalId: string): CalendarioSucursal | 
       return CALENDARIO_TSRAFAEL;
     case "T.GLLEN":
       return CALENDARIO_TGGLLEN;
+    case "MCD Ciudad":
+      return CALENDARIO_MCDCIUDAD;
     default:
       return null;
   }
