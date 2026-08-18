@@ -1,4 +1,4 @@
-import { type Ajuste, type InsertAjuste } from "@shared/schema";
+import { type Ajuste, type InsertAjuste, type MuestreoFileStatus, type MuestreoFileStatusRecord } from "@shared/schema";
 import { pool } from "./db";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -64,6 +64,8 @@ export interface IStorage {
   getTelaRinde(articleCode: string): Promise<any | null>;
   saveTelaRinde(payload: any): Promise<any>;
   getCodigosArticulos(): Promise<string[]>;
+  getMuestreosFileStatuses(): Promise<MuestreoFileStatusRecord[]>;
+  upsertMuestreoFileStatus(fileId: string, payload: { filePath?: string | null; status: MuestreoFileStatus; updatedBy?: string | null }): Promise<MuestreoFileStatusRecord>;
 }
 
 export class PostgreSQLStorage implements IStorage {
@@ -982,6 +984,78 @@ export class PostgreSQLStorage implements IStorage {
       console.error('Error syncing ventas:', error);
       throw error;
     }
+  }
+
+  async getMuestreosFileStatuses(): Promise<MuestreoFileStatusRecord[]> {
+    try {
+      const rows = await sql(`
+        SELECT
+          id,
+          file_id as "fileId",
+          file_path as "filePath",
+          status,
+          updated_at as "updatedAt",
+          updated_by as "updatedBy"
+        FROM muestreos_file_status
+        ORDER BY updated_at DESC
+      `);
+
+      return rows.map((row: any) => ({
+        id: Number(row.id),
+        fileId: String(row.fileId),
+        filePath: row.filePath ?? null,
+        status: row.status as MuestreoFileStatus,
+        updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : undefined,
+        updatedBy: row.updatedBy ?? null,
+      }));
+    } catch (error) {
+      console.error('Error getting muestreos file statuses:', error);
+      return [];
+    }
+  }
+
+  async upsertMuestreoFileStatus(fileId: string, payload: { filePath?: string | null; status: MuestreoFileStatus; updatedBy?: string | null }): Promise<MuestreoFileStatusRecord> {
+    const normalizedFileId = String(fileId ?? '').trim();
+    if (!normalizedFileId) {
+      throw new Error('fileId is required');
+    }
+
+    const normalizedPath = payload.filePath ? String(payload.filePath).trim() : null;
+    const updatedBy = payload.updatedBy ? String(payload.updatedBy).trim() : null;
+
+    const result = await sql(`
+      INSERT INTO muestreos_file_status (
+        file_id,
+        file_path,
+        status,
+        updated_at,
+        updated_by
+      )
+      VALUES ($1, $2, $3, NOW(), $4)
+      ON CONFLICT (file_id)
+      DO UPDATE SET
+        file_path = COALESCE(EXCLUDED.file_path, muestreos_file_status.file_path),
+        status = EXCLUDED.status,
+        updated_at = NOW(),
+        updated_by = EXCLUDED.updated_by
+      RETURNING
+        id,
+        file_id as "fileId",
+        file_path as "filePath",
+        status,
+        updated_at as "updatedAt",
+        updated_by as "updatedBy"
+    `, [normalizedFileId, normalizedPath, payload.status, updatedBy]);
+
+    const row = result[0];
+    return {
+      id: Number(row.id),
+      fileId: String(row.fileId),
+      filePath: row.filePath ?? null,
+      status: row.status as MuestreoFileStatus,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : undefined,
+      updatedBy: row.updatedBy ?? null,
+    };
   }
 
   async getPuntoEquilibrio(sucursal?: string): Promise<any> {
