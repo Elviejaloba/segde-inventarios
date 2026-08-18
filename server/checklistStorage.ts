@@ -40,6 +40,7 @@ const CHECKLIST_BRANCHES = [
   "T.Maipu",
   "T.Srafael",
   "T.GLLEN",
+  "MCD Ciudad",
 ] as const;
 
 const BASE_PERIOD_SCOPE = "__base__";
@@ -85,6 +86,7 @@ function normalizeBranchId(branchId: string): string {
   if (normalized === "T.SJuan") return "T.Sjuan";
   if (normalized === "T.SRafael") return "T.Srafael";
   if (normalized === "T.Glen") return "T.GLLEN";
+  if (normalized === "MCD CIUDAD") return "MCD Ciudad";
   return normalized;
 }
 

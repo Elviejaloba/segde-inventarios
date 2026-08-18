@@ -11,6 +11,7 @@ export type Branch =
   | 'Crisa2' 
   | 'T.Srafael'
   | 'T.GLLEN'
+  | 'MCD Ciudad'
   | 'Ctro. de Distribucion';
 
 export type Season = 'temporada-verano' | null;
@@ -27,6 +28,8 @@ export const SUCURSAL_MAPPING: Record<string, Branch> = {
   'LA TIJERA SAN RAFAEL': 'T.Srafael',
   'CIRCUITO GLLEN': 'T.GLLEN',
   'T.GLLEN': 'T.GLLEN',
+  'MCD CIUDAD': 'MCD Ciudad',
+  'MCD Ciudad': 'MCD Ciudad',
   'CENTRO DE DISTRIBUCION': 'Ctro. de Distribucion'
 };
 
@@ -524,5 +527,6 @@ export const AVAILABLE_BRANCHES: Branch[] = [
   'T.Lujan',
   'T.Maipu',
   'T.Srafael',
-  'T.GLLEN'
+  'T.GLLEN',
+  'MCD Ciudad'
 ];

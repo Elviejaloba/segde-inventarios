@@ -166,7 +166,7 @@ const sanitizeCode = (code: string): string => {
 };
 
 // Sucursales con calendario
-const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2', 'T.S.Martin', 'T.Tunuyan', 'T.Lujan', 'T.Maipu', 'T.Srafael', 'T.GLLEN'];
+const SUCURSALES_CALENDARIO = ['T.Mendoza', 'T.Sjuan', 'T.SLuis', 'Crisa2', 'T.S.Martin', 'T.Tunuyan', 'T.Lujan', 'T.Maipu', 'T.Srafael', 'T.GLLEN', 'MCD Ciudad'];
 
 const SUCURSALES_PREMIUM: string[] = ['T.Srafael', 'T.Maipu', 'T.S.Martin', 'T.Lujan', 'T.Tunuyan'];
 
