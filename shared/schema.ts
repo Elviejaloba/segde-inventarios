@@ -224,6 +224,7 @@ export const rindeArticleSchema = z.object({
   anchoCm: z.number().nullable().optional(),
   metrosReferencia: z.number().nullable().optional(),
   kgPorMetro: z.number().nullable().optional(),
+  referenceLabel: z.string().nullable().optional(),
 });
 
 export type RindeArticle = z.infer<typeof rindeArticleSchema>;
@@ -235,6 +236,7 @@ export const telaRindeSchema = z.object({
   pesoReferenciaKg: z.number(),
   metrosReferencia: z.number(),
   kgPorMetro: z.number(),
+  referenceLabel: z.string().nullable().optional(),
   activo: z.boolean().default(true),
   updatedAt: z.string().nullable().optional(),
   updatedBy: z.string().nullable().optional(),
@@ -248,6 +250,7 @@ export const telaRindeUpsertSchema = z.object({
   pesoReferenciaKg: z.coerce.number().positive(),
   metrosReferencia: z.coerce.number().positive(),
   kgPorMetro: z.coerce.number().positive(),
+  referenceLabel: z.string().trim().max(120).optional().nullable(),
   activo: z.boolean().default(true),
   updatedBy: z.string().trim().max(120).optional().nullable(),
 });
