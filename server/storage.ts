@@ -1219,37 +1219,46 @@ export class PostgreSQLStorage implements IStorage {
 
       const normalized = search.toUpperCase();
       const rows = await sql(`
-        WITH catalog AS (
-          SELECT DISTINCT ON (code)
-            code,
-            description,
-            synonym,
-            "codigoBase",
-            "descripcionBase"
-          FROM (
-            SELECT
-              TRIM(c."Codigo") as code,
-              COALESCE(c."Descripcion", '') as description,
-              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
-              COALESCE(c."CodigoBase", '') as "codigoBase",
-              COALESCE(c."DescripcionBase", '') as "descripcionBase",
-              0 as priority
-            FROM costos_articulos c
+        WITH ajustes_catalog AS (
+          SELECT
+            TRIM(a."Codigo") as code,
+            COALESCE(MAX(NULLIF(a."Articulo", '')), '') as description
+          FROM ajustes_sucursales a
+          WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
+          GROUP BY TRIM(a."Codigo")
+        ),
+        costos_catalog AS (
+          SELECT
+            TRIM(c."Codigo") as code,
+            COALESCE(c."Descripcion", '') as description,
+            COALESCE(TRIM(c."Sinonimo"), '') as synonym,
+            COALESCE(c."CodigoBase", '') as "codigoBase",
+            COALESCE(c."DescripcionBase", '') as "descripcionBase"
+          FROM costos_articulos c
+          WHERE COALESCE(TRIM(c."Codigo"), '') <> ''
+        ),
+        catalog AS (
+          SELECT
+            a.code,
+            COALESCE(NULLIF(c.description, ''), a.description, '') as description,
+            COALESCE(c.synonym, '') as synonym,
+            COALESCE(c."codigoBase", '') as "codigoBase",
+            COALESCE(c."descripcionBase", '') as "descripcionBase"
+          FROM ajustes_catalog a
+          LEFT JOIN costos_catalog c ON c.code = a.code
 
-            UNION ALL
+          UNION
 
-            SELECT
-              TRIM(a."Codigo") as code,
-              COALESCE(MAX(a."Articulo"), '') as description,
-              '' as synonym,
-              '' as "codigoBase",
-              '' as "descripcionBase",
-              1 as priority
-            FROM ajustes_sucursales a
-            WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
-            GROUP BY TRIM(a."Codigo")
-          ) catalog_union
-          ORDER BY code, priority
+          SELECT
+            c.code,
+            c.description,
+            c.synonym,
+            c."codigoBase",
+            c."descripcionBase"
+          FROM costos_catalog c
+          WHERE NOT EXISTS (
+            SELECT 1 FROM ajustes_catalog a WHERE a.code = c.code
+          )
         )
         SELECT
           c.code as code,
