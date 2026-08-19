@@ -61,7 +61,7 @@ export interface IStorage {
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
   getPuntoEquilibrio(sucursal?: string): Promise<any>;
   searchRindeArticles(query: string): Promise<any[]>;
-  getActiveTelaRindes(): Promise<any[]>;
+  getActiveTelaRindes(options?: { includeInactive?: boolean }): Promise<any[]>;
   getTelaRinde(articleCode: string): Promise<any | null>;
   saveTelaRinde(payload: any): Promise<any>;
   getCodigosArticulos(): Promise<string[]>;
@@ -1300,41 +1300,10 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getActiveTelaRindes(): Promise<any[]> {
+  async getActiveTelaRindes(options?: { includeInactive?: boolean }): Promise<any[]> {
     try {
+      const includeInactive = options?.includeInactive === true;
       const rows = await sql(`
-        WITH catalog AS (
-          SELECT DISTINCT ON (code)
-            code,
-            description,
-            synonym,
-            "codigoBase",
-            "descripcionBase"
-          FROM (
-            SELECT
-              TRIM(c."Codigo") as code,
-              COALESCE(c."Descripcion", '') as description,
-              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
-              COALESCE(c."CodigoBase", '') as "codigoBase",
-              COALESCE(c."DescripcionBase", '') as "descripcionBase",
-              0 as priority
-            FROM costos_articulos c
-
-            UNION ALL
-
-            SELECT
-              TRIM(a."Codigo") as code,
-              COALESCE(MAX(a."Articulo"), '') as description,
-              '' as synonym,
-              '' as "codigoBase",
-              '' as "descripcionBase",
-              1 as priority
-            FROM ajustes_sucursales a
-            WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
-            GROUP BY TRIM(a."Codigo")
-          ) catalog_union
-          ORDER BY code, priority
-        )
         SELECT
           tr.id,
           tr.article_code as "articleCode",
@@ -1345,26 +1314,20 @@ export class PostgreSQLStorage implements IStorage {
           tr.kg_por_metro as "kgPorMetro",
           tr.activo,
           tr.updated_at as "updatedAt",
-          tr.updated_by as "updatedBy",
-          c.code as code,
-          c.description as description,
-          c.synonym as synonym,
-          c."codigoBase" as "codigoBase",
-          c."descripcionBase" as "descripcionBase"
+          tr.updated_by as "updatedBy"
         FROM tela_rindes tr
-        LEFT JOIN catalog c ON c.code = tr.article_code
-        WHERE tr.activo = TRUE
+        WHERE ($1::boolean = TRUE OR tr.activo = TRUE)
         ORDER BY COALESCE(NULLIF(tr.reference_label, ''), tr.article_code) ASC
-      `);
+      `, [includeInactive]);
 
       return rows.map((row: any) => ({
         id: Number(row.id),
         articleCode: row.articleCode,
         referenceLabel: row.referenceLabel ?? null,
-        description: row.description ?? '',
-        synonym: row.synonym ?? '',
-        codigoBase: row.codigoBase ?? '',
-        descripcionBase: row.descripcionBase ?? '',
+        description: '',
+        synonym: '',
+        codigoBase: '',
+        descripcionBase: '',
         anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
         pesoReferenciaKg: row.pesoReferenciaKg == null ? null : Number(row.pesoReferenciaKg),
         metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
@@ -1372,7 +1335,7 @@ export class PostgreSQLStorage implements IStorage {
         activo: Boolean(row.activo),
         updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
         updatedBy: row.updatedBy ?? null,
-        code: row.code ?? row.articleCode,
+        code: row.articleCode,
       }));
     } catch (error) {
       console.error('Error listing active tela rindes:', error);
@@ -1386,45 +1349,7 @@ export class PostgreSQLStorage implements IStorage {
       if (!code) return null;
 
       const rows = await sql(`
-        WITH catalog AS (
-          SELECT DISTINCT ON (code)
-            code,
-            description,
-            synonym,
-            "codigoBase",
-            "descripcionBase"
-          FROM (
-            SELECT
-              TRIM(c."Codigo") as code,
-              COALESCE(c."Descripcion", '') as description,
-              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
-              COALESCE(c."CodigoBase", '') as "codigoBase",
-              COALESCE(c."DescripcionBase", '') as "descripcionBase",
-              0 as priority
-            FROM costos_articulos c
-            WHERE TRIM(c."Codigo") = $1
-
-            UNION ALL
-
-            SELECT
-              TRIM(a."Codigo") as code,
-              COALESCE(MAX(a."Articulo"), '') as description,
-              '' as synonym,
-              '' as "codigoBase",
-              '' as "descripcionBase",
-              1 as priority
-            FROM ajustes_sucursales a
-            WHERE TRIM(a."Codigo") = $1
-            GROUP BY TRIM(a."Codigo")
-          ) catalog_union
-          ORDER BY code, priority
-        )
         SELECT
-          c.code as code,
-          c.description as description,
-          c.synonym as synonym,
-          c."codigoBase" as "codigoBase",
-          c."descripcionBase" as "descripcionBase",
           tr.id,
           tr.article_code as "articleCode",
           tr.ancho_cm as "anchoCm",
@@ -1435,29 +1360,28 @@ export class PostgreSQLStorage implements IStorage {
           tr.activo,
           tr.updated_at as "updatedAt",
           tr.updated_by as "updatedBy"
-        FROM catalog c
-        LEFT JOIN tela_rindes tr ON tr.article_code = c.code
+        FROM tela_rindes tr
+        WHERE UPPER(TRIM(tr.article_code)) = UPPER(TRIM($1))
+           OR UPPER(TRIM(COALESCE(tr.reference_label, ''))) = UPPER(TRIM($1))
         LIMIT 1
       `, [code]);
 
       const row = rows[0];
-      if (!row) return null;
-
       return {
         article: {
-          code: row.code,
-          description: row.description ?? '',
-          synonym: row.synonym ?? '',
-          codigoBase: row.codigoBase ?? '',
-          descripcionBase: row.descripcionBase ?? '',
-          hasRinde: row.id != null && Boolean(row.activo),
-          active: row.id != null ? Boolean(row.activo) : undefined,
-          anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
-          metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
-          kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
-          referenceLabel: row.referenceLabel ?? null,
+          code: row?.articleCode ?? code,
+          description: '',
+          synonym: '',
+          codigoBase: '',
+          descripcionBase: '',
+          hasRinde: row != null && Boolean(row.activo),
+          active: row != null ? Boolean(row.activo) : undefined,
+          anchoCm: row?.anchoCm == null ? null : Number(row.anchoCm),
+          metrosReferencia: row?.metrosReferencia == null ? null : Number(row.metrosReferencia),
+          kgPorMetro: row?.kgPorMetro == null ? null : Number(row.kgPorMetro),
+          referenceLabel: row?.referenceLabel ?? (row ? null : code),
         },
-        rinde: row.id == null ? null : {
+        rinde: row == null ? null : {
           id: Number(row.id),
           articleCode: row.articleCode,
           anchoCm: Number(row.anchoCm),

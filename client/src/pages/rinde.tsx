@@ -132,21 +132,22 @@ export default function RindePage() {
     return () => window.clearTimeout(timer);
   }, [adminSearch]);
 
-  const adminArticleSearch = useQuery<Article[]>({
-    queryKey: ["rinde-admin-search", debouncedAdminSearch],
-    enabled: adminUnlocked && adminPanelOpen && debouncedAdminSearch.length >= 2,
-    queryFn: async () => {
-      const response = await fetch(buildApiUrl(`/api/rinde-articulos?q=${encodeURIComponent(debouncedAdminSearch)}`));
-      if (!response.ok) throw new Error("No se pudo buscar artículos.");
-      return response.json();
-    },
-  });
 
   const activeRindesQuery = useQuery<AvailableRinde[]>({
     queryKey: ["rindes-activos"],
     queryFn: async () => {
       const response = await fetch(buildApiUrl("/api/rindes"));
       if (!response.ok) throw new Error("No se pudieron cargar los rindes disponibles.");
+      return response.json();
+    },
+  });
+
+  const adminRindesQuery = useQuery<AvailableRinde[]>({
+    queryKey: ["rindes-admin"],
+    enabled: adminUnlocked && adminPanelOpen,
+    queryFn: async () => {
+      const response = await fetch(buildApiUrl("/api/rindes?includeInactive=1"));
+      if (!response.ok) throw new Error("No se pudieron cargar los rindes configurados.");
       return response.json();
     },
   });
@@ -178,6 +179,17 @@ export default function RindePage() {
     });
   }, [rindeQuery.data]);
 
+  useEffect(() => {
+    if (!rindeQuery.data?.article || !selectedArticle) return;
+    const resolvedCode = normalize(rindeQuery.data.article.code);
+    const currentCode = normalize(selectedArticle.code);
+    const currentReference = normalize(getReferenceLabel(selectedArticle));
+    if (resolvedCode && resolvedCode !== currentCode && resolvedCode !== currentReference) {
+      setSelectedArticle((current) => current ? { ...current, ...rindeQuery.data!.article } : current);
+      setAdminSearch(rindeQuery.data.article.code);
+    }
+  }, [rindeQuery.data, selectedArticle]);
+
   const pesoReferencia = parseDecimal(form.pesoReferenciaKg);
   const metrosReferencia = parseDecimal(form.metrosReferencia);
   const kgPorMetro = useMemo(() => {
@@ -193,7 +205,7 @@ export default function RindePage() {
       return { abierto: 0, cerrados: 0, total: 0, valid: false, message: "Buscá y seleccioná una tela para calcular el rinde." };
     }
     if (!rindeQuery.data?.rinde || rindeQuery.data.rinde.activo === false) {
-      return { abierto: 0, cerrados: 0, total: 0, valid: false, message: "Este artículo todavía no tiene parámetros de rinde configurados." };
+      return { abierto: 0, cerrados: 0, total: 0, valid: false, message: "Esta referencia todavía no tiene parámetros de rinde." };
     }
     if (!Number.isFinite(kgPorMetro) || kgPorMetro <= 0) {
       return { abierto: 0, cerrados: 0, total: 0, valid: false, message: "Los parámetros de referencia están incompletos o tienen valores inválidos." };
@@ -284,7 +296,7 @@ export default function RindePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["rinde-config", selectedArticle?.code] });
       await queryClient.invalidateQueries({ queryKey: ["rindes-activos"] });
-      await queryClient.invalidateQueries({ queryKey: ["rinde-admin-search"] });
+      await queryClient.invalidateQueries({ queryKey: ["rindes-admin"] });
       toast({ variant: "success", title: "Rinde guardado", description: "Los parámetros quedaron listos para la calculadora." });
     },
     onError: (error: Error) => {
@@ -329,8 +341,7 @@ export default function RindePage() {
     ? [selectedArticle.code, getReferenceLabel(selectedArticle)].filter(Boolean).map((value) => normalize(value))
     : [];
 
-  const shouldShowSearchPanel = debouncedSearch.length >= 2 && !selectedSearchValue.includes(normalize(search));
-  const shouldShowAdminSearchPanel = adminUnlocked && adminPanelOpen && debouncedAdminSearch.length >= 2 && normalize(selectedArticle?.code) !== normalize(adminSearch);
+  const shouldShowSearchPanel = debouncedSearch.length >= 1 && !selectedSearchValue.includes(normalize(search));
 
   const filteredAvailableRindes = useMemo(() => {
     const list = activeRindesQuery.data || [];
@@ -344,13 +355,26 @@ export default function RindePage() {
     ].some((value) => normalize(value).includes(term)));
   }, [activeRindesQuery.data, debouncedSearch, search]);
 
+  const filteredAdminRindes = useMemo(() => {
+    const list = adminRindesQuery.data || [];
+    const term = normalize(debouncedAdminSearch || adminSearch);
+    if (!term) return list;
+    return list.filter((item) => [
+      item.referenceLabel,
+      item.articleCode,
+      item.description,
+    ].some((value) => normalize(value).includes(term)));
+  }, [adminRindesQuery.data, debouncedAdminSearch, adminSearch]);
+
+  const shouldShowAdminSearchPanel = adminUnlocked && adminPanelOpen && normalize(adminSearch).length >= 1;
+
   const rindeStatusLabel = !selectedArticle
-    ? "Seleccioná un artículo real del catálogo para revisar o configurar su rinde."
+    ? "Seleccioná un rinde disponible o escribí una referencia para configurarlo."
     : rindeQuery.isFetching
       ? "Cargando parámetros..."
       : rindeQuery.data?.rinde
         ? "Rinde configurado"
-        : "Este artículo todavía no tiene parámetros de rinde.";
+        : "Esta referencia todavía no tiene parámetros de rinde.";
 
   const selectedArticleSummary = selectedArticle
     ? [
@@ -406,13 +430,13 @@ export default function RindePage() {
 
   const renderSelectedArticleCard = () => {
     if (!selectedArticle) {
-      return <p className="text-sm text-slate-500">Seleccioná una tela para ver sus parámetros y calcular el rinde estimado.</p>;
+      return <p className="text-sm text-slate-500">Seleccion? un rinde para ver sus par?metros y calcular el estimado.</p>;
     }
 
     return (
       <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className="bg-slate-900 text-white">Artículo seleccionado</Badge>
+          <Badge className="bg-slate-900 text-white">Rinde seleccionado</Badge>
           <Badge variant="outline" className={rindeQuery.data?.rinde ? "border-emerald-200 text-emerald-700" : "border-amber-200 text-amber-700"}>
             {rindeQuery.data?.rinde ? "Rinde configurado" : "Sin rinde"}
           </Badge>
@@ -459,7 +483,7 @@ export default function RindePage() {
     <div className="space-y-3">
       <div className="space-y-1">
         <p className="text-sm font-semibold text-slate-900">Buscar artículo para configurar</p>
-        <p className="text-xs text-slate-500">Código, descripción o sinónimo del catálogo real.</p>
+        <p className="text-xs text-slate-500">Escribí la referencia exacta del CDD o elegí una ya configurada.</p>
       </div>
 
       <div className="relative">
@@ -468,16 +492,73 @@ export default function RindePage() {
           onChange={(event) => {
             const value = event.target.value;
             setAdminSearch(value);
-            if (selectedArticle && normalize(value) !== normalize(selectedArticle.code)) {
+            if (selectedArticle && ![normalize(selectedArticle.code), normalize(getReferenceLabel(selectedArticle))].includes(normalize(value))) {
               clearSelectedArticle();
             }
           }}
-          placeholder="Código, descripción o sinónimo"
+          placeholder="Ej: 148L (C)"
           className="h-11 rounded-2xl border-slate-200 bg-white text-sm shadow-none"
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const value = adminSearch.trim();
+            if (!value) return;
+            const existing = (adminRindesQuery.data || []).find((item) =>
+              [item.articleCode, item.referenceLabel].some((candidate) => normalize(candidate) === normalize(value))
+            );
+            if (existing) {
+              handleSelectArticle({
+                code: existing.articleCode,
+                description: existing.description,
+                synonym: existing.synonym,
+                codigoBase: existing.codigoBase,
+                descripcionBase: existing.descripcionBase,
+                hasRinde: true,
+                active: existing.activo,
+                anchoCm: existing.anchoCm,
+                metrosReferencia: existing.metrosReferencia,
+                kgPorMetro: existing.kgPorMetro,
+                referenceLabel: existing.referenceLabel,
+              }, "admin");
+              return;
+            }
+            handleSelectArticle({ code: value, referenceLabel: value, hasRinde: false, active: true }, "admin");
+          }}
         />
         {shouldShowAdminSearchPanel ? (
           <div className={`absolute left-0 z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${mobile ? "" : ""}`}>
-            {renderSearchPanel(adminArticleSearch, (article) => handleSelectArticle(article, "admin"))}
+            {adminRindesQuery.isFetching ? (
+              <div className="px-3 py-4 text-sm text-slate-500">Buscando rindes configurados...</div>
+            ) : adminRindesQuery.isError ? (
+              <div className="px-3 py-4 text-sm text-rose-600">No pudimos cargar los rindes configurados.</div>
+            ) : filteredAdminRindes.length > 0 ? (
+              filteredAdminRindes.map((item) => renderArticleOption({
+                code: item.articleCode,
+                description: item.description,
+                synonym: item.synonym,
+                codigoBase: item.codigoBase,
+                descripcionBase: item.descripcionBase,
+                hasRinde: true,
+                active: item.activo,
+                anchoCm: item.anchoCm,
+                metrosReferencia: item.metrosReferencia,
+                kgPorMetro: item.kgPorMetro,
+                referenceLabel: item.referenceLabel,
+              }, (article) => handleSelectArticle(article, "admin")))
+            ) : (
+              <div className="space-y-3 px-3 py-4 text-sm text-slate-500">
+                <p>No encontramos un rinde cargado con esa referencia.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-2xl"
+                  onClick={() => handleSelectArticle({ code: adminSearch.trim(), referenceLabel: adminSearch.trim(), hasRinde: false, active: true }, "admin")}
+                  disabled={!adminSearch.trim()}
+                >
+                  Usar ?{adminSearch.trim() || "nueva referencia"}?
+                </Button>
+              </div>
+            )}
           </div>
         ) : null}
       </div>
