@@ -33,6 +33,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/rindes', async (_req, res) => {
+    try {
+      const items = await storage.getActiveTelaRindes();
+      res.json(items);
+    } catch (error) {
+      console.error('Error listing active tela rindes:', error);
+      res.status(500).json({ error: 'No se pudo listar los rindes activos.' });
+    }
+  });
+
   app.get('/api/rindes/:articleCode', async (req, res) => {
     try {
       const data = await storage.getTelaRinde(req.params.articleCode);

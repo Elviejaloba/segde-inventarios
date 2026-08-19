@@ -61,6 +61,7 @@ export interface IStorage {
   getHistorialAjustesCodigo(codigo: string, sucursal?: string): Promise<any>;
   getPuntoEquilibrio(sucursal?: string): Promise<any>;
   searchRindeArticles(query: string): Promise<any[]>;
+  getActiveTelaRindes(): Promise<any[]>;
   getTelaRinde(articleCode: string): Promise<any | null>;
   saveTelaRinde(payload: any): Promise<any>;
   getCodigosArticulos(): Promise<string[]>;
@@ -1218,37 +1219,74 @@ export class PostgreSQLStorage implements IStorage {
 
       const normalized = search.toUpperCase();
       const rows = await sql(`
+        WITH catalog AS (
+          SELECT DISTINCT ON (code)
+            code,
+            description,
+            synonym,
+            "codigoBase",
+            "descripcionBase"
+          FROM (
+            SELECT
+              TRIM(c."Codigo") as code,
+              COALESCE(c."Descripcion", '') as description,
+              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
+              COALESCE(c."CodigoBase", '') as "codigoBase",
+              COALESCE(c."DescripcionBase", '') as "descripcionBase",
+              0 as priority
+            FROM costos_articulos c
+
+            UNION ALL
+
+            SELECT
+              TRIM(a."Codigo") as code,
+              COALESCE(MAX(a."Articulo"), '') as description,
+              '' as synonym,
+              '' as "codigoBase",
+              '' as "descripcionBase",
+              1 as priority
+            FROM ajustes_sucursales a
+            WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
+            GROUP BY TRIM(a."Codigo")
+          ) catalog_union
+          ORDER BY code, priority
+        )
         SELECT
-          c."Codigo" as code,
-          c."Descripcion" as description,
-          c."Sinonimo" as synonym,
-          c."CodigoBase" as "codigoBase",
-          c."DescripcionBase" as "descripcionBase",
+          c.code as code,
+          c.description as description,
+          c.synonym as synonym,
+          c."codigoBase" as "codigoBase",
+          c."descripcionBase" as "descripcionBase",
           CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
           COALESCE(tr.activo, FALSE) as active,
           tr.ancho_cm as "anchoCm",
           tr.metros_referencia as "metrosReferencia",
-          tr.kg_por_metro as "kgPorMetro"
-        FROM costos_articulos c
-        LEFT JOIN tela_rindes tr ON tr.article_code = c."Codigo"
+          tr.kg_por_metro as "kgPorMetro",
+          tr.reference_label as "referenceLabel"
+        FROM catalog c
+        LEFT JOIN tela_rindes tr ON tr.article_code = c.code
         WHERE (
-          UPPER(TRIM(c."Codigo")) = $1
-          OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1
-          OR UPPER(COALESCE(c."Descripcion", '')) LIKE $2
-          OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $2
-          OR UPPER(TRIM(c."Codigo")) LIKE $2
+          UPPER(c.code) = $1
+          OR UPPER(COALESCE(c.synonym, '')) = $1
+          OR UPPER(COALESCE(c.description, '')) LIKE $2
+          OR UPPER(COALESCE(c.synonym, '')) LIKE $2
+          OR UPPER(c.code) LIKE $2
+          OR UPPER(COALESCE(tr.reference_label, '')) = $1
+          OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
         )
         ORDER BY
           CASE
-            WHEN UPPER(TRIM(c."Codigo")) = $1 THEN 0
-            WHEN UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1 THEN 1
-            WHEN UPPER(COALESCE(c."Descripcion", '')) LIKE $3 THEN 2
-            WHEN UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $3 THEN 3
-            WHEN UPPER(TRIM(c."Codigo")) LIKE $3 THEN 4
-            ELSE 5
+            WHEN UPPER(COALESCE(tr.reference_label, '')) = $1 THEN 0
+            WHEN UPPER(c.code) = $1 THEN 1
+            WHEN UPPER(COALESCE(c.synonym, '')) = $1 THEN 2
+            WHEN UPPER(COALESCE(tr.reference_label, '')) LIKE $3 THEN 3
+            WHEN UPPER(COALESCE(c.description, '')) LIKE $3 THEN 4
+            WHEN UPPER(COALESCE(c.synonym, '')) LIKE $3 THEN 5
+            WHEN UPPER(c.code) LIKE $3 THEN 6
+            ELSE 7
           END,
-          c."Descripcion" ASC NULLS LAST,
-          c."Codigo" ASC
+          c.description ASC NULLS LAST,
+          c.code ASC
         LIMIT 12
       `, [normalized, `%${normalized}%`, `${normalized}%`]);
 
@@ -1263,9 +1301,90 @@ export class PostgreSQLStorage implements IStorage {
         anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
         metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
         kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+        referenceLabel: row.referenceLabel ?? null,
       }));
     } catch (error) {
       console.error('Error searching rinde articles:', error);
+      return [];
+    }
+  }
+
+  async getActiveTelaRindes(): Promise<any[]> {
+    try {
+      const rows = await sql(`
+        WITH catalog AS (
+          SELECT DISTINCT ON (code)
+            code,
+            description,
+            synonym,
+            "codigoBase",
+            "descripcionBase"
+          FROM (
+            SELECT
+              TRIM(c."Codigo") as code,
+              COALESCE(c."Descripcion", '') as description,
+              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
+              COALESCE(c."CodigoBase", '') as "codigoBase",
+              COALESCE(c."DescripcionBase", '') as "descripcionBase",
+              0 as priority
+            FROM costos_articulos c
+
+            UNION ALL
+
+            SELECT
+              TRIM(a."Codigo") as code,
+              COALESCE(MAX(a."Articulo"), '') as description,
+              '' as synonym,
+              '' as "codigoBase",
+              '' as "descripcionBase",
+              1 as priority
+            FROM ajustes_sucursales a
+            WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
+            GROUP BY TRIM(a."Codigo")
+          ) catalog_union
+          ORDER BY code, priority
+        )
+        SELECT
+          tr.id,
+          tr.article_code as "articleCode",
+          tr.reference_label as "referenceLabel",
+          tr.ancho_cm as "anchoCm",
+          tr.peso_referencia_kg as "pesoReferenciaKg",
+          tr.metros_referencia as "metrosReferencia",
+          tr.kg_por_metro as "kgPorMetro",
+          tr.activo,
+          tr.updated_at as "updatedAt",
+          tr.updated_by as "updatedBy",
+          c.code as code,
+          c.description as description,
+          c.synonym as synonym,
+          c."codigoBase" as "codigoBase",
+          c."descripcionBase" as "descripcionBase"
+        FROM tela_rindes tr
+        LEFT JOIN catalog c ON c.code = tr.article_code
+        WHERE tr.activo = TRUE
+        ORDER BY COALESCE(NULLIF(tr.reference_label, ''), tr.article_code) ASC
+      `);
+
+      return rows.map((row: any) => ({
+        id: Number(row.id),
+        articleCode: row.articleCode,
+        referenceLabel: row.referenceLabel ?? null,
+        description: row.description ?? '',
+        synonym: row.synonym ?? '',
+        codigoBase: row.codigoBase ?? '',
+        descripcionBase: row.descripcionBase ?? '',
+        anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
+        pesoReferenciaKg: row.pesoReferenciaKg == null ? null : Number(row.pesoReferenciaKg),
+        metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
+        kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+        activo: Boolean(row.activo),
+        updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+        updatedBy: row.updatedBy ?? null,
+        code: row.code ?? row.articleCode,
+      }));
+    } catch (error) {
+      console.error('Error listing active tela rindes:', error);
       return [];
     }
   }
@@ -1276,24 +1395,57 @@ export class PostgreSQLStorage implements IStorage {
       if (!code) return null;
 
       const rows = await sql(`
+        WITH catalog AS (
+          SELECT DISTINCT ON (code)
+            code,
+            description,
+            synonym,
+            "codigoBase",
+            "descripcionBase"
+          FROM (
+            SELECT
+              TRIM(c."Codigo") as code,
+              COALESCE(c."Descripcion", '') as description,
+              COALESCE(TRIM(c."Sinonimo"), '') as synonym,
+              COALESCE(c."CodigoBase", '') as "codigoBase",
+              COALESCE(c."DescripcionBase", '') as "descripcionBase",
+              0 as priority
+            FROM costos_articulos c
+            WHERE TRIM(c."Codigo") = $1
+
+            UNION ALL
+
+            SELECT
+              TRIM(a."Codigo") as code,
+              COALESCE(MAX(a."Articulo"), '') as description,
+              '' as synonym,
+              '' as "codigoBase",
+              '' as "descripcionBase",
+              1 as priority
+            FROM ajustes_sucursales a
+            WHERE TRIM(a."Codigo") = $1
+            GROUP BY TRIM(a."Codigo")
+          ) catalog_union
+          ORDER BY code, priority
+        )
         SELECT
-          c."Codigo" as code,
-          c."Descripcion" as description,
-          c."Sinonimo" as synonym,
-          c."CodigoBase" as "codigoBase",
-          c."DescripcionBase" as "descripcionBase",
+          c.code as code,
+          c.description as description,
+          c.synonym as synonym,
+          c."codigoBase" as "codigoBase",
+          c."descripcionBase" as "descripcionBase",
           tr.id,
           tr.article_code as "articleCode",
           tr.ancho_cm as "anchoCm",
           tr.peso_referencia_kg as "pesoReferenciaKg",
           tr.metros_referencia as "metrosReferencia",
           tr.kg_por_metro as "kgPorMetro",
+          tr.reference_label as "referenceLabel",
           tr.activo,
           tr.updated_at as "updatedAt",
           tr.updated_by as "updatedBy"
-        FROM costos_articulos c
-        LEFT JOIN tela_rindes tr ON tr.article_code = c."Codigo"
-        WHERE TRIM(c."Codigo") = $1
+        FROM catalog c
+        LEFT JOIN tela_rindes tr ON tr.article_code = c.code
         LIMIT 1
       `, [code]);
 
@@ -1312,6 +1464,7 @@ export class PostgreSQLStorage implements IStorage {
           anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
           metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
           kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+          referenceLabel: row.referenceLabel ?? null,
         },
         rinde: row.id == null ? null : {
           id: Number(row.id),
@@ -1320,6 +1473,7 @@ export class PostgreSQLStorage implements IStorage {
           pesoReferenciaKg: Number(row.pesoReferenciaKg),
           metrosReferencia: Number(row.metrosReferencia),
           kgPorMetro: Number(row.kgPorMetro),
+          referenceLabel: row.referenceLabel ?? null,
           activo: Boolean(row.activo),
           updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
           updatedBy: row.updatedBy ?? null,
@@ -1337,6 +1491,7 @@ export class PostgreSQLStorage implements IStorage {
     const pesoReferenciaKg = Number(payload.pesoReferenciaKg);
     const metrosReferencia = Number(payload.metrosReferencia);
     const kgPorMetro = Number(payload.kgPorMetro);
+    const referenceLabel = payload.referenceLabel ? String(payload.referenceLabel).trim() : null;
     const activo = payload.activo !== false;
     const updatedBy = payload.updatedBy ? String(payload.updatedBy).trim() : null;
 
@@ -1347,17 +1502,19 @@ export class PostgreSQLStorage implements IStorage {
         peso_referencia_kg,
         metros_referencia,
         kg_por_metro,
+        reference_label,
         activo,
         updated_at,
         updated_by
       )
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
       ON CONFLICT (article_code)
       DO UPDATE SET
         ancho_cm = EXCLUDED.ancho_cm,
         peso_referencia_kg = EXCLUDED.peso_referencia_kg,
         metros_referencia = EXCLUDED.metros_referencia,
         kg_por_metro = EXCLUDED.kg_por_metro,
+        reference_label = EXCLUDED.reference_label,
         activo = EXCLUDED.activo,
         updated_at = NOW(),
         updated_by = EXCLUDED.updated_by
@@ -1368,10 +1525,11 @@ export class PostgreSQLStorage implements IStorage {
         peso_referencia_kg as "pesoReferenciaKg",
         metros_referencia as "metrosReferencia",
         kg_por_metro as "kgPorMetro",
+        reference_label as "referenceLabel",
         activo,
         updated_at as "updatedAt",
         updated_by as "updatedBy"
-    `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, activo, updatedBy]);
+    `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, referenceLabel, activo, updatedBy]);
 
     const row = result[0];
     return {
@@ -1381,6 +1539,7 @@ export class PostgreSQLStorage implements IStorage {
       pesoReferenciaKg: Number(row.pesoReferenciaKg),
       metrosReferencia: Number(row.metrosReferencia),
       kgPorMetro: Number(row.kgPorMetro),
+      referenceLabel: row.referenceLabel ?? null,
       activo: Boolean(row.activo),
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
       updatedBy: row.updatedBy ?? null,

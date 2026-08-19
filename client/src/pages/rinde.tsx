@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calculator, Lock, Ruler, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -21,6 +21,7 @@ type Article = {
   anchoCm?: number | null;
   metrosReferencia?: number | null;
   kgPorMetro?: number | null;
+  referenceLabel?: string | null;
 };
 
 type RindeConfig = {
@@ -30,6 +31,7 @@ type RindeConfig = {
   pesoReferenciaKg: number;
   metrosReferencia: number;
   kgPorMetro: number;
+  referenceLabel?: string | null;
   activo: boolean;
   updatedAt?: string | null;
   updatedBy?: string | null;
@@ -38,6 +40,23 @@ type RindeConfig = {
 type RindeResponse = {
   article: Article;
   rinde: RindeConfig | null;
+};
+
+type AvailableRinde = {
+  id?: number;
+  articleCode: string;
+  referenceLabel?: string | null;
+  description?: string | null;
+  synonym?: string | null;
+  codigoBase?: string | null;
+  descripcionBase?: string | null;
+  anchoCm?: number | null;
+  pesoReferenciaKg?: number | null;
+  metrosReferencia?: number | null;
+  kgPorMetro?: number | null;
+  activo?: boolean;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
 };
 
 const formatNumber = (value: number, digits = 2) =>
@@ -67,11 +86,20 @@ const parseDecimal = (value: string) => {
   return Number.isFinite(parsed) ? parsed : NaN;
 };
 
+const getReferenceLabel = (item?: { referenceLabel?: string | null; code?: string | null; articleCode?: string | null }) => {
+  if (!item) return "";
+  return item.referenceLabel?.trim() || item.code?.trim() || item.articleCode?.trim() || "";
+};
+
+const normalize = (value?: string | null) => String(value || "").trim().toUpperCase();
+
 export default function RindePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [adminSearch, setAdminSearch] = useState("");
+  const [debouncedAdminSearch, setDebouncedAdminSearch] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [pesoActual, setPesoActual] = useState("");
   const [rollosCerrados, setRollosCerrados] = useState("0");
@@ -79,8 +107,10 @@ export default function RindePage() {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [password, setPassword] = useState("");
+  const [validatedPassword, setValidatedPassword] = useState("");
   const [updatedBy, setUpdatedBy] = useState("CDD");
   const [form, setForm] = useState({
+    referenceLabel: "",
     anchoCm: "",
     pesoReferenciaKg: "",
     metrosReferencia: "",
@@ -95,12 +125,28 @@ export default function RindePage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const articleSearch = useQuery<Article[]>({
-    queryKey: ["rinde-search", debouncedSearch],
-    enabled: debouncedSearch.length >= 2,
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedAdminSearch(adminSearch.trim());
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [adminSearch]);
+
+  const adminArticleSearch = useQuery<Article[]>({
+    queryKey: ["rinde-admin-search", debouncedAdminSearch],
+    enabled: adminUnlocked && adminPanelOpen && debouncedAdminSearch.length >= 2,
     queryFn: async () => {
-      const response = await fetch(buildApiUrl(`/api/rinde-articulos?q=${encodeURIComponent(debouncedSearch)}`));
+      const response = await fetch(buildApiUrl(`/api/rinde-articulos?q=${encodeURIComponent(debouncedAdminSearch)}`));
       if (!response.ok) throw new Error("No se pudo buscar artículos.");
+      return response.json();
+    },
+  });
+
+  const activeRindesQuery = useQuery<AvailableRinde[]>({
+    queryKey: ["rindes-activos"],
+    queryFn: async () => {
+      const response = await fetch(buildApiUrl("/api/rindes"));
+      if (!response.ok) throw new Error("No se pudieron cargar los rindes disponibles.");
       return response.json();
     },
   });
@@ -118,12 +164,13 @@ export default function RindePage() {
 
   useEffect(() => {
     if (!rindeQuery.data?.rinde) {
-      setForm({ anchoCm: "", pesoReferenciaKg: "", metrosReferencia: "", activo: true });
+      setForm({ referenceLabel: "", anchoCm: "", pesoReferenciaKg: "", metrosReferencia: "", activo: true });
       return;
     }
 
     const rinde = rindeQuery.data.rinde;
     setForm({
+      referenceLabel: rinde.referenceLabel || "",
       anchoCm: String(rinde.anchoCm),
       pesoReferenciaKg: String(rinde.pesoReferenciaKg),
       metrosReferencia: String(rinde.metrosReferencia),
@@ -181,6 +228,7 @@ export default function RindePage() {
       return payload;
     },
     onSuccess: () => {
+      setValidatedPassword(password.trim());
       setAdminUnlocked(true);
       setAdminPanelOpen(true);
       setPassword("");
@@ -192,10 +240,11 @@ export default function RindePage() {
       toast({ variant: "destructive", title: "Contraseña incorrecta", description: error.message });
     },
   });
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!selectedArticle) throw new Error("Seleccioná un artículo antes de guardar.");
+      if (!validatedPassword) throw new Error("Volvé a validar la contraseña del sector CDD antes de guardar.");
+
       const anchoCm = parseDecimal(form.anchoCm);
       const pesoReferenciaKgValue = parseDecimal(form.pesoReferenciaKg);
       const metrosReferenciaValue = parseDecimal(form.metrosReferencia);
@@ -214,10 +263,11 @@ export default function RindePage() {
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-rinde-password": password,
+          "x-rinde-password": validatedPassword,
         },
         body: JSON.stringify({
           articleCode: selectedArticle.code,
+          referenceLabel: form.referenceLabel.trim() || null,
           anchoCm,
           pesoReferenciaKg: pesoReferenciaKgValue,
           metrosReferencia: metrosReferenciaValue,
@@ -233,7 +283,8 @@ export default function RindePage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["rinde-config", selectedArticle?.code] });
-      await queryClient.invalidateQueries({ queryKey: ["rinde-search"] });
+      await queryClient.invalidateQueries({ queryKey: ["rindes-activos"] });
+      await queryClient.invalidateQueries({ queryKey: ["rinde-admin-search"] });
       toast({ variant: "success", title: "Rinde guardado", description: "Los parámetros quedaron listos para la calculadora." });
     },
     onError: (error: Error) => {
@@ -241,10 +292,26 @@ export default function RindePage() {
     },
   });
 
-  const handleSelectArticle = (article: Article) => {
+  const clearSelectedArticle = ({ closeAdminPanel = false }: { closeAdminPanel?: boolean } = {}) => {
+    setSelectedArticle(null);
+    setForm({ referenceLabel: "", anchoCm: "", pesoReferenciaKg: "", metrosReferencia: "", activo: true });
+    setPesoActual("");
+    setRollosCerrados("0");
+    if (closeAdminPanel) {
+      setAdminPanelOpen(false);
+    }
+  };
+
+  const handleSelectArticle = (article: Article, source: "main" | "admin" = "main") => {
     setSelectedArticle(article);
-    setSearch(article.code);
+    setPesoActual("");
+    setRollosCerrados("0");
+    setSearch(source === "main" ? getReferenceLabel(article) || article.code : article.code);
+    setAdminSearch(article.code);
     setMobileSections((current) => Array.from(new Set([...current, "referencia", ...(adminUnlocked ? ["maestro"] : [])])));
+    if (source === "admin") {
+      setAdminPanelOpen(true);
+    }
   };
 
   const handleClear = () => {
@@ -258,14 +325,192 @@ export default function RindePage() {
       ? calculation.message
       : "Elegí una tela para empezar";
 
-  const shouldShowSearchPanel = debouncedSearch.length >= 2
-    && selectedArticle?.code !== search.trim();
+  const selectedSearchValue = selectedArticle
+    ? [selectedArticle.code, getReferenceLabel(selectedArticle)].filter(Boolean).map((value) => normalize(value))
+    : [];
+
+  const shouldShowSearchPanel = debouncedSearch.length >= 2 && !selectedSearchValue.includes(normalize(search));
+  const shouldShowAdminSearchPanel = adminUnlocked && adminPanelOpen && debouncedAdminSearch.length >= 2 && normalize(selectedArticle?.code) !== normalize(adminSearch);
+
+  const filteredAvailableRindes = useMemo(() => {
+    const list = activeRindesQuery.data || [];
+    const term = normalize(debouncedSearch || search);
+    if (!term) return list;
+    return list.filter((item) => [
+      item.referenceLabel,
+      item.articleCode,
+      item.description,
+      item.synonym,
+    ].some((value) => normalize(value).includes(term)));
+  }, [activeRindesQuery.data, debouncedSearch, search]);
+
+  const rindeStatusLabel = !selectedArticle
+    ? "Seleccioná un artículo real del catálogo para revisar o configurar su rinde."
+    : rindeQuery.isFetching
+      ? "Cargando parámetros..."
+      : rindeQuery.data?.rinde
+        ? "Rinde configurado"
+        : "Este artículo todavía no tiene parámetros de rinde.";
+
+  const selectedArticleSummary = selectedArticle
+    ? [
+        { label: "Referencia CDD", value: getReferenceLabel(selectedArticle) || "Sin referencia cargada" },
+        { label: "Código", value: selectedArticle.code },
+        { label: "Descripción", value: selectedArticle.description || "Sin descripción disponible" },
+        { label: "Sinónimo", value: selectedArticle.synonym || "Sin sinónimo" },
+      ]
+    : [];
 
   const renderReferenceSummary = () => {
     const rinde = rindeQuery.data?.rinde;
     if (!rinde) return "Sin parámetros activos todavía";
     return `${formatNumber(rinde.anchoCm, 0)} cm · ${formatNumber(rinde.kgPorMetro, 4)} kg/m · ${formatNumber(rinde.metrosReferencia)} m/rollo`;
   };
+
+  const renderArticleOption = (article: Article, onSelect: (article: Article) => void) => {
+    const displayReference = getReferenceLabel(article) || article.code;
+    return (
+      <button
+        key={`${article.code}-${displayReference}`}
+        type="button"
+        onClick={() => onSelect(article)}
+        className="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-emerald-50"
+      >
+        <div className="min-w-0">
+          <p className="font-semibold text-slate-900">{displayReference}</p>
+          <p className="truncate text-sm text-slate-600">
+            {article.code}
+            {article.description ? ` · ${article.description}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Sinónimo: {article.synonym || "-"}</p>
+        </div>
+        <Badge variant="secondary" className={article.hasRinde ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
+          {article.hasRinde ? "Con rinde" : "Pendiente"}
+        </Badge>
+      </button>
+    );
+  };
+
+  const renderSearchPanel = (searchQuery: { isFetching: boolean; isError: boolean; data?: Article[] }, onSelect: (article: Article) => void) => {
+    if (searchQuery.isFetching) {
+      return <div className="px-3 py-4 text-sm text-slate-500">Buscando artículos...</div>;
+    }
+    if (searchQuery.isError) {
+      return <div className="px-3 py-4 text-sm text-rose-600">No pudimos consultar los artículos. Intentá nuevamente.</div>;
+    }
+    if (searchQuery.data && searchQuery.data.length > 0) {
+      return searchQuery.data.map((article) => renderArticleOption(article, onSelect));
+    }
+    return <div className="px-3 py-4 text-sm text-slate-500">No encontramos artículos con esa búsqueda.</div>;
+  };
+
+  const renderSelectedArticleCard = () => {
+    if (!selectedArticle) {
+      return <p className="text-sm text-slate-500">Seleccioná una tela para ver sus parámetros y calcular el rinde estimado.</p>;
+    }
+
+    return (
+      <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className="bg-slate-900 text-white">Artículo seleccionado</Badge>
+          <Badge variant="outline" className={rindeQuery.data?.rinde ? "border-emerald-200 text-emerald-700" : "border-amber-200 text-amber-700"}>
+            {rindeQuery.data?.rinde ? "Rinde configurado" : "Sin rinde"}
+          </Badge>
+        </div>
+        <div className="grid gap-2 text-sm text-slate-700">
+          {selectedArticleSummary.map((item) => (
+            <p key={item.label}><span className="font-semibold text-slate-900">{item.label}:</span> {item.value}</p>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  const renderAvailableRindes = (mobile = false) => {
+    if (activeRindesQuery.isLoading) {
+      return <p className="text-sm text-slate-500">Cargando rindes disponibles...</p>;
+    }
+    if (activeRindesQuery.isError) {
+      return <p className="text-sm text-rose-600">No pudimos cargar los rindes configurados.</p>;
+    }
+    if (!filteredAvailableRindes.length) {
+      return <p className="text-sm text-slate-500">No hay rindes activos que coincidan con esa búsqueda.</p>;
+    }
+
+    return (
+      <div className={`space-y-2 ${mobile ? "" : "max-h-72 overflow-y-auto pr-1"}`}>
+        {filteredAvailableRindes.map((item) => renderArticleOption({
+          code: item.articleCode,
+          description: item.description,
+          synonym: item.synonym,
+          codigoBase: item.codigoBase,
+          descripcionBase: item.descripcionBase,
+          hasRinde: true,
+          active: item.activo,
+          anchoCm: item.anchoCm,
+          metrosReferencia: item.metrosReferencia,
+          kgPorMetro: item.kgPorMetro,
+          referenceLabel: item.referenceLabel,
+        }, (article) => handleSelectArticle(article, "main")))}
+      </div>
+    );
+  };
+
+  const renderAdminConfigurator = (mobile = false) => (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-slate-900">Buscar artículo para configurar</p>
+        <p className="text-xs text-slate-500">Código, descripción o sinónimo del catálogo real.</p>
+      </div>
+
+      <div className="relative">
+        <Input
+          value={adminSearch}
+          onChange={(event) => {
+            const value = event.target.value;
+            setAdminSearch(value);
+            if (selectedArticle && normalize(value) !== normalize(selectedArticle.code)) {
+              clearSelectedArticle();
+            }
+          }}
+          placeholder="Código, descripción o sinónimo"
+          className="h-11 rounded-2xl border-slate-200 bg-white text-sm shadow-none"
+        />
+        {shouldShowAdminSearchPanel ? (
+          <div className={`absolute left-0 z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${mobile ? "" : ""}`}>
+            {renderSearchPanel(adminArticleSearch, (article) => handleSelectArticle(article, "admin"))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+        <p className="text-sm font-medium text-emerald-900">{rindeStatusLabel}</p>
+        <div className="mt-3">{renderSelectedArticleCard()}</div>
+      </div>
+
+      <fieldset disabled={!selectedArticle} className="grid gap-3 disabled:opacity-60">
+        <div className="grid gap-2">
+          <label className="text-sm font-semibold text-slate-800">Referencia CDD</label>
+          <Input value={form.referenceLabel} onChange={(event) => setForm((current) => ({ ...current, referenceLabel: event.target.value }))} placeholder="Ej: 148L (C)" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho (cm)" />
+          <Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso referencia (kg)" />
+          <Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros referencia" />
+          <Input value={updatedBy} onChange={(event) => setUpdatedBy(event.target.value)} placeholder="Modificado por" />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
+          <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2">
+            <input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />
+            Activo
+          </label>
+          <span className="rounded-full bg-white px-3 py-2 text-sm">kg/m automático: {Number.isFinite(kgPorMetro) ? formatNumber(kgPorMetro, 4) : "-"}</span>
+        </div>
+        <Button type="button" className="h-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedArticle || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+          {saveMutation.isPending ? "Guardando..." : "Guardar parámetros"}
+        </Button>
+      </fieldset>
+    </div>
+  );
 
   const resultCard = (
     <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white shadow-sm">
@@ -322,80 +567,93 @@ export default function RindePage() {
                 </p>
               </div>
             </div>
+            <Card className="border-slate-200 shadow-none">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Rindes disponibles</CardTitle>
+                <CardDescription>Elegí una referencia ya configurada para cargar sus parámetros al instante.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {renderAvailableRindes(false)}
+              </CardContent>
+            </Card>
 
             <Card className="border-slate-200 shadow-none" data-tour="rinde-search">
               <CardContent className="p-3 sm:p-5">
                 <div className="relative">
                   <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
                     <Search className="h-4 w-4 text-emerald-600" />
-                    Buscar artículo
+                    Buscar rinde configurado
                   </label>
                   <Input
                     value={search}
                     onChange={(event) => {
                       const value = event.target.value;
                       setSearch(value);
-                      if (selectedArticle && value !== selectedArticle.code) {
-                        setSelectedArticle(null);
-                        setAdminPanelOpen(false);
+                      if (selectedArticle && ![normalize(selectedArticle.code), normalize(getReferenceLabel(selectedArticle))].includes(normalize(value))) {
+                        clearSelectedArticle({ closeAdminPanel: true });
                       }
                     }}
-                    placeholder="Código, sinónimo o descripción"
+                    placeholder="Referencia, código, sinónimo o descripción"
                     className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm shadow-none sm:h-12 sm:text-base"
                   />
-                  {shouldShowSearchPanel && (
+                  {shouldShowSearchPanel ? (
                     <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                      {articleSearch.isFetching ? (
-                        <div className="px-3 py-4 text-sm text-slate-500">Buscando artículos...</div>
-                      ) : articleSearch.isError ? (
-                        <div className="px-3 py-4 text-sm text-rose-600">No pudimos consultar los artículos. Intentá nuevamente.</div>
-                      ) : articleSearch.data && articleSearch.data.length > 0 ? (
-                        articleSearch.data.map((article) => (
-                        <button
-                          key={article.code}
-                          type="button"
-                          onClick={() => handleSelectArticle(article)}
-                          className="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-emerald-50"
-                        >
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-900">{article.code}</p>
-                            <p className="truncate text-sm text-slate-600">{article.description || "Sin descripción"}</p>
-                            {article.synonym ? <p className="mt-1 text-xs text-slate-500">Sinónimo: {article.synonym}</p> : null}
-                          </div>
-                          <Badge variant="secondary" className={article.hasRinde ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-                            {article.hasRinde ? "Con rinde" : "Pendiente"}
-                          </Badge>
-                        </button>
-                        ))
+                      {activeRindesQuery.isLoading ? (
+                        <div className="px-3 py-4 text-sm text-slate-500">Cargando rindes disponibles...</div>
+                      ) : activeRindesQuery.isError ? (
+                        <div className="px-3 py-4 text-sm text-rose-600">No pudimos cargar los rindes configurados.</div>
+                      ) : filteredAvailableRindes.length > 0 ? (
+                        filteredAvailableRindes.map((item) => renderArticleOption({
+                          code: item.articleCode,
+                          description: item.description,
+                          synonym: item.synonym,
+                          codigoBase: item.codigoBase,
+                          descripcionBase: item.descripcionBase,
+                          hasRinde: true,
+                          active: item.activo,
+                          anchoCm: item.anchoCm,
+                          metrosReferencia: item.metrosReferencia,
+                          kgPorMetro: item.kgPorMetro,
+                          referenceLabel: item.referenceLabel,
+                        }, (article) => handleSelectArticle(article, "main")))
                       ) : (
-                        <div className="px-3 py-4 text-sm text-slate-500">No encontramos artículos con esa búsqueda.</div>
+                        <div className="px-3 py-4 text-sm text-slate-500">No encontramos rindes configurados con esa búsqueda.</div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
-                <div data-tour="rinde-article" className="hidden md:block">
-                  {selectedArticle ? (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="bg-slate-900 text-white">{selectedArticle.code}</Badge>
-                        {selectedArticle.synonym ? <Badge variant="outline">Sinónimo: {selectedArticle.synonym}</Badge> : null}
-                      </div>
-                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedArticle.description || "Sin descripción disponible"}</p>
-                      {selectedArticle.descripcionBase ? <p className="mt-1 text-xs text-slate-500">Base: {selectedArticle.descripcionBase}</p> : null}
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-sm text-slate-500">Seleccioná una tela para ver sus parámetros y calcular el rinde estimado.</p>
-                  )}
+                <div data-tour="rinde-article" className="mt-4 hidden md:block">
+                  {renderSelectedArticleCard()}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="hidden border-slate-200 shadow-sm md:block" data-tour="rinde-inputs">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Cálculo</CardTitle>
+                <CardDescription>Ingresá el peso del rollo abierto y cuántos rollos cerrados tenés para estimar los metros totales.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto (kg)</label>
+                  <Input value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="Ej. 6,00" className="h-12 rounded-2xl" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-800">Cantidad de rollos cerrados</label>
+                  <Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="Ej. 2" className="h-12 rounded-2xl" />
+                </div>
+                <div className="sm:col-span-2 flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" className="rounded-2xl" onClick={handleClear}>Limpiar</Button>
+                  <Badge variant="secondary" className="rounded-full bg-slate-100 px-3 py-2 text-slate-700">Fórmula: metros abiertos = peso actual ÷ kg/m</Badge>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div className="hidden md:flex md:flex-col md:gap-4">
-            <div data-tour="rinde-result">
-              {resultCard}
-            </div>
+            <div data-tour="rinde-result">{resultCard}</div>
+
             <Card className="border-slate-200 shadow-none" data-tour="rinde-reference">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Datos de referencia</CardTitle>
@@ -426,48 +684,75 @@ export default function RindePage() {
                     Administrar rindes
                   </Button>
                 </div>
-                {adminUnlocked && adminPanelOpen && (
-                  <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-                    <p className="text-sm font-medium text-emerald-900">Configuración del artículo seleccionado</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho (cm)" />
-                      <Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso referencia (kg)" />
-                      <Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros referencia" />
-                      <Input value={updatedBy} onChange={(event) => setUpdatedBy(event.target.value)} placeholder="Modificado por" />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
-                      <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2">
-                        <input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />
-                        Activo
-                      </label>
-                      <span className="rounded-full bg-white px-3 py-2 text-sm">kg/m automático: {Number.isFinite(kgPorMetro) ? formatNumber(kgPorMetro, 4) : "-"}</span>
-                    </div>
-                    <Button type="button" className="rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedArticle || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                      {saveMutation.isPending ? "Guardando..." : "Guardar parámetros"}
-                    </Button>
-                  </div>
-                )}
+                {adminUnlocked && adminPanelOpen ? renderAdminConfigurator(false) : null}
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] md:items-start">
+      <section className="grid gap-4">
         <div className="space-y-4">
           <div className="space-y-3 md:hidden">
+            <Card className="border-slate-200 shadow-none md:hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Rindes disponibles</CardTitle>
+                <CardDescription>Elegí una referencia configurada para empezar más rápido.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="max-h-64 overflow-y-auto">{renderAvailableRindes(true)}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-none" data-tour="rinde-search-mobile">
+              <CardContent className="p-3">
+                <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <Search className="h-4 w-4 text-emerald-600" />
+                  Buscar rinde configurado
+                </label>
+                <Input
+                  value={search}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSearch(value);
+                    if (selectedArticle && ![normalize(selectedArticle.code), normalize(getReferenceLabel(selectedArticle))].includes(normalize(value))) {
+                      clearSelectedArticle({ closeAdminPanel: true });
+                    }
+                  }}
+                  placeholder="Referencia, código, sinónimo o descripción"
+                  className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm shadow-none"
+                />
+                {shouldShowSearchPanel ? (
+                  <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                    {activeRindesQuery.isLoading ? (
+                      <div className="px-3 py-4 text-sm text-slate-500">Cargando rindes disponibles...</div>
+                    ) : activeRindesQuery.isError ? (
+                      <div className="px-3 py-4 text-sm text-rose-600">No pudimos cargar los rindes configurados.</div>
+                    ) : filteredAvailableRindes.length > 0 ? (
+                      filteredAvailableRindes.map((item) => renderArticleOption({
+                        code: item.articleCode,
+                        description: item.description,
+                        synonym: item.synonym,
+                        codigoBase: item.codigoBase,
+                        descripcionBase: item.descripcionBase,
+                        hasRinde: true,
+                        active: item.activo,
+                        anchoCm: item.anchoCm,
+                        metrosReferencia: item.metrosReferencia,
+                        kgPorMetro: item.kgPorMetro,
+                        referenceLabel: item.referenceLabel,
+                      }, (article) => handleSelectArticle(article, "main")))
+                    ) : (
+                      <div className="px-3 py-4 text-sm text-slate-500">No encontramos rindes configurados con esa búsqueda.</div>
+                    )}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
             {selectedArticle ? (
               <Card className="border-slate-200 shadow-none" data-tour="rinde-article">
                 <CardContent className="space-y-4 p-3">
-                  <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="bg-slate-900 text-white">{selectedArticle.code}</Badge>
-                      {selectedArticle.synonym ? <Badge variant="outline">Sinónimo: {selectedArticle.synonym}</Badge> : null}
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">{selectedArticle.description || "Sin descripción disponible"}</p>
-                    {selectedArticle.descripcionBase ? <p className="text-xs text-slate-500">Base: {selectedArticle.descripcionBase}</p> : null}
-                  </div>
-
+                  {renderSelectedArticleCard()}
                   <div className="grid gap-3 min-[390px]:grid-cols-2" data-tour="rinde-inputs-mobile">
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto</label>
@@ -484,7 +769,6 @@ export default function RindePage() {
                       </div>
                     </div>
                   </div>
-
                   <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={handleClear}>Limpiar cálculo</Button>
                 </CardContent>
               </Card>
@@ -518,64 +802,13 @@ export default function RindePage() {
                       <Lock className="mr-2 h-4 w-4" />
                       {adminUnlocked ? (adminPanelOpen ? "Ocultar edición" : "Administrar") : "Administrar"}
                     </Button>
-                    {adminUnlocked && adminPanelOpen && (
-                      <div className="grid gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
-                        <p className="text-sm font-medium text-emerald-900">Configuración del artículo seleccionado</p>
-                        {selectedArticle ? (
-                          <div className="space-y-1 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-3">
-                            <p className="text-sm font-semibold text-slate-900">{selectedArticle.code}</p>
-                            <p className="text-xs text-slate-600">{selectedArticle.description || "Sin descripción disponible"}</p>
-                            {selectedArticle.synonym ? <p className="text-[11px] text-slate-500">Sinónimo: {selectedArticle.synonym}</p> : null}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-slate-600">Seleccioná un artículo para editar o configurar su rinde.</p>
-                        )}
-                        <div className="grid gap-3">
-                          <Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho (cm)" />
-                          <Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso referencia (kg)" />
-                          <Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros referencia" />
-                          <Input value={updatedBy} onChange={(event) => setUpdatedBy(event.target.value)} placeholder="Modificado por" />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
-                          <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2">
-                            <input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />
-                            Activo
-                          </label>
-                          <span className="rounded-full bg-white px-3 py-2 text-sm">kg/m automático: {Number.isFinite(kgPorMetro) ? formatNumber(kgPorMetro, 4) : "-"}</span>
-                        </div>
-                        <Button type="button" className="h-10 rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedArticle || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                          {saveMutation.isPending ? "Guardando..." : "Guardar parámetros"}
-                        </Button>
-                      </div>
-                    )}
+                    {adminUnlocked && adminPanelOpen ? renderAdminConfigurator(true) : null}
                   </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           </div>
-
-          <Card className="hidden border-slate-200 shadow-sm md:block" data-tour="rinde-inputs">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Cálculo</CardTitle>
-              <CardDescription>Ingresá el peso del rollo abierto y cuántos rollos cerrados tenés para estimar los metros totales.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto (kg)</label>
-                <Input value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="Ej. 6,00" className="h-12 rounded-2xl" />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-800">Cantidad de rollos cerrados</label>
-                <Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="Ej. 2" className="h-12 rounded-2xl" />
-              </div>
-              <div className="sm:col-span-2 flex flex-wrap gap-2">
-                <Button type="button" variant="outline" className="rounded-2xl" onClick={handleClear}>Limpiar</Button>
-                <Badge variant="secondary" className="rounded-full bg-slate-100 px-3 py-2 text-slate-700">Fórmula: metros abiertos = peso actual ÷ kg/m</Badge>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-
       </section>
 
       {selectedArticle ? (
@@ -618,5 +851,3 @@ export default function RindePage() {
     </div>
   );
 }
-
-
