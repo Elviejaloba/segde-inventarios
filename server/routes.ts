@@ -35,7 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/rindes', async (_req, res) => {
     try {
-      const items = await storage.getActiveTelaRindes();
+      const includeInactive = _req.query.includeInactive === '1' || _req.query.includeInactive === 'true';
+      const items = await storage.getActiveTelaRindes({ includeInactive });
       res.json(items);
     } catch (error) {
       console.error('Error listing active tela rindes:', error);
