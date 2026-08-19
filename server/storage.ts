@@ -1213,11 +1213,66 @@ export class PostgreSQLStorage implements IStorage {
   }
 
   async searchRindeArticles(query: string): Promise<any[]> {
-    try {
-      const search = query.trim();
-      if (!search) return [];
+    const search = query.trim();
+    if (!search) return [];
 
-      const normalized = search.toUpperCase();
+    const normalized = search.toUpperCase();
+    const mapRows = (rows: any[]) => rows.map((row: any) => ({
+      code: row.code,
+      description: row.description ?? '',
+      synonym: row.synonym ?? '',
+      codigoBase: row.codigoBase ?? '',
+      descripcionBase: row.descripcionBase ?? '',
+      hasRinde: Boolean(row.hasRinde),
+      active: Boolean(row.active),
+      anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
+      metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
+      kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+      referenceLabel: row.referenceLabel ?? null,
+    }));
+
+    const runFallbackSearch = async () => {
+      const rows = await sql(`
+        SELECT
+          TRIM(a."Codigo") as code,
+          COALESCE(MAX(NULLIF(a."Articulo", '')), '') as description,
+          '' as synonym,
+          '' as "codigoBase",
+          '' as "descripcionBase",
+          CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
+          COALESCE(tr.activo, FALSE) as active,
+          tr.ancho_cm as "anchoCm",
+          tr.metros_referencia as "metrosReferencia",
+          tr.kg_por_metro as "kgPorMetro",
+          tr.reference_label as "referenceLabel"
+        FROM ajustes_sucursales a
+        LEFT JOIN tela_rindes tr ON tr.article_code = TRIM(a."Codigo")
+        WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
+        GROUP BY TRIM(a."Codigo"), tr.article_code, tr.activo, tr.ancho_cm, tr.metros_referencia, tr.kg_por_metro, tr.reference_label
+        HAVING (
+          UPPER(TRIM(a."Codigo")) = $1
+          OR UPPER(COALESCE(MAX(NULLIF(a."Articulo", '')), '')) LIKE $2
+          OR UPPER(TRIM(a."Codigo")) LIKE $2
+          OR UPPER(COALESCE(tr.reference_label, '')) = $1
+          OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
+        )
+        ORDER BY
+          CASE
+            WHEN UPPER(COALESCE(tr.reference_label, '')) = $1 THEN 0
+            WHEN UPPER(TRIM(a."Codigo")) = $1 THEN 1
+            WHEN UPPER(COALESCE(tr.reference_label, '')) LIKE $3 THEN 2
+            WHEN UPPER(COALESCE(MAX(NULLIF(a."Articulo", '')), '')) LIKE $3 THEN 3
+            WHEN UPPER(TRIM(a."Codigo")) LIKE $3 THEN 4
+            ELSE 5
+          END,
+          COALESCE(MAX(NULLIF(a."Articulo", '')), '') ASC,
+          TRIM(a."Codigo") ASC
+        LIMIT 12
+      `, [normalized, `%${normalized}%`, `${normalized}%`])
+      return mapRows(rows)
+    }
+
+    try {
       const rows = await sql(`
         WITH ajustes_catalog AS (
           SELECT
@@ -1299,22 +1354,19 @@ export class PostgreSQLStorage implements IStorage {
         LIMIT 12
       `, [normalized, `%${normalized}%`, `${normalized}%`]);
 
-      return rows.map((row: any) => ({
-        code: row.code,
-        description: row.description ?? '',
-        synonym: row.synonym ?? '',
-        codigoBase: row.codigoBase ?? '',
-        descripcionBase: row.descripcionBase ?? '',
-        hasRinde: Boolean(row.hasRinde),
-        active: Boolean(row.active),
-        anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
-        metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
-        kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
-        referenceLabel: row.referenceLabel ?? null,
-      }));
+      if (rows.length > 0) {
+        return mapRows(rows);
+      }
+
+      return await runFallbackSearch();
     } catch (error) {
       console.error('Error searching rinde articles:', error);
-      return [];
+      try {
+        return await runFallbackSearch();
+      } catch (fallbackError) {
+        console.error('Fallback rinde search also failed:', fallbackError);
+        return [];
+      }
     }
   }
 
