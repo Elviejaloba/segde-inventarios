@@ -40,6 +40,30 @@ const sql: any = async (queryOrStrings: string | TemplateStringsArray, ...values
   return result.rows;
 };
 
+let telaRindesReferenceLabelSupport: boolean | null = null;
+
+const hasTelaRindesReferenceLabel = async () => {
+  if (runningWithoutDb) return false;
+  if (telaRindesReferenceLabelSupport !== null) return telaRindesReferenceLabelSupport;
+
+  try {
+    const rows = await sql(`
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'tela_rindes'
+        AND column_name = 'reference_label'
+      LIMIT 1
+    `);
+    telaRindesReferenceLabelSupport = rows.length > 0;
+  } catch (error) {
+    console.error('Error checking tela_rindes.reference_label support:', error);
+    telaRindesReferenceLabelSupport = false;
+  }
+
+  return telaRindesReferenceLabelSupport;
+};
+
 // modify the interface with any CRUD methods
 // you might need
 
@@ -1303,11 +1327,12 @@ export class PostgreSQLStorage implements IStorage {
   async getActiveTelaRindes(options?: { includeInactive?: boolean }): Promise<any[]> {
     try {
       const includeInactive = options?.includeInactive === true;
+      const supportsReferenceLabel = await hasTelaRindesReferenceLabel();
       const rows = await sql(`
         SELECT
           tr.id,
           tr.article_code as "articleCode",
-          tr.reference_label as "referenceLabel",
+          ${supportsReferenceLabel ? 'tr.reference_label' : 'NULL'} as "referenceLabel",
           tr.ancho_cm as "anchoCm",
           tr.peso_referencia_kg as "pesoReferenciaKg",
           tr.metros_referencia as "metrosReferencia",
@@ -1317,13 +1342,13 @@ export class PostgreSQLStorage implements IStorage {
           tr.updated_by as "updatedBy"
         FROM tela_rindes tr
         WHERE ($1::boolean = TRUE OR tr.activo = TRUE)
-        ORDER BY COALESCE(NULLIF(tr.reference_label, ''), tr.article_code) ASC
+        ORDER BY COALESCE(NULLIF(${supportsReferenceLabel ? 'tr.reference_label' : 'NULL'}, ''), tr.article_code) ASC
       `, [includeInactive]);
 
       return rows.map((row: any) => ({
         id: Number(row.id),
         articleCode: row.articleCode,
-        referenceLabel: row.referenceLabel ?? null,
+        referenceLabel: row.referenceLabel ?? row.articleCode ?? null,
         description: '',
         synonym: '',
         codigoBase: '',
@@ -1347,6 +1372,7 @@ export class PostgreSQLStorage implements IStorage {
     try {
       const code = articleCode.trim();
       if (!code) return null;
+      const supportsReferenceLabel = await hasTelaRindesReferenceLabel();
 
       const rows = await sql(`
         SELECT
@@ -1356,13 +1382,13 @@ export class PostgreSQLStorage implements IStorage {
           tr.peso_referencia_kg as "pesoReferenciaKg",
           tr.metros_referencia as "metrosReferencia",
           tr.kg_por_metro as "kgPorMetro",
-          tr.reference_label as "referenceLabel",
+          ${supportsReferenceLabel ? 'tr.reference_label' : 'NULL'} as "referenceLabel",
           tr.activo,
           tr.updated_at as "updatedAt",
           tr.updated_by as "updatedBy"
         FROM tela_rindes tr
         WHERE UPPER(TRIM(tr.article_code)) = UPPER(TRIM($1))
-           OR UPPER(TRIM(COALESCE(tr.reference_label, ''))) = UPPER(TRIM($1))
+           OR (${supportsReferenceLabel ? "UPPER(TRIM(COALESCE(tr.reference_label, ''))) = UPPER(TRIM($1))" : 'FALSE'})
         LIMIT 1
       `, [code]);
 
@@ -1379,7 +1405,7 @@ export class PostgreSQLStorage implements IStorage {
           anchoCm: row?.anchoCm == null ? null : Number(row.anchoCm),
           metrosReferencia: row?.metrosReferencia == null ? null : Number(row.metrosReferencia),
           kgPorMetro: row?.kgPorMetro == null ? null : Number(row.kgPorMetro),
-          referenceLabel: row?.referenceLabel ?? (row ? null : code),
+          referenceLabel: row?.referenceLabel ?? row?.articleCode ?? code,
         },
         rinde: row == null ? null : {
           id: Number(row.id),
@@ -1388,7 +1414,7 @@ export class PostgreSQLStorage implements IStorage {
           pesoReferenciaKg: Number(row.pesoReferenciaKg),
           metrosReferencia: Number(row.metrosReferencia),
           kgPorMetro: Number(row.kgPorMetro),
-          referenceLabel: row.referenceLabel ?? null,
+          referenceLabel: row.referenceLabel ?? row.articleCode ?? null,
           activo: Boolean(row.activo),
           updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
           updatedBy: row.updatedBy ?? null,
@@ -1409,42 +1435,77 @@ export class PostgreSQLStorage implements IStorage {
     const referenceLabel = payload.referenceLabel ? String(payload.referenceLabel).trim() : null;
     const activo = payload.activo !== false;
     const updatedBy = payload.updatedBy ? String(payload.updatedBy).trim() : null;
+    const supportsReferenceLabel = await hasTelaRindesReferenceLabel();
 
-    const result = await sql(`
-      INSERT INTO tela_rindes (
-        article_code,
-        ancho_cm,
-        peso_referencia_kg,
-        metros_referencia,
-        kg_por_metro,
-        reference_label,
-        activo,
-        updated_at,
-        updated_by
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
-      ON CONFLICT (article_code)
-      DO UPDATE SET
-        ancho_cm = EXCLUDED.ancho_cm,
-        peso_referencia_kg = EXCLUDED.peso_referencia_kg,
-        metros_referencia = EXCLUDED.metros_referencia,
-        kg_por_metro = EXCLUDED.kg_por_metro,
-        reference_label = EXCLUDED.reference_label,
-        activo = EXCLUDED.activo,
-        updated_at = NOW(),
-        updated_by = EXCLUDED.updated_by
-      RETURNING
-        id,
-        article_code as "articleCode",
-        ancho_cm as "anchoCm",
-        peso_referencia_kg as "pesoReferenciaKg",
-        metros_referencia as "metrosReferencia",
-        kg_por_metro as "kgPorMetro",
-        reference_label as "referenceLabel",
-        activo,
-        updated_at as "updatedAt",
-        updated_by as "updatedBy"
-    `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, referenceLabel, activo, updatedBy]);
+    const result = supportsReferenceLabel
+      ? await sql(`
+          INSERT INTO tela_rindes (
+            article_code,
+            ancho_cm,
+            peso_referencia_kg,
+            metros_referencia,
+            kg_por_metro,
+            reference_label,
+            activo,
+            updated_at,
+            updated_by
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
+          ON CONFLICT (article_code)
+          DO UPDATE SET
+            ancho_cm = EXCLUDED.ancho_cm,
+            peso_referencia_kg = EXCLUDED.peso_referencia_kg,
+            metros_referencia = EXCLUDED.metros_referencia,
+            kg_por_metro = EXCLUDED.kg_por_metro,
+            reference_label = EXCLUDED.reference_label,
+            activo = EXCLUDED.activo,
+            updated_at = NOW(),
+            updated_by = EXCLUDED.updated_by
+          RETURNING
+            id,
+            article_code as "articleCode",
+            ancho_cm as "anchoCm",
+            peso_referencia_kg as "pesoReferenciaKg",
+            metros_referencia as "metrosReferencia",
+            kg_por_metro as "kgPorMetro",
+            reference_label as "referenceLabel",
+            activo,
+            updated_at as "updatedAt",
+            updated_by as "updatedBy"
+        `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, referenceLabel, activo, updatedBy])
+      : await sql(`
+          INSERT INTO tela_rindes (
+            article_code,
+            ancho_cm,
+            peso_referencia_kg,
+            metros_referencia,
+            kg_por_metro,
+            activo,
+            updated_at,
+            updated_by
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+          ON CONFLICT (article_code)
+          DO UPDATE SET
+            ancho_cm = EXCLUDED.ancho_cm,
+            peso_referencia_kg = EXCLUDED.peso_referencia_kg,
+            metros_referencia = EXCLUDED.metros_referencia,
+            kg_por_metro = EXCLUDED.kg_por_metro,
+            activo = EXCLUDED.activo,
+            updated_at = NOW(),
+            updated_by = EXCLUDED.updated_by
+          RETURNING
+            id,
+            article_code as "articleCode",
+            ancho_cm as "anchoCm",
+            peso_referencia_kg as "pesoReferenciaKg",
+            metros_referencia as "metrosReferencia",
+            kg_por_metro as "kgPorMetro",
+            NULL as "referenceLabel",
+            activo,
+            updated_at as "updatedAt",
+            updated_by as "updatedBy"
+        `, [articleCode, anchoCm, pesoReferenciaKg, metrosReferencia, kgPorMetro, activo, updatedBy]);
 
     const row = result[0];
     return {
@@ -1454,7 +1515,7 @@ export class PostgreSQLStorage implements IStorage {
       pesoReferenciaKg: Number(row.pesoReferenciaKg),
       metrosReferencia: Number(row.metrosReferencia),
       kgPorMetro: Number(row.kgPorMetro),
-      referenceLabel: row.referenceLabel ?? null,
+      referenceLabel: row.referenceLabel ?? row.articleCode ?? null,
       activo: Boolean(row.activo),
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
       updatedBy: row.updatedBy ?? null,
