@@ -1218,87 +1218,82 @@ export class PostgreSQLStorage implements IStorage {
       if (!search) return [];
 
       const normalized = search.toUpperCase();
-      const rows = await sql(`
-        WITH matches AS (
-          SELECT DISTINCT ON (TRIM(a."Codigo"))
-            TRIM(a."Codigo") as code,
-            COALESCE(NULLIF(c."Descripcion", ''), a."Articulo", '') as description,
-            COALESCE(TRIM(c."Sinonimo"), '') as synonym,
-            COALESCE(c."CodigoBase", '') as "codigoBase",
-            COALESCE(c."DescripcionBase", '') as "descripcionBase",
-            CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
-            COALESCE(tr.activo, FALSE) as active,
-            tr.ancho_cm as "anchoCm",
-            tr.metros_referencia as "metrosReferencia",
-            tr.kg_por_metro as "kgPorMetro",
-            tr.reference_label as "referenceLabel",
-            a."FechaMovimiento" as "fechaMovimiento"
-          FROM ajustes_sucursales a
-          LEFT JOIN LATERAL (
-            SELECT
-              c."Descripcion",
-              c."Sinonimo",
-              c."CodigoBase",
-              c."DescripcionBase"
-            FROM costos_articulos c
-            WHERE TRIM(c."Codigo") = TRIM(a."Codigo")
-            LIMIT 1
-          ) c ON TRUE
-          LEFT JOIN tela_rindes tr ON tr.article_code = TRIM(a."Codigo")
-          WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
-            AND (
-              UPPER(TRIM(a."Codigo")) = $1
-              OR UPPER(COALESCE(a."Articulo", '')) LIKE $2
-              OR UPPER(TRIM(a."Codigo")) LIKE $2
-              OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1
-              OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $2
-              OR UPPER(COALESCE(tr.reference_label, '')) = $1
-              OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
-            )
-          ORDER BY TRIM(a."Codigo"), a."FechaMovimiento" DESC NULLS LAST
-        )
+      const baseRows = await sql(`
         SELECT
-          code,
-          description,
-          synonym,
-          "codigoBase",
-          "descripcionBase",
-          "hasRinde",
-          active,
-          "anchoCm",
-          "metrosReferencia",
-          "kgPorMetro",
-          "referenceLabel"
-        FROM matches
-        ORDER BY
-          CASE
-            WHEN UPPER(COALESCE("referenceLabel", '')) = $1 THEN 0
-            WHEN UPPER(code) = $1 THEN 1
-            WHEN UPPER(COALESCE(synonym, '')) = $1 THEN 2
-            WHEN UPPER(COALESCE("referenceLabel", '')) LIKE $3 THEN 3
-            WHEN UPPER(COALESCE(description, '')) LIKE $3 THEN 4
-            WHEN UPPER(COALESCE(synonym, '')) LIKE $3 THEN 5
-            WHEN UPPER(code) LIKE $3 THEN 6
-            ELSE 7
-          END,
-          description ASC NULLS LAST,
-          code ASC
-        LIMIT 12
-      `, [normalized, `%${normalized}%`, `${normalized}%`]);
+          TRIM("Codigo") as code,
+          COALESCE(MAX(COALESCE("Articulo", '')), '') as description
+        FROM ajustes_sucursales
+        WHERE "Codigo" IS NOT NULL AND TRIM("Codigo") != ''
+        GROUP BY TRIM("Codigo")
+      `);
 
-      return rows.map((row: any) => ({
-        code: row.code,
-        description: row.description ?? '',
-        synonym: row.synonym ?? '',
-        codigoBase: row.codigoBase ?? '',
-        descripcionBase: row.descripcionBase ?? '',
-        hasRinde: Boolean(row.hasRinde),
-        active: Boolean(row.active),
-        anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
-        metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
-        kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
-        referenceLabel: row.referenceLabel ?? null,
-      }));
+      const ranked = baseRows
+        .map((row: any) => {
+          const code = String(row.code || '').trim();
+          const description = String(row.description || '').trim();
+          const haystack = `${code} ${description}`.toUpperCase();
+          if (!haystack.includes(normalized)) return null;
+
+          let rank = 5;
+          if (code.toUpperCase() == normalized) rank = 0;
+          else if (description.toUpperCase() == normalized) rank = 1;
+          else if (code.toUpperCase().startsWith(normalized)) rank = 2;
+          else if (description.toUpperCase().startsWith(normalized)) rank = 3;
+          else if (code.toUpperCase().includes(normalized)) rank = 4;
+
+          return { code, description, rank };
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => a.rank - b.rank || a.description.localeCompare(b.description) || a.code.localeCompare(b.code))
+        .slice(0, 12);
+
+      if (!ranked.length) {
+        return [];
+      }
+
+      const codes = ranked.map((item: any) => item.code);
+      const costRows = await sql(`
+        SELECT
+          TRIM("Codigo") as code,
+          COALESCE("Descripcion", '') as description,
+          COALESCE(TRIM("Sinonimo"), '') as synonym,
+          COALESCE("CodigoBase", '') as "codigoBase",
+          COALESCE("DescripcionBase", '') as "descripcionBase"
+        FROM costos_articulos
+        WHERE TRIM("Codigo") = ANY($1)
+      `, [codes]);
+      const rindeRows = await sql(`
+        SELECT
+          article_code as code,
+          activo,
+          ancho_cm as "anchoCm",
+          metros_referencia as "metrosReferencia",
+          kg_por_metro as "kgPorMetro",
+          reference_label as "referenceLabel"
+        FROM tela_rindes
+        WHERE article_code = ANY($1)
+      `, [codes]);
+
+      const costsByCode = new Map(costRows.map((row: any) => [String(row.code || '').trim(), row]));
+      const rindesByCode = new Map(rindeRows.map((row: any) => [String(row.code || '').trim(), row]));
+
+      return ranked.map((item: any) => {
+        const cost = costsByCode.get(item.code);
+        const rinde = rindesByCode.get(item.code);
+        return {
+          code: item.code,
+          description: cost?.description || item.description || '',
+          synonym: cost?.synonym || '',
+          codigoBase: cost?.codigoBase || '',
+          descripcionBase: cost?.descripcionBase || '',
+          hasRinde: Boolean(rinde?.activo),
+          active: Boolean(rinde?.activo),
+          anchoCm: rinde?.anchoCm == null ? null : Number(rinde.anchoCm),
+          metrosReferencia: rinde?.metrosReferencia == null ? null : Number(rinde.metrosReferencia),
+          kgPorMetro: rinde?.kgPorMetro == null ? null : Number(rinde.kgPorMetro),
+          referenceLabel: rinde?.referenceLabel ?? null,
+        };
+      });
     } catch (error) {
       console.error('Error searching rinde articles:', error);
       return [];
