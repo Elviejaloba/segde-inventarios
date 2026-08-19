@@ -1213,160 +1213,95 @@ export class PostgreSQLStorage implements IStorage {
   }
 
   async searchRindeArticles(query: string): Promise<any[]> {
-    const search = query.trim();
-    if (!search) return [];
-
-    const normalized = search.toUpperCase();
-    const mapRows = (rows: any[]) => rows.map((row: any) => ({
-      code: row.code,
-      description: row.description ?? '',
-      synonym: row.synonym ?? '',
-      codigoBase: row.codigoBase ?? '',
-      descripcionBase: row.descripcionBase ?? '',
-      hasRinde: Boolean(row.hasRinde),
-      active: Boolean(row.active),
-      anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
-      metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
-      kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
-      referenceLabel: row.referenceLabel ?? null,
-    }));
-
-    const runFallbackSearch = async () => {
-      const rows = await sql(`
-        SELECT
-          TRIM(a."Codigo") as code,
-          COALESCE(MAX(NULLIF(a."Articulo", '')), '') as description,
-          '' as synonym,
-          '' as "codigoBase",
-          '' as "descripcionBase",
-          CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
-          COALESCE(tr.activo, FALSE) as active,
-          tr.ancho_cm as "anchoCm",
-          tr.metros_referencia as "metrosReferencia",
-          tr.kg_por_metro as "kgPorMetro",
-          tr.reference_label as "referenceLabel"
-        FROM ajustes_sucursales a
-        LEFT JOIN tela_rindes tr ON tr.article_code = TRIM(a."Codigo")
-        WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
-        GROUP BY TRIM(a."Codigo"), tr.article_code, tr.activo, tr.ancho_cm, tr.metros_referencia, tr.kg_por_metro, tr.reference_label
-        HAVING (
-          UPPER(TRIM(a."Codigo")) = $1
-          OR UPPER(COALESCE(MAX(NULLIF(a."Articulo", '')), '')) LIKE $2
-          OR UPPER(TRIM(a."Codigo")) LIKE $2
-          OR UPPER(COALESCE(tr.reference_label, '')) = $1
-          OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
-        )
-        ORDER BY
-          CASE
-            WHEN UPPER(COALESCE(tr.reference_label, '')) = $1 THEN 0
-            WHEN UPPER(TRIM(a."Codigo")) = $1 THEN 1
-            WHEN UPPER(COALESCE(tr.reference_label, '')) LIKE $3 THEN 2
-            WHEN UPPER(COALESCE(MAX(NULLIF(a."Articulo", '')), '')) LIKE $3 THEN 3
-            WHEN UPPER(TRIM(a."Codigo")) LIKE $3 THEN 4
-            ELSE 5
-          END,
-          COALESCE(MAX(NULLIF(a."Articulo", '')), '') ASC,
-          TRIM(a."Codigo") ASC
-        LIMIT 12
-      `, [normalized, `%${normalized}%`, `${normalized}%`])
-      return mapRows(rows)
-    }
-
     try {
+      const search = query.trim();
+      if (!search) return [];
+
+      const normalized = search.toUpperCase();
       const rows = await sql(`
-        WITH ajustes_catalog AS (
-          SELECT
+        WITH matches AS (
+          SELECT DISTINCT ON (TRIM(a."Codigo"))
             TRIM(a."Codigo") as code,
-            COALESCE(MAX(NULLIF(a."Articulo", '')), '') as description
-          FROM ajustes_sucursales a
-          WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
-          GROUP BY TRIM(a."Codigo")
-        ),
-        costos_catalog AS (
-          SELECT
-            TRIM(c."Codigo") as code,
-            COALESCE(c."Descripcion", '') as description,
+            COALESCE(NULLIF(c."Descripcion", ''), a."Articulo", '') as description,
             COALESCE(TRIM(c."Sinonimo"), '') as synonym,
             COALESCE(c."CodigoBase", '') as "codigoBase",
-            COALESCE(c."DescripcionBase", '') as "descripcionBase"
-          FROM costos_articulos c
-          WHERE COALESCE(TRIM(c."Codigo"), '') <> ''
-        ),
-        catalog AS (
-          SELECT
-            a.code,
-            COALESCE(NULLIF(c.description, ''), a.description, '') as description,
-            COALESCE(c.synonym, '') as synonym,
-            COALESCE(c."codigoBase", '') as "codigoBase",
-            COALESCE(c."descripcionBase", '') as "descripcionBase"
-          FROM ajustes_catalog a
-          LEFT JOIN costos_catalog c ON c.code = a.code
-
-          UNION
-
-          SELECT
-            c.code,
-            c.description,
-            c.synonym,
-            c."codigoBase",
-            c."descripcionBase"
-          FROM costos_catalog c
-          WHERE NOT EXISTS (
-            SELECT 1 FROM ajustes_catalog a WHERE a.code = c.code
-          )
+            COALESCE(c."DescripcionBase", '') as "descripcionBase",
+            CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
+            COALESCE(tr.activo, FALSE) as active,
+            tr.ancho_cm as "anchoCm",
+            tr.metros_referencia as "metrosReferencia",
+            tr.kg_por_metro as "kgPorMetro",
+            tr.reference_label as "referenceLabel",
+            a."FechaMovimiento" as "fechaMovimiento"
+          FROM ajustes_sucursales a
+          LEFT JOIN LATERAL (
+            SELECT
+              c."Descripcion",
+              c."Sinonimo",
+              c."CodigoBase",
+              c."DescripcionBase"
+            FROM costos_articulos c
+            WHERE TRIM(c."Codigo") = TRIM(a."Codigo")
+            LIMIT 1
+          ) c ON TRUE
+          LEFT JOIN tela_rindes tr ON tr.article_code = TRIM(a."Codigo")
+          WHERE COALESCE(TRIM(a."Codigo"), '') <> ''
+            AND (
+              UPPER(TRIM(a."Codigo")) = $1
+              OR UPPER(COALESCE(a."Articulo", '')) LIKE $2
+              OR UPPER(TRIM(a."Codigo")) LIKE $2
+              OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) = $1
+              OR UPPER(COALESCE(TRIM(c."Sinonimo"), '')) LIKE $2
+              OR UPPER(COALESCE(tr.reference_label, '')) = $1
+              OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
+            )
+          ORDER BY TRIM(a."Codigo"), a."FechaMovimiento" DESC NULLS LAST
         )
         SELECT
-          c.code as code,
-          c.description as description,
-          c.synonym as synonym,
-          c."codigoBase" as "codigoBase",
-          c."descripcionBase" as "descripcionBase",
-          CASE WHEN tr.article_code IS NOT NULL AND tr.activo = TRUE THEN TRUE ELSE FALSE END as "hasRinde",
-          COALESCE(tr.activo, FALSE) as active,
-          tr.ancho_cm as "anchoCm",
-          tr.metros_referencia as "metrosReferencia",
-          tr.kg_por_metro as "kgPorMetro",
-          tr.reference_label as "referenceLabel"
-        FROM catalog c
-        LEFT JOIN tela_rindes tr ON tr.article_code = c.code
-        WHERE (
-          UPPER(c.code) = $1
-          OR UPPER(COALESCE(c.synonym, '')) = $1
-          OR UPPER(COALESCE(c.description, '')) LIKE $2
-          OR UPPER(COALESCE(c.synonym, '')) LIKE $2
-          OR UPPER(c.code) LIKE $2
-          OR UPPER(COALESCE(tr.reference_label, '')) = $1
-          OR UPPER(COALESCE(tr.reference_label, '')) LIKE $2
-        )
+          code,
+          description,
+          synonym,
+          "codigoBase",
+          "descripcionBase",
+          "hasRinde",
+          active,
+          "anchoCm",
+          "metrosReferencia",
+          "kgPorMetro",
+          "referenceLabel"
+        FROM matches
         ORDER BY
           CASE
-            WHEN UPPER(COALESCE(tr.reference_label, '')) = $1 THEN 0
-            WHEN UPPER(c.code) = $1 THEN 1
-            WHEN UPPER(COALESCE(c.synonym, '')) = $1 THEN 2
-            WHEN UPPER(COALESCE(tr.reference_label, '')) LIKE $3 THEN 3
-            WHEN UPPER(COALESCE(c.description, '')) LIKE $3 THEN 4
-            WHEN UPPER(COALESCE(c.synonym, '')) LIKE $3 THEN 5
-            WHEN UPPER(c.code) LIKE $3 THEN 6
+            WHEN UPPER(COALESCE("referenceLabel", '')) = $1 THEN 0
+            WHEN UPPER(code) = $1 THEN 1
+            WHEN UPPER(COALESCE(synonym, '')) = $1 THEN 2
+            WHEN UPPER(COALESCE("referenceLabel", '')) LIKE $3 THEN 3
+            WHEN UPPER(COALESCE(description, '')) LIKE $3 THEN 4
+            WHEN UPPER(COALESCE(synonym, '')) LIKE $3 THEN 5
+            WHEN UPPER(code) LIKE $3 THEN 6
             ELSE 7
           END,
-          c.description ASC NULLS LAST,
-          c.code ASC
+          description ASC NULLS LAST,
+          code ASC
         LIMIT 12
       `, [normalized, `%${normalized}%`, `${normalized}%`]);
 
-      if (rows.length > 0) {
-        return mapRows(rows);
-      }
-
-      return await runFallbackSearch();
+      return rows.map((row: any) => ({
+        code: row.code,
+        description: row.description ?? '',
+        synonym: row.synonym ?? '',
+        codigoBase: row.codigoBase ?? '',
+        descripcionBase: row.descripcionBase ?? '',
+        hasRinde: Boolean(row.hasRinde),
+        active: Boolean(row.active),
+        anchoCm: row.anchoCm == null ? null : Number(row.anchoCm),
+        metrosReferencia: row.metrosReferencia == null ? null : Number(row.metrosReferencia),
+        kgPorMetro: row.kgPorMetro == null ? null : Number(row.kgPorMetro),
+        referenceLabel: row.referenceLabel ?? null,
+      }));
     } catch (error) {
       console.error('Error searching rinde articles:', error);
-      try {
-        return await runFallbackSearch();
-      } catch (fallbackError) {
-        console.error('Fallback rinde search also failed:', fallbackError);
-        return [];
-      }
+      return [];
     }
   }
 
