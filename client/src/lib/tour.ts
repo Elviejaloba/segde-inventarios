@@ -308,8 +308,8 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
   const rindeSteps = [
     {
       popover: {
-        title: 'Calculadora de Rinde',
-        description: 'Te mostramos rápidamente cómo calcular metros estimados y dónde administrar los parámetros de referencia.',
+        title: 'Calculadora e Inventario',
+        description: 'Ac? pod?s calcular metros y cargar un inventario r?pido por sesi?n sin mezclar relevamientos.',
         side: 'top',
         align: 'center'
       }
@@ -317,45 +317,54 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
     {
       element: '[data-tour="rinde-search"]',
       popover: {
-        title: 'Buscar artículo',
-        description: 'Buscá una tela por código, descripción o sinónimo.',
+        title: 'Buscar rinde',
+        description: 'Eleg? una referencia ya medida y validada por CDD para calcular metros estimados.',
         side: 'bottom',
         align: 'start'
-      }
-    },
-    {
-      element: '[data-tour="rinde-article"]',
-      popover: {
-        title: 'Artículo seleccionado',
-        description: 'Verificá el código y la descripción del artículo antes de calcular.',
-        side: 'bottom',
-        align: 'start'
-      }
-    },
-    {
-      element: mobile ? '[data-tour="rinde-reference-mobile"]' : '[data-tour="rinde-reference"]',
-      popover: {
-        title: 'Datos de referencia',
-        description: 'Estos valores de referencia son administrados por el CDD y se usan para calcular los metros.',
-        side: mobile ? 'top' : 'left',
-        align: 'center'
-      }
-    },
-    {
-      element: mobile ? '[data-tour="rinde-inputs-mobile"]' : '[data-tour="rinde-inputs"]',
-      popover: {
-        title: 'Datos para cálculo',
-        description: 'Ingresá el peso actual del rollo abierto y la cantidad de rollos cerrados.',
-        side: 'top',
-        align: 'center'
       }
     },
     {
       element: mobile ? '[data-tour="rinde-result-mobile"]' : '[data-tour="rinde-result"]',
       popover: {
-        title: 'Resultado',
-        description: 'El sistema calcula automáticamente los metros estimados disponibles.',
+        title: 'Resultado r?pido',
+        description: 'El sistema calcula autom?ticamente metros abiertos, cerrados y total.',
         side: mobile ? 'top' : 'left',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-branch"]',
+      popover: {
+        title: 'Seleccionar sucursal',
+        description: 'Cada relevamiento inicia con su propia sesi?n activa por sucursal para no pisar a otros usuarios.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-inventory-form-mobile"]' : '[data-tour="rinde-inventory-form"]',
+      popover: {
+        title: 'Carga r?pida',
+        description: 'Seleccion? el rinde, carg? peso y rollos, y agreg? filas seguidas sin abrir modales.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-inventory-list-mobile"]' : '[data-tour="rinde-inventory-list"]',
+      popover: {
+        title: 'Inventario activo',
+        description: 'Ac? ves las filas cargadas, pod?s editar, borrar y seguir el relevamiento sin perder el trabajo por refresh.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: mobile ? '[data-tour="rinde-inventory-summary-mobile"]' : '[data-tour="rinde-inventory-summary"]',
+      popover: {
+        title: 'Resumen y exportaci?n',
+        description: 'Control? el total relevado y descarg? el Excel final cuando cierres la sesi?n.',
+        side: 'top',
         align: 'center'
       }
     },
@@ -363,7 +372,7 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
       element: mobile ? '[data-tour="rinde-master-mobile"]' : '[data-tour="rinde-master"]',
       popover: {
         title: 'Maestro CDD',
-        description: 'El encargado del CDD puede administrar los parámetros de rinde de cada artículo.',
+        description: 'Solo CDD administra los par?metros de referencia. Las sucursales no los editan.',
         side: 'top',
         align: 'center'
       }

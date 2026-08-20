@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { type Ajuste, type InsertAjuste, type MuestreoFileStatus, type MuestreoFileStatusRecord } from "@shared/schema";
 import { pool } from "./db";
 
@@ -88,6 +89,12 @@ export interface IStorage {
   getActiveTelaRindes(options?: { includeInactive?: boolean }): Promise<any[]>;
   getTelaRinde(articleCode: string): Promise<any | null>;
   saveTelaRinde(payload: any): Promise<any>;
+  createRindeInventorySession(payload: { sessionId?: string; branchCode: string }): Promise<any>;
+  getRindeInventorySession(sessionId: string): Promise<any | null>;
+  createRindeInventoryItem(sessionId: string, payload: any): Promise<any>;
+  updateRindeInventoryItem(sessionId: string, itemId: number, payload: any): Promise<any>;
+  deleteRindeInventoryItem(sessionId: string, itemId: number): Promise<any>;
+  finalizeRindeInventorySession(sessionId: string): Promise<any | null>;
   getCodigosArticulos(): Promise<string[]>;
   getMuestreosFileStatuses(): Promise<MuestreoFileStatusRecord[]>;
   upsertMuestreoFileStatus(fileId: string, payload: { filePath?: string | null; status: MuestreoFileStatus; updatedBy?: string | null }): Promise<MuestreoFileStatusRecord>;
@@ -1520,6 +1527,289 @@ export class PostgreSQLStorage implements IStorage {
       updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
       updatedBy: row.updatedBy ?? null,
     };
+  }
+
+  private mapRindeInventorySession(row: any) {
+    return {
+      id: String(row.id),
+      branchCode: String(row.branchCode),
+      status: String(row.status),
+      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+      lastActivity: row.lastActivity ? new Date(row.lastActivity).toISOString() : null,
+      closedAt: row.closedAt ? new Date(row.closedAt).toISOString() : null,
+    };
+  }
+
+  private mapRindeInventoryItem(row: any) {
+    return {
+      id: Number(row.id),
+      sessionId: String(row.sessionId),
+      sortOrder: Number(row.sortOrder ?? 0),
+      articleCode: String(row.articleCode),
+      referenceLabel: String(row.referenceLabel),
+      anchoCm: Number(row.anchoCm),
+      pesoKg: Number(row.pesoKg ?? 0),
+      kgPorMetro: Number(row.kgPorMetro),
+      metrosReferencia: Number(row.metrosReferencia),
+      metrosAbiertos: Number(row.metrosAbiertos ?? 0),
+      rollosCerrados: Number(row.rollosCerrados ?? 0),
+      metrosCerrados: Number(row.metrosCerrados ?? 0),
+      totalMetros: Number(row.totalMetros ?? 0),
+      observacion: row.observacion ?? null,
+      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).toISOString() : null,
+    };
+  }
+
+  private buildRindeInventorySummary(items: any[]) {
+    const rowCount = items.length;
+    const openMeters = items.reduce((sum, item) => sum + Number(item.metrosAbiertos || 0), 0);
+    const closedMeters = items.reduce((sum, item) => sum + Number(item.metrosCerrados || 0), 0);
+    const totalMeters = items.reduce((sum, item) => sum + Number(item.totalMetros || 0), 0);
+    const closedRolls = items.reduce((sum, item) => sum + Number(item.rollosCerrados || 0), 0);
+    const byReferenceMap = new Map<string, number>();
+
+    for (const item of items) {
+      const key = String(item.referenceLabel || item.articleCode || '').trim();
+      if (!key) continue;
+      byReferenceMap.set(key, (byReferenceMap.get(key) || 0) + Number(item.totalMetros || 0));
+    }
+
+    const byReference = Array.from(byReferenceMap.entries())
+      .map(([referenceLabel, total]) => ({ referenceLabel, totalMeters: total }))
+      .sort((a, b) => b.totalMeters - a.totalMeters || a.referenceLabel.localeCompare(b.referenceLabel, 'es'));
+
+    return {
+      rowCount,
+      openMeters,
+      closedMeters,
+      totalMeters,
+      closedRolls,
+      byReference,
+    };
+  }
+
+  private async getRindeInventorySessionRow(sessionId: string) {
+    const rows = await sql(`
+      SELECT
+        id,
+        branch_code as "branchCode",
+        status,
+        created_at as "createdAt",
+        last_activity as "lastActivity",
+        closed_at as "closedAt"
+      FROM rinde_inventory_sessions
+      WHERE id = $1
+      LIMIT 1
+    `, [sessionId]);
+    return rows[0] ?? null;
+  }
+
+  private async buildRindeInventoryPayload(sessionId: string) {
+    const sessionRow = await this.getRindeInventorySessionRow(sessionId);
+    if (!sessionRow) return null;
+
+    const itemRows = await sql(`
+      SELECT
+        id,
+        session_id as "sessionId",
+        sort_order as "sortOrder",
+        article_code as "articleCode",
+        reference_label as "referenceLabel",
+        ancho_cm as "anchoCm",
+        peso_kg as "pesoKg",
+        kg_por_metro as "kgPorMetro",
+        metros_referencia as "metrosReferencia",
+        metros_abiertos as "metrosAbiertos",
+        rollos_cerrados as "rollosCerrados",
+        metros_cerrados as "metrosCerrados",
+        total_metros as "totalMetros",
+        observacion,
+        created_at as "createdAt",
+        updated_at as "updatedAt"
+      FROM rinde_inventory_items
+      WHERE session_id = $1
+      ORDER BY sort_order ASC, id ASC
+    `, [sessionId]);
+
+    const items = itemRows.map((row: any) => this.mapRindeInventoryItem(row));
+    return {
+      session: this.mapRindeInventorySession(sessionRow),
+      items,
+      summary: this.buildRindeInventorySummary(items),
+    };
+  }
+
+  async createRindeInventorySession(payload: { sessionId?: string; branchCode: string }): Promise<any> {
+    const branchCode = String(payload.branchCode || '').trim();
+    if (!branchCode) {
+      throw new Error('La sucursal es obligatoria.');
+    }
+
+    const sessionId = String(payload.sessionId || randomUUID()).trim();
+    await sql(`
+      INSERT INTO rinde_inventory_sessions (id, branch_code, status, created_at, last_activity)
+      VALUES ($1, $2, 'active', NOW(), NOW())
+      ON CONFLICT (id) DO NOTHING
+    `, [sessionId, branchCode]);
+
+    const current = await this.getRindeInventorySessionRow(sessionId);
+    if (!current) {
+      throw new Error('No se pudo crear la sesi?n de inventario.');
+    }
+    if (String(current.branchCode).trim() !== branchCode) {
+      throw new Error('La sesi?n activa pertenece a otra sucursal.');
+    }
+
+    return this.buildRindeInventoryPayload(sessionId);
+  }
+
+  async getRindeInventorySession(sessionId: string): Promise<any | null> {
+    const normalizedSessionId = String(sessionId || '').trim();
+    if (!normalizedSessionId) return null;
+
+    await sql(`
+      UPDATE rinde_inventory_sessions
+      SET last_activity = NOW()
+      WHERE id = $1
+    `, [normalizedSessionId]);
+
+    return this.buildRindeInventoryPayload(normalizedSessionId);
+  }
+
+  async createRindeInventoryItem(sessionId: string, payload: any): Promise<any> {
+    const normalizedSessionId = String(sessionId || '').trim();
+    const session = await this.getRindeInventorySessionRow(normalizedSessionId);
+    if (!session) throw new Error('La sesi?n no existe.');
+    if (String(session.status) !== 'active') throw new Error('La sesi?n ya fue finalizada.');
+
+    const articleCode = String(payload.articleCode || '').trim();
+    const referenceLabel = String(payload.referenceLabel || '').trim();
+    const anchoCm = Number(payload.anchoCm);
+    const pesoKg = Number(payload.pesoKg || 0);
+    const kgPorMetro = Number(payload.kgPorMetro);
+    const metrosReferencia = Number(payload.metrosReferencia);
+    const rollosCerrados = Number(payload.rollosCerrados || 0);
+    const observacion = payload.observacion == null || String(payload.observacion).trim() === '' ? null : String(payload.observacion).trim();
+
+    if (!articleCode || !referenceLabel) throw new Error('La referencia es obligatoria.');
+    if (![anchoCm, kgPorMetro, metrosReferencia].every((value) => Number.isFinite(value) && value > 0)) {
+      throw new Error('Los par?metros del rinde seleccionado son inv?lidos.');
+    }
+    if (!Number.isFinite(pesoKg) || pesoKg < 0) throw new Error('El peso debe ser v?lido.');
+    if (!Number.isFinite(rollosCerrados) || rollosCerrados < 0) throw new Error('La cantidad de rollos debe ser v?lida.');
+
+    const metrosAbiertos = pesoKg > 0 ? pesoKg / kgPorMetro : 0;
+    const metrosCerrados = rollosCerrados > 0 ? rollosCerrados * metrosReferencia : 0;
+    const totalMetros = metrosAbiertos + metrosCerrados;
+    const sortRows = await sql(`SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM rinde_inventory_items WHERE session_id = $1`, [normalizedSessionId]);
+    const sortOrder = Number(sortRows[0]?.next_order || 1);
+
+    await sql(`
+      INSERT INTO rinde_inventory_items (
+        session_id,
+        sort_order,
+        article_code,
+        reference_label,
+        ancho_cm,
+        peso_kg,
+        kg_por_metro,
+        metros_referencia,
+        metros_abiertos,
+        rollos_cerrados,
+        metros_cerrados,
+        total_metros,
+        observacion,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+    `, [normalizedSessionId, sortOrder, articleCode, referenceLabel, anchoCm, pesoKg, kgPorMetro, metrosReferencia, metrosAbiertos, rollosCerrados, metrosCerrados, totalMetros, observacion]);
+
+    await sql(`UPDATE rinde_inventory_sessions SET last_activity = NOW() WHERE id = $1`, [normalizedSessionId]);
+    return this.buildRindeInventoryPayload(normalizedSessionId);
+  }
+
+  async updateRindeInventoryItem(sessionId: string, itemId: number, payload: any): Promise<any> {
+    const normalizedSessionId = String(sessionId || '').trim();
+    const normalizedItemId = Number(itemId);
+    const session = await this.getRindeInventorySessionRow(normalizedSessionId);
+    if (!session) throw new Error('La sesi?n no existe.');
+    if (String(session.status) !== 'active') throw new Error('La sesi?n ya fue finalizada.');
+
+    const articleCode = String(payload.articleCode || '').trim();
+    const referenceLabel = String(payload.referenceLabel || '').trim();
+    const anchoCm = Number(payload.anchoCm);
+    const pesoKg = Number(payload.pesoKg || 0);
+    const kgPorMetro = Number(payload.kgPorMetro);
+    const metrosReferencia = Number(payload.metrosReferencia);
+    const rollosCerrados = Number(payload.rollosCerrados || 0);
+    const observacion = payload.observacion == null || String(payload.observacion).trim() === '' ? null : String(payload.observacion).trim();
+
+    if (!articleCode || !referenceLabel) throw new Error('La referencia es obligatoria.');
+    if (![anchoCm, kgPorMetro, metrosReferencia].every((value) => Number.isFinite(value) && value > 0)) {
+      throw new Error('Los par?metros del rinde seleccionado son inv?lidos.');
+    }
+    if (!Number.isFinite(pesoKg) || pesoKg < 0) throw new Error('El peso debe ser v?lido.');
+    if (!Number.isFinite(rollosCerrados) || rollosCerrados < 0) throw new Error('La cantidad de rollos debe ser v?lida.');
+
+    const metrosAbiertos = pesoKg > 0 ? pesoKg / kgPorMetro : 0;
+    const metrosCerrados = rollosCerrados > 0 ? rollosCerrados * metrosReferencia : 0;
+    const totalMetros = metrosAbiertos + metrosCerrados;
+
+    const result = await sql(`
+      UPDATE rinde_inventory_items
+      SET
+        article_code = $3,
+        reference_label = $4,
+        ancho_cm = $5,
+        peso_kg = $6,
+        kg_por_metro = $7,
+        metros_referencia = $8,
+        metros_abiertos = $9,
+        rollos_cerrados = $10,
+        metros_cerrados = $11,
+        total_metros = $12,
+        observacion = $13,
+        updated_at = NOW()
+      WHERE session_id = $1 AND id = $2
+      RETURNING id
+    `, [normalizedSessionId, normalizedItemId, articleCode, referenceLabel, anchoCm, pesoKg, kgPorMetro, metrosReferencia, metrosAbiertos, rollosCerrados, metrosCerrados, totalMetros, observacion]);
+
+    if (!result[0]) throw new Error('La fila de inventario no existe.');
+
+    await sql(`UPDATE rinde_inventory_sessions SET last_activity = NOW() WHERE id = $1`, [normalizedSessionId]);
+    return this.buildRindeInventoryPayload(normalizedSessionId);
+  }
+
+  async deleteRindeInventoryItem(sessionId: string, itemId: number): Promise<any> {
+    const normalizedSessionId = String(sessionId || '').trim();
+    const normalizedItemId = Number(itemId);
+    const session = await this.getRindeInventorySessionRow(normalizedSessionId);
+    if (!session) throw new Error('La sesi?n no existe.');
+    if (String(session.status) !== 'active') throw new Error('La sesi?n ya fue finalizada.');
+
+    const result = await sql(`DELETE FROM rinde_inventory_items WHERE session_id = $1 AND id = $2 RETURNING id`, [normalizedSessionId, normalizedItemId]);
+    if (!result[0]) throw new Error('La fila de inventario no existe.');
+
+    await sql(`UPDATE rinde_inventory_sessions SET last_activity = NOW() WHERE id = $1`, [normalizedSessionId]);
+    return this.buildRindeInventoryPayload(normalizedSessionId);
+  }
+
+  async finalizeRindeInventorySession(sessionId: string): Promise<any | null> {
+    const normalizedSessionId = String(sessionId || '').trim();
+    const result = await sql(`
+      UPDATE rinde_inventory_sessions
+      SET status = 'closed', closed_at = NOW(), last_activity = NOW()
+      WHERE id = $1 AND status = 'active'
+      RETURNING id
+    `, [normalizedSessionId]);
+
+    if (!result[0]) {
+      return this.buildRindeInventoryPayload(normalizedSessionId);
+    }
+
+    return this.buildRindeInventoryPayload(normalizedSessionId);
   }
 
   async getCodigosArticulos(): Promise<string[]> {
