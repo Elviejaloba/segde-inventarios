@@ -307,27 +307,37 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
 
   const rindeSteps = [
     {
-      popover: {
-        title: 'Calculadora e Inventario',
-        description: 'Ac? pod?s calcular metros y cargar un inventario r?pido por sesi?n sin mezclar relevamientos.',
-        side: 'top',
-        align: 'center'
-      }
-    },
-    {
       element: '[data-tour="rinde-search"]',
       popover: {
         title: 'Buscar rinde',
-        description: 'Eleg? una referencia ya medida y validada por CDD para calcular metros estimados.',
-        side: 'bottom',
+        description: 'Busc\u00e1 y seleccion\u00e1 un rinde ya configurado.',
+        side: mobile ? 'bottom' : 'bottom',
         align: 'start'
       }
     },
     {
-      element: mobile ? '[data-tour="rinde-result-mobile"]' : '[data-tour="rinde-result"]',
+      element: '[data-tour="rinde-inputs"]',
       popover: {
-        title: 'Resultado r?pido',
-        description: 'El sistema calcula autom?ticamente metros abiertos, cerrados y total.',
+        title: 'Peso del rollo',
+        description: 'Ingres\u00e1 el peso del rollo abierto.',
+        side: mobile ? 'top' : 'bottom',
+        align: mobile ? 'center' : 'start'
+      }
+    },
+    {
+      element: '[data-tour="rinde-inputs"]',
+      popover: {
+        title: 'Rollos cerrados',
+        description: 'Si ten\u00e9s rollos cerrados, carg\u00e1 la cantidad.',
+        side: mobile ? 'top' : 'bottom',
+        align: mobile ? 'end' : 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-result"]',
+      popover: {
+        title: 'Resultado estimado',
+        description: 'El total en metros se calcula autom\u00e1ticamente.',
         side: mobile ? 'top' : 'left',
         align: 'center'
       }
@@ -335,17 +345,17 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
     {
       element: '[data-tour="rinde-branch"]',
       popover: {
-        title: 'Seleccionar sucursal',
-        description: 'Cada relevamiento inicia con su propia sesi?n activa por sucursal para no pisar a otros usuarios.',
-        side: 'top',
-        align: 'center'
+        title: 'Sucursal e inicio',
+        description: 'Eleg\u00ed la sucursal para comenzar el inventario.',
+        side: mobile ? 'top' : 'bottom',
+        align: mobile ? 'center' : 'start'
       }
     },
     {
-      element: mobile ? '[data-tour="rinde-inventory-form-mobile"]' : '[data-tour="rinde-inventory-form"]',
+      element: '[data-tour="rinde-inventory-form"]',
       popover: {
-        title: 'Carga r?pida',
-        description: 'Seleccion? el rinde, carg? peso y rollos, y agreg? filas seguidas sin abrir modales.',
+        title: 'Agregar fila',
+        description: 'Complet\u00e1 los datos y agreg\u00e1 la fila al inventario.',
         side: 'top',
         align: 'center'
       }
@@ -353,27 +363,54 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
     {
       element: mobile ? '[data-tour="rinde-inventory-list-mobile"]' : '[data-tour="rinde-inventory-list"]',
       popover: {
-        title: 'Inventario activo',
-        description: 'Ac? ves las filas cargadas, pod?s editar, borrar y seguir el relevamiento sin perder el trabajo por refresh.',
+        title: 'Lista cargada',
+        description: 'Ac\u00e1 ves todo lo cargado en esta sesi\u00f3n.',
         side: 'top',
         align: 'center'
       }
     },
     {
-      element: mobile ? '[data-tour="rinde-inventory-summary-mobile"]' : '[data-tour="rinde-inventory-summary"]',
+      element: mobile ? '[data-tour="rinde-inventory-list-mobile"]' : '[data-tour="rinde-inventory-list"]',
       popover: {
-        title: 'Resumen y exportaci?n',
-        description: 'Control? el total relevado y descarg? el Excel final cuando cierres la sesi?n.',
+        title: 'Editar o eliminar',
+        description: 'Pod\u00e9s corregir o borrar filas desde esta misma lista.',
         side: 'top',
         align: 'center'
       }
     },
     {
-      element: mobile ? '[data-tour="rinde-master-mobile"]' : '[data-tour="rinde-master"]',
+      element: mobile ? '[data-tour="rinde-inventory-summary-mobile"]' : '[data-tour="rinde-branch"]',
+      popover: {
+        title: 'Resumen actual',
+        description: 'Revis\u00e1 registros, abiertos, cerrados y total acumulado.',
+        side: 'top',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-inventory-export"]',
+      popover: {
+        title: 'Descargar Excel',
+        description: 'Descarg\u00e1 el Excel cuando quieras revisar lo cargado.',
+        side: mobile ? 'top' : 'left',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-inventory-export"]',
+      popover: {
+        title: 'Finalizar inventario',
+        description: 'Cerr\u00e1 la sesi\u00f3n solo cuando termines el relevamiento.',
+        side: mobile ? 'top' : 'left',
+        align: 'center'
+      }
+    },
+    {
+      element: '[data-tour="rinde-master"]',
       popover: {
         title: 'Maestro CDD',
-        description: 'Solo CDD administra los par?metros de referencia. Las sucursales no los editan.',
-        side: 'top',
+        description: 'Este acceso es solo para administrar par\u00e1metros de referencia.',
+        side: mobile ? 'top' : 'bottom',
         align: 'center'
       }
     }
