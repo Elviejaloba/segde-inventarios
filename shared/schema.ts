@@ -269,3 +269,81 @@ export const telaRindeResponseSchema = z.object({
 });
 
 export type TelaRindeResponse = z.infer<typeof telaRindeResponseSchema>;
+
+
+export const rindeInventorySessionStatusSchema = z.enum(["active", "closed"]);
+export type RindeInventorySessionStatus = z.infer<typeof rindeInventorySessionStatusSchema>;
+
+export const rindeInventorySessionSchema = z.object({
+  id: z.string(),
+  branchCode: z.string().min(1),
+  status: rindeInventorySessionStatusSchema,
+  createdAt: z.string().optional(),
+  lastActivity: z.string().optional(),
+  closedAt: z.string().nullable().optional(),
+});
+
+export type RindeInventorySession = z.infer<typeof rindeInventorySessionSchema>;
+
+export const rindeInventoryItemSchema = z.object({
+  id: z.number(),
+  sessionId: z.string(),
+  sortOrder: z.number().default(0),
+  articleCode: z.string().min(1),
+  referenceLabel: z.string().min(1),
+  anchoCm: z.number().positive(),
+  pesoKg: z.number().min(0),
+  kgPorMetro: z.number().positive(),
+  metrosReferencia: z.number().positive(),
+  metrosAbiertos: z.number().min(0),
+  rollosCerrados: z.number().int().min(0),
+  metrosCerrados: z.number().min(0),
+  totalMetros: z.number().min(0),
+  observacion: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export type RindeInventoryItem = z.infer<typeof rindeInventoryItemSchema>;
+
+export const rindeInventorySummarySchema = z.object({
+  rowCount: z.number().int().min(0),
+  openMeters: z.number().min(0),
+  closedMeters: z.number().min(0),
+  totalMeters: z.number().min(0),
+  closedRolls: z.number().int().min(0),
+  byReference: z.array(z.object({
+    referenceLabel: z.string(),
+    totalMeters: z.number().min(0),
+  })),
+});
+
+export type RindeInventorySummary = z.infer<typeof rindeInventorySummarySchema>;
+
+export const rindeInventorySessionPayloadSchema = z.object({
+  session: rindeInventorySessionSchema,
+  items: z.array(rindeInventoryItemSchema),
+  summary: rindeInventorySummarySchema,
+});
+
+export type RindeInventorySessionPayload = z.infer<typeof rindeInventorySessionPayloadSchema>;
+
+export const rindeInventorySessionCreateSchema = z.object({
+  sessionId: z.string().trim().min(1).optional(),
+  branchCode: z.string().trim().min(1),
+});
+
+export type RindeInventorySessionCreateInput = z.infer<typeof rindeInventorySessionCreateSchema>;
+
+export const rindeInventoryItemUpsertSchema = z.object({
+  articleCode: z.string().trim().min(1),
+  referenceLabel: z.string().trim().min(1),
+  anchoCm: z.coerce.number().positive(),
+  pesoKg: z.coerce.number().min(0),
+  kgPorMetro: z.coerce.number().positive(),
+  metrosReferencia: z.coerce.number().positive(),
+  rollosCerrados: z.coerce.number().int().min(0),
+  observacion: z.string().trim().max(240).optional().nullable(),
+});
+
+export type RindeInventoryItemUpsertInput = z.infer<typeof rindeInventoryItemUpsertSchema>;

@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema, muestreoFileStatusUpdateSchema, telaRindeAuthSchema, telaRindeUpsertSchema } from "@shared/schema";
+import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatchSchema, checklistSingleItemUpdateSchema, muestreoFileStatusUpdateSchema, telaRindeAuthSchema, telaRindeUpsertSchema, rindeInventorySessionCreateSchema, rindeInventoryItemUpsertSchema } from "@shared/schema";
 import * as dropbox from './dropbox';
 import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, primeChecklistRuntime, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
@@ -103,6 +103,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating tela rinde:', error);
       res.status(400).json({ error: 'No se pudo actualizar el rinde.' });
+    }
+  });
+
+  app.post('/api/rinde-inventory/sessions', async (req, res) => {
+    try {
+      const payload = rindeInventorySessionCreateSchema.parse(req.body);
+      const session = await storage.createRindeInventorySession(payload);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error('Error creating rinde inventory session:', error);
+      res.status(400).json({ error: 'No se pudo iniciar el inventario.' });
+    }
+  });
+
+  app.get('/api/rinde-inventory/sessions/:sessionId', async (req, res) => {
+    try {
+      const session = await storage.getRindeInventorySession(req.params.sessionId);
+      if (!session) {
+        res.status(404).json({ error: 'Inventario no encontrado.' });
+        return;
+      }
+      res.json(session);
+    } catch (error) {
+      console.error('Error getting rinde inventory session:', error);
+      res.status(500).json({ error: 'No se pudo cargar el inventario.' });
+    }
+  });
+
+  app.post('/api/rinde-inventory/sessions/:sessionId/items', async (req, res) => {
+    try {
+      const payload = rindeInventoryItemUpsertSchema.parse(req.body);
+      const session = await storage.createRindeInventoryItem(req.params.sessionId, payload);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error('Error creating rinde inventory item:', error);
+      res.status(400).json({ error: 'No se pudo agregar la fila al inventario.' });
+    }
+  });
+
+  app.patch('/api/rinde-inventory/sessions/:sessionId/items/:itemId', async (req, res) => {
+    try {
+      const payload = rindeInventoryItemUpsertSchema.parse(req.body);
+      const itemId = Number(req.params.itemId);
+      const session = await storage.updateRindeInventoryItem(req.params.sessionId, itemId, payload);
+      res.json(session);
+    } catch (error) {
+      console.error('Error updating rinde inventory item:', error);
+      res.status(400).json({ error: 'No se pudo actualizar la fila del inventario.' });
+    }
+  });
+
+  app.delete('/api/rinde-inventory/sessions/:sessionId/items/:itemId', async (req, res) => {
+    try {
+      const itemId = Number(req.params.itemId);
+      const session = await storage.deleteRindeInventoryItem(req.params.sessionId, itemId);
+      res.json(session);
+    } catch (error) {
+      console.error('Error deleting rinde inventory item:', error);
+      res.status(400).json({ error: 'No se pudo eliminar la fila del inventario.' });
+    }
+  });
+
+  app.post('/api/rinde-inventory/sessions/:sessionId/finalize', async (req, res) => {
+    try {
+      const session = await storage.finalizeRindeInventorySession(req.params.sessionId);
+      if (!session) {
+        res.status(404).json({ error: 'Inventario no encontrado.' });
+        return;
+      }
+      res.json(session);
+    } catch (error) {
+      console.error('Error finalizing rinde inventory session:', error);
+      res.status(400).json({ error: 'No se pudo finalizar el inventario.' });
     }
   });
 
