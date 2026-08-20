@@ -185,6 +185,9 @@ const setStoredSessionMap = (map: Record<string, string>) => {
 export default function RindePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchBlurTimer = useRef<number | null>(null);
+  const calculatorPesoInputRef = useRef<HTMLInputElement | null>(null);
   const inventorySearchInputRef = useRef<HTMLInputElement | null>(null);
   const pesoInputRef = useRef<HTMLInputElement | null>(null);
   const rollosInputRef = useRef<HTMLInputElement | null>(null);
@@ -192,6 +195,7 @@ export default function RindePage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [adminSearch, setAdminSearch] = useState("");
   const [debouncedAdminSearch, setDebouncedAdminSearch] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -204,6 +208,8 @@ export default function RindePage() {
   const [validatedPassword, setValidatedPassword] = useState("");
   const [updatedBy, setUpdatedBy] = useState("CDD");
   const [deleteCandidate, setDeleteCandidate] = useState<AvailableRinde | null>(null);
+  const [deleteInventoryCandidate, setDeleteInventoryCandidate] = useState<InventoryItem | null>(null);
+  const [finalizeInventoryOpen, setFinalizeInventoryOpen] = useState(false);
   const [mobileSections, setMobileSections] = useState<string[]>([]);
   const [form, setForm] = useState({
     referenceLabel: "",
@@ -449,6 +455,7 @@ export default function RindePage() {
     },
     onSuccess: (payload) => {
       applyInventoryPayload(payload);
+      setDeleteInventoryCandidate(null);
       toast({ variant: "warning", title: "Fila eliminada", description: "El relevamiento sigue disponible para continuar." });
     },
     onError: (error: Error) => toast({ variant: "destructive", title: "No se pudo eliminar", description: error.message }),
@@ -569,6 +576,8 @@ export default function RindePage() {
     return list.filter((item) => item.activo !== false && [item.referenceLabel, item.articleCode].some((value) => normalize(value).includes(term)));
   }, [activeRindesQuery.data, debouncedSearch, search]);
 
+  const compactAvailableRindes = useMemo(() => filteredAvailableRindes.slice(0, 4), [filteredAvailableRindes]);
+
   const filteredAdminRindes = useMemo(() => {
     const list = adminRindesQuery.data || [];
     const term = normalize(debouncedAdminSearch || adminSearch);
@@ -588,6 +597,10 @@ export default function RindePage() {
   const inventorySummary = inventoryPayload?.summary || { rowCount: 0, openMeters: 0, closedMeters: 0, totalMeters: 0, closedRolls: 0, byReference: [] };
   const inventoryInlineError = upsertInventoryItemMutation.isError && upsertInventoryItemMutation.error instanceof Error ? upsertInventoryItemMutation.error.message : "";
   const resultSummary = calculation.valid ? `${formatNumber(calculation.total)} m estimados` : selectedArticle ? calculation.message : "Elegí una referencia para empezar";
+  const selectedReferenceLabel = selectedArticle ? getReferenceLabel(selectedArticle) || selectedArticle.code : "";
+  const calculatorTotalValue = calculation.valid ? `${formatNumber(calculation.total)} m` : "— m";
+  const calculatorBreakdown = calculation.valid ? `Abierto ${formatNumber(calculation.abierto)} · Cerrado ${formatNumber(calculation.cerrados)}` : selectedArticle ? resultSummary : "Elegí un rinde";
+  const inventoryCompactSummary = `${inventorySummary.rowCount} registros · Ab ${formatNumber(inventorySummary.openMeters)} · Ce ${formatNumber(inventorySummary.closedMeters)} · Total ${formatNumber(inventorySummary.totalMeters)} m`;
   const renderReferenceSummary = () => {
     const rinde = rindeQuery.data?.rinde;
     if (!rinde) return "Sin parámetros activos todavía";
@@ -602,6 +615,13 @@ export default function RindePage() {
     setAdminSearch(reference);
     setPesoActual("");
     setRollosCerrados("0");
+    setSearchOpen(false);
+    if (source === "main") {
+      window.setTimeout(() => {
+        calculatorPesoInputRef.current?.focus();
+        calculatorPesoInputRef.current?.select();
+      }, 20);
+    }
     if (source === "admin") setAdminPanelOpen(true);
   };
   const handleCreateNewRinde = () => {
@@ -613,163 +633,268 @@ export default function RindePage() {
   const resetInventoryForm = () => { setEditingItemId(null); setInventorySelectedRinde(null); setInventorySearch(""); setInventoryPeso(""); setInventoryRollos("0"); setInventoryObservation(""); };
   const handleSelectInventoryRinde = (item: AvailableRinde) => { setInventorySelectedRinde(item); setInventorySearch(getReferenceLabel(item) || item.articleCode); setInventorySearchOpen(false); window.setTimeout(() => { pesoInputRef.current?.focus(); pesoInputRef.current?.select(); }, 20); };
   const handleEditInventoryItem = (item: InventoryItem) => { const match = (activeRindesQuery.data || []).find((entry) => normalize(entry.articleCode) === normalize(item.articleCode)) || ({ articleCode: item.articleCode, referenceLabel: item.referenceLabel, anchoCm: item.anchoCm, kgPorMetro: item.kgPorMetro, metrosReferencia: item.metrosReferencia, activo: true } as AvailableRinde); setEditingItemId(item.id); setInventorySelectedRinde(match); setInventorySearch(item.referenceLabel); setInventoryPeso(String(item.pesoKg).replace(".", ",")); setInventoryRollos(String(item.rollosCerrados)); setInventoryObservation(item.observacion || ""); setInventorySearchOpen(false); };
-  const handleDeleteInventoryItem = (item: InventoryItem) => { if (window.confirm(`¿Eliminar la fila ${item.referenceLabel} del inventario actual?`)) deleteInventoryItemMutation.mutate(item.id); };
+  const handleDeleteInventoryItem = (item: InventoryItem) => { setDeleteInventoryCandidate(item); };
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pb-28 pt-2 sm:px-4 md:gap-5 md:pb-8 md:pt-4">
-      <section className="rounded-[28px] border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 md:px-6 md:py-5">
-        <div className="grid gap-5 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-emerald-50 p-2.5 text-emerald-700 shadow-sm"><Calculator className="h-5 w-5" /></div>
-              <div>
-                <h2 className="text-xl font-bold tracking-tight text-slate-950 md:text-3xl">Calculadora de Rinde</h2>
-                <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-emerald-700">por Jony Caro</p>
-                <p className="mt-1 text-sm text-slate-600">Calculá los metros estimados de una tela según su peso.</p>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-24 pt-2 sm:px-4 md:gap-5 md:pb-8 md:pt-4">
+      <section className="rounded-[22px] border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-5 md:px-6 md:py-5">
+        <div className="space-y-2.5 md:space-y-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-emerald-50 p-2 text-emerald-700 shadow-sm"><Calculator className="h-5 w-5" /></div>
+                <div className="min-w-0">
+                  <h2 className="text-[22px] font-bold tracking-tight text-slate-950 md:text-[26px]">Calculadora de Rinde</h2>
+                  <p className="mt-1 text-sm text-slate-600">Seleccioná un rinde e ingresá el peso.</p>
+                </div>
               </div>
             </div>
-            <Card className="border-slate-200 shadow-none" data-tour="rinde-search">
-              <CardHeader className="pb-3"><CardTitle className="text-base">Rindes disponibles</CardTitle><CardDescription>Elegí una tela ya medida y verificada por CDD.</CardDescription></CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <Input value={search} onChange={(event) => { const value = event.target.value; setSearch(value); if (selectedArticle && normalize(value) !== normalize(getReferenceLabel(selectedArticle)) && normalize(value) !== normalize(selectedArticle.code)) { setSelectedArticle(null); setPesoActual(""); setRollosCerrados("0"); } }} placeholder="Buscar rinde..." className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm shadow-none" />
-                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                  {filteredAvailableRindes.map((item) => (
-                    <button key={`${item.articleCode}-${item.referenceLabel || ""}`} type="button" onClick={() => handleSelectArticle(toArticle(item))} className={`w-full rounded-2xl border px-4 py-3 text-left ${normalize(item.articleCode) === normalize(selectedArticle?.code) ? "border-emerald-300 bg-emerald-50/70" : "border-slate-200 bg-white hover:bg-emerald-50/40"}`}>
-                      <p className="font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</p>
-                      <p className="mt-1 text-sm text-slate-600">{renderRindeMeta(item)}</p>
-                    </button>
+            <div data-tour="rinde-master" className="flex items-center justify-start lg:justify-end">
+              <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}>
+                <Lock className="mr-2 h-4 w-4" />
+                {adminUnlocked && adminPanelOpen ? "Ocultar maestro" : "Administrar rindes"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-2.5 md:rounded-[20px] md:p-4">
+            <div className="grid grid-cols-2 items-end gap-2.5 lg:grid-cols-[minmax(0,1.9fr)_112px_112px_190px] xl:grid-cols-[minmax(0,2.2fr)_120px_120px_220px]" data-tour="rinde-inputs">
+              <div className="relative col-span-2 min-w-0" data-tour="rinde-search">
+                <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Rinde</label>
+                <Input
+                  ref={searchInputRef}
+                  value={search}
+                  onFocus={() => setSearchOpen(true)}
+                  onBlur={() => { searchBlurTimer.current = window.setTimeout(() => setSearchOpen(false), 120); }}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSearch(value);
+                    setSearchOpen(true);
+                    if (selectedArticle && normalize(value) !== normalize(getReferenceLabel(selectedArticle)) && normalize(value) !== normalize(selectedArticle.code)) {
+                      setSelectedArticle(null);
+                      setPesoActual("");
+                      setRollosCerrados("0");
+                    }
+                  }}
+                  placeholder="Buscar rinde..."
+                  className="h-10 rounded-2xl border-slate-200 bg-white text-sm shadow-none"
+                />
+                {searchOpen && compactAvailableRindes.length > 0 ? (
+                  <div className="absolute inset-x-0 z-30 mt-2 max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                    {compactAvailableRindes.map((item) => (
+                      <button
+                        key={`${item.articleCode}-${item.referenceLabel || ""}`}
+                        type="button"
+                        className={`flex w-full flex-col rounded-xl px-3 py-2 text-left ${normalize(item.articleCode) === normalize(selectedArticle?.code) ? "bg-emerald-50 text-emerald-900" : "hover:bg-emerald-50/70"}`}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          if (searchBlurTimer.current) window.clearTimeout(searchBlurTimer.current);
+                          handleSelectArticle(toArticle(item));
+                        }}
+                      >
+                        <span className="text-sm font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</span>
+                        <span className="text-xs text-slate-500">{renderRindeMeta(item)}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="mt-2 min-h-[34px]" data-tour="rinde-article">
+                  <p className="truncate text-sm font-semibold text-slate-900">{selectedReferenceLabel || "Sin rinde seleccionado"}</p>
+                  <p className="truncate text-xs text-slate-500">{selectedArticle ? renderReferenceSummary() : "Elegí un rinde para calcular metros disponibles."}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Peso kg</label>
+                <Input ref={calculatorPesoInputRef} value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="6,00" className="h-10 rounded-2xl bg-white text-sm shadow-none" />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Rollos</label>
+                <Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="0" className="h-10 rounded-2xl bg-white text-sm shadow-none" />
+              </div>
+
+              <div className="col-span-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-left lg:col-span-1 lg:text-right" data-tour="rinde-result">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Total</p>
+                <p className="mt-1 text-[24px] font-black leading-none tracking-tight text-slate-950 md:text-[30px]">{calculatorTotalValue}</p>
+                <p className="mt-1 text-xs text-slate-500">{calculatorBreakdown}</p>
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500" data-tour="rinde-reference">
+              {selectedArticle ? (
+                <>
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700">{selectedReferenceLabel}</span>
+                  <span className="truncate">{renderReferenceSummary()}</span>
+                  {rindeQuery.data?.rinde?.updatedAt ? <span className="truncate">Actualizado {formatDateTime(rindeQuery.data.rinde.updatedAt)}</span> : null}
+                </>
+              ) : (
+                <span>Elegí un rinde y el detalle técnico aparecerá acá, sin ocupar otra tarjeta.</span>
+              )}
+            </div>
+          </div>
+
+          {adminUnlocked && adminPanelOpen ? (
+            <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 p-3 md:p-4">
+              <div className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Maestro de Rindes</p>
+                    <p className="text-xs text-slate-500">Acceso CDD para crear, editar o desactivar referencias.</p>
+                  </div>
+                  <Button type="button" variant="outline" className="h-10 rounded-2xl px-4" onClick={handleCreateNewRinde}><Plus className="mr-2 h-4 w-4" />Nuevo</Button>
+                </div>
+                <Input value={adminSearch} onChange={(event) => setAdminSearch(event.target.value)} placeholder="Buscar referencia..." className="h-10 rounded-2xl bg-white" />
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_120px_140px_140px_auto]">
+                  <Input value={form.referenceLabel} onChange={(event) => setForm((current) => ({ ...current, referenceLabel: event.target.value }))} placeholder="Referencia" className="h-10 rounded-2xl bg-white md:col-span-2 xl:col-span-1" />
+                  <Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho" className="h-10 rounded-2xl bg-white" />
+                  <Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso ref." className="h-10 rounded-2xl bg-white" />
+                  <Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros ref." className="h-10 rounded-2xl bg-white" />
+                  <label className="flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700"><input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />Activo</label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" className="h-10 rounded-2xl bg-emerald-600 px-4 hover:bg-emerald-700" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>{saveMutation.isPending ? "Guardando..." : "Guardar rinde"}</Button>
+                </div>
+                <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+                  {filteredAdminRindes.map((item) => (
+                    <div key={`${item.articleCode}-${item.referenceLabel || ""}`} className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</p>
+                          <p className="mt-1 truncate text-xs text-slate-500">{renderRindeMeta(item)}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button type="button" variant="ghost" size="sm" className="h-9 w-9 rounded-full p-0" onClick={() => handleSelectArticle(toArticle(item), "admin")}><Pencil className="h-4 w-4" /></Button>
+                          <Button type="button" variant="ghost" size="sm" className="h-9 w-9 rounded-full p-0 text-rose-600 hover:text-rose-700" onClick={() => setDeleteCandidate(item)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <div data-tour="rinde-article" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-900">{selectedArticle ? getReferenceLabel(selectedArticle) || selectedArticle.code : "Seleccioná una referencia"}</p>
-                  <p className="mt-1 text-sm text-slate-600">{renderReferenceSummary()}</p>
-                </div>
-                <div className="grid gap-3 min-[390px]:grid-cols-2" data-tour="rinde-inputs">
-                  <div><label className="mb-2 block text-sm font-semibold text-slate-800">Peso del rollo abierto</label><Input value={pesoActual} onChange={(event) => setPesoActual(event.target.value)} inputMode="decimal" placeholder="Ej. 6,00" className="h-11 rounded-2xl" /></div>
-                  <div><label className="mb-2 block text-sm font-semibold text-slate-800">Rollos cerrados</label><Input value={rollosCerrados} onChange={(event) => setRollosCerrados(event.target.value)} inputMode="numeric" placeholder="Ej. 2" className="h-11 rounded-2xl" /></div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="space-y-4">
-            <Card className="border-emerald-200 bg-emerald-50/70 shadow-none" data-tour="rinde-result">
-              <CardHeader className="pb-3"><CardTitle className="text-lg text-slate-950">Resultado estimado</CardTitle><CardDescription>Buscá y seleccioná una referencia para calcular metros disponibles.</CardDescription></CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="rounded-[24px] border border-emerald-200 bg-white px-4 py-4 text-center shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Rinde estimado</p><p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{resultSummary}</p><p className="mt-2 text-sm text-slate-600">{calculation.message}</p></div>
-                <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-slate-200 bg-white px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Abierto</p><p className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(calculation.abierto)} m</p></div><div className="rounded-2xl border border-slate-200 bg-white px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cerrados</p><p className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(calculation.cerrados)} m</p></div><div className="rounded-2xl border border-slate-200 bg-white px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p><p className="mt-1 text-lg font-semibold text-emerald-700">{formatNumber(calculation.total)} m</p></div></div>
-              </CardContent>
-            </Card>
-            <Card className="border-slate-200 shadow-none" data-tour="rinde-reference"><CardHeader className="pb-3"><CardTitle className="text-lg">Referencia técnica</CardTitle><CardDescription>{renderReferenceSummary()}</CardDescription></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ancho</p><p className="mt-1 text-lg font-semibold text-slate-900">{rindeQuery.data?.rinde ? `${formatNumber(rindeQuery.data.rinde.anchoCm, 0)} cm` : "-"}</p></div><div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Última actualización</p><p className="mt-1 text-sm font-medium text-slate-900">{formatDateTime(rindeQuery.data?.rinde?.updatedAt)}</p><p className="mt-1 text-xs text-slate-500">{rindeQuery.data?.rinde?.updatedBy || "CDD"}</p></div></CardContent></Card>
-            <Card className="border-slate-200 shadow-none" data-tour="rinde-master"><CardContent className="flex flex-col gap-3 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">Maestro de Rindes</p><p className="text-sm text-slate-500">Acceso protegido para crear, editar o desactivar referencias.</p></div><Button type="button" variant="outline" className="rounded-2xl" onClick={() => adminUnlocked ? setAdminPanelOpen((value) => !value) : setAuthDialogOpen(true)}><Lock className="mr-2 h-4 w-4" />Administrar rindes</Button></div>{adminUnlocked && adminPanelOpen ? <div className="space-y-4 rounded-[24px] border border-slate-200 bg-white p-4"><Input value={adminSearch} onChange={(event) => setAdminSearch(event.target.value)} placeholder="Buscar referencia..." className="h-11 rounded-2xl" /><div className="grid gap-3 sm:grid-cols-2"><Input value={form.referenceLabel} onChange={(event) => setForm((current) => ({ ...current, referenceLabel: event.target.value }))} placeholder="Referencia" className="h-11 rounded-2xl sm:col-span-2" /><Input value={form.anchoCm} onChange={(event) => setForm((current) => ({ ...current, anchoCm: event.target.value }))} placeholder="Ancho" className="h-11 rounded-2xl" /><Input value={form.pesoReferenciaKg} onChange={(event) => setForm((current) => ({ ...current, pesoReferenciaKg: event.target.value }))} placeholder="Peso ref." className="h-11 rounded-2xl" /><Input value={form.metrosReferencia} onChange={(event) => setForm((current) => ({ ...current, metrosReferencia: event.target.value }))} placeholder="Metros ref." className="h-11 rounded-2xl" /><label className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm"><input type="checkbox" checked={form.activo} onChange={(event) => setForm((current) => ({ ...current, activo: event.target.checked }))} />Activo</label></div><div className="flex flex-wrap gap-2"><Button type="button" className="rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>{saveMutation.isPending ? "Guardando..." : "Guardar rinde"}</Button><Button type="button" variant="outline" className="rounded-2xl" onClick={handleCreateNewRinde}><Plus className="mr-2 h-4 w-4" />Nuevo</Button></div><div className="max-h-64 space-y-2 overflow-y-auto pr-1">{filteredAdminRindes.map((item) => <div key={`${item.articleCode}-${item.referenceLabel || ""}`} className="rounded-2xl border border-slate-200 px-4 py-3"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</p><p className="mt-1 text-sm text-slate-600">{renderRindeMeta(item)}</p></div><div className="flex items-center gap-2"><Button type="button" variant="ghost" size="sm" className="rounded-full px-3" onClick={() => handleSelectArticle(toArticle(item), "admin")}><Pencil className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="sm" className="rounded-full px-3 text-rose-600 hover:text-rose-700" onClick={() => setDeleteCandidate(item)}><Trash2 className="h-4 w-4" /></Button></div></div></div>)}</div></div> : null}</CardContent></Card>
-          </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 md:px-6 md:py-5">
-        <div className="space-y-3 md:space-y-4">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-3 md:p-4" data-tour="rinde-branch">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="rounded-2xl bg-sky-50 p-2.5 text-sky-700 shadow-sm"><ClipboardList className="h-5 w-5" /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
-                    <h3 className="text-lg font-bold text-slate-950 md:text-xl">Inventario actual</h3>
-                    <span className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">{selectedBranch ? `Inventario · ${selectedBranch}` : "Inventario · sin sucursal"}</span>
-                    <span className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">{inventorySummary.rowCount} registros</span>
-                    <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Total {formatNumber(inventorySummary.totalMeters)} m</span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-600">La carga rápida queda primero; los datos técnicos y la descarga siguen accesibles sin estorbar el trabajo operativo.</p>
-                </div>
+      <section className="rounded-[22px] border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-5 md:px-6 md:py-5">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between" data-tour="rinde-branch">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold text-slate-950 md:text-xl">Inventario actual</h3>
+                {selectedBranch ? <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{selectedBranch}</span> : null}
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end" data-tour="rinde-inventory-export">
-                <Button type="button" variant="outline" className="h-10 rounded-2xl bg-white px-4" disabled={!inventoryPayload?.items.length} onClick={() => inventoryPayload && downloadInventoryExcel(inventoryPayload)}><Download className="mr-2 h-4 w-4" />Excel</Button>
-                <Button type="button" className="h-10 rounded-2xl bg-slate-900 px-4 hover:bg-slate-800" disabled={!currentSessionId || !inventoryItems.length || finalizeInventoryMutation.isPending} onClick={() => { if (window.confirm("¿Finalizar este inventario? Se descargará el Excel y la sesión dejará de estar activa.")) finalizeInventoryMutation.mutate(); }}>{finalizeInventoryMutation.isPending ? "Finalizando..." : "Finalizar"}</Button>
-              </div>
+              <p className="mt-1 text-xs text-slate-600">{inventoryCompactSummary}</p>
             </div>
-            <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
-              <div className="min-w-0 space-y-3 rounded-[22px] border border-slate-200 bg-white p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" data-tour="rinde-inventory-export">
+              <Button type="button" variant="outline" className="h-10 rounded-2xl bg-white px-4" disabled={!inventoryPayload?.items.length} onClick={() => inventoryPayload && downloadInventoryExcel(inventoryPayload)}><Download className="mr-2 h-4 w-4" />Excel</Button>
+              <Button type="button" className="h-10 rounded-2xl bg-slate-900 px-4 hover:bg-slate-800" disabled={!currentSessionId || !inventoryItems.length || finalizeInventoryMutation.isPending} onClick={() => setFinalizeInventoryOpen(true)}>{finalizeInventoryMutation.isPending ? "Finalizando..." : "Finalizar"}</Button>
+            </div>
+          </div>
+
+          <div className="grid gap-2.5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="hidden space-y-2 rounded-[20px] border border-slate-200 bg-slate-50/80 p-3 lg:block">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Sucursal</label>
+                <select value={selectedBranch} onChange={(event) => { setSelectedBranch(event.target.value as Branch | ""); resetInventoryForm(); }} className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-none outline-none focus:border-emerald-500">
+                  <option value="">Seleccionar sucursal...</option>
+                  {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
+                </select>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                {currentSessionId ? <>Sesión activa <span className="font-semibold text-slate-900">{currentSessionId.slice(0, 8)}</span></> : "Elegí una sucursal e iniciá un inventario activo."}
+              </div>
+              {!currentSessionId ? <Button type="button" className="h-10 w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedBranch || createSessionMutation.isPending} onClick={() => { if (!selectedBranch) return; createSessionMutation.mutate(selectedBranch); }}>{createSessionMutation.isPending ? "Iniciando..." : "Iniciar inventario"}</Button> : null}
+            </div>
+
+            <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-2.5 md:rounded-[20px] md:p-3" data-tour="rinde-inventory-form">
+              <div className="mb-2.5 space-y-2 lg:hidden">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sucursal</p>
-                  <select value={selectedBranch} onChange={(event) => { setSelectedBranch(event.target.value as Branch | ""); resetInventoryForm(); }} className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-none outline-none focus:border-emerald-500">
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Sucursal</label>
+                  <select value={selectedBranch} onChange={(event) => { setSelectedBranch(event.target.value as Branch | ""); resetInventoryForm(); }} className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-none outline-none focus:border-emerald-500">
                     <option value="">Seleccionar sucursal...</option>
                     {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
                   </select>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-                  {currentSessionId ? <>Sesión activa <span className="font-semibold text-slate-900">{currentSessionId.slice(0, 8)}</span></> : "Elegí una sucursal e iniciá un inventario activo para no mezclar relevamientos."}
-                </div>
-                {!currentSessionId ? <Button type="button" className="h-11 w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!selectedBranch || createSessionMutation.isPending} onClick={() => { if (!selectedBranch) return; createSessionMutation.mutate(selectedBranch); }}>{createSessionMutation.isPending ? "Iniciando..." : "Iniciar inventario"}</Button> : null}
-                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 xl:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5"><p className="font-semibold uppercase tracking-wide text-slate-500">Abiertos</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatNumber(inventorySummary.openMeters)} m</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5"><p className="font-semibold uppercase tracking-wide text-slate-500">Cerrados</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatNumber(inventorySummary.closedMeters)} m</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5"><p className="font-semibold uppercase tracking-wide text-slate-500">Rollos</p><p className="mt-1 text-sm font-semibold text-slate-900">{inventorySummary.closedRolls}</p></div>
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"><p className="font-semibold uppercase tracking-wide text-emerald-700">Total</p><p className="mt-1 text-sm font-semibold text-emerald-700">{formatNumber(inventorySummary.totalMeters)} m</p></div>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                    {currentSessionId ? <>Sesión activa <span className="font-semibold text-slate-900">{currentSessionId.slice(0, 8)}</span></> : "Elegí una sucursal e iniciá un inventario activo."}
+                  </div>
+                  {!currentSessionId ? <Button type="button" className="h-10 rounded-2xl bg-emerald-600 px-4 hover:bg-emerald-700" disabled={!selectedBranch || createSessionMutation.isPending} onClick={() => { if (!selectedBranch) return; createSessionMutation.mutate(selectedBranch); }}>{createSessionMutation.isPending ? "Iniciando..." : "Iniciar"}</Button> : null}
                 </div>
               </div>
-              <Card className="min-w-0 border-slate-200 shadow-none" data-tour="rinde-inventory-form">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Carga rápida</CardTitle>
-                  <CardDescription>Buscá, cargá peso y seguí con la siguiente tela sin salir de esta barra operativa.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-0">
-                  {inventoryInlineError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{inventoryInlineError}</div> : null}
-                  <div className="grid gap-2.5 md:grid-cols-[minmax(0,1.7fr)_140px_120px_auto] xl:grid-cols-[minmax(0,1.9fr)_150px_120px_160px_auto]">
-                    <div className="relative md:col-span-4 xl:col-span-1">
-                      <Input ref={inventorySearchInputRef} value={inventorySearch} onFocus={() => setInventorySearchOpen(true)} onBlur={() => { inventorySearchBlurTimer.current = window.setTimeout(() => setInventorySearchOpen(false), 120); }} onChange={(event) => { setInventorySearch(event.target.value); setInventorySearchOpen(true); if (inventorySelectedRinde && normalize(event.target.value) !== normalize(getReferenceLabel(inventorySelectedRinde))) setInventorySelectedRinde(null); }} placeholder="Buscar rinde..." className="h-11 rounded-2xl border-slate-200 bg-white text-sm shadow-none" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
-                      {inventorySearchOpen && inventorySuggestions.length > 0 ? <div className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">{inventorySuggestions.map((item) => <button key={`${item.articleCode}-${item.referenceLabel || ""}`} type="button" className="flex w-full flex-col rounded-xl px-3 py-2 text-left hover:bg-emerald-50" onMouseDown={(event) => event.preventDefault()} onClick={() => { if (inventorySearchBlurTimer.current) window.clearTimeout(inventorySearchBlurTimer.current); handleSelectInventoryRinde(item); }}><span className="font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</span><span className="text-xs text-slate-500">{renderRindeMeta(item)}</span></button>)}</div> : null}
-                    </div>
-                    <Input ref={pesoInputRef} value={inventoryPeso} onChange={(event) => setInventoryPeso(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); rollosInputRef.current?.focus(); rollosInputRef.current?.select(); } }} inputMode="decimal" placeholder="Peso kg" className="h-11 rounded-2xl" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
-                    <Input ref={rollosInputRef} value={inventoryRollos} onChange={(event) => setInventoryRollos(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); upsertInventoryItemMutation.mutate(); } }} inputMode="numeric" placeholder="Rollos" className="h-11 rounded-2xl" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
-                    <Input value={inventoryObservation} onChange={(event) => setInventoryObservation(event.target.value)} placeholder="Obs." className="h-11 rounded-2xl" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
-                    <div className="flex gap-2 md:col-span-4 xl:col-span-1 xl:flex-col">
-                      <Button type="button" className="h-11 flex-1 rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={!currentSessionId || upsertInventoryItemMutation.isPending || !inventorySelectedRinde} onClick={() => upsertInventoryItemMutation.mutate()}>{upsertInventoryItemMutation.isPending ? "Guardando..." : editingItemId ? "Guardar" : "+ Agregar"}</Button>
-                      {(editingItemId || inventorySelectedRinde || inventoryPeso || inventoryRollos !== "0" || inventoryObservation) ? <Button type="button" variant="outline" className="h-11 rounded-2xl px-3 xl:h-10" onClick={resetInventoryForm}><X className="h-4 w-4" /></Button> : null}
-                    </div>
-                  </div>
-                  <div className="grid gap-2.5 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Referencia activa</p>
-                      <p className="mt-1 truncate text-sm font-semibold text-slate-900">{inventorySelectedRinde ? getReferenceLabel(inventorySelectedRinde) || inventorySelectedRinde.articleCode : "Elegí un rinde"}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{inventorySelectedRinde ? renderRindeMeta(inventorySelectedRinde) : "Ancho, kg/m y metros por rollo se completan automáticamente."}</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Abiertos</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatNumber(inventoryCalculation.openMeters)} m</p></div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Cerrados</p><p className="mt-1 text-sm font-semibold text-slate-900">{formatNumber(inventoryCalculation.closedMeters)} m</p></div>
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Total estimado</p><p className="mt-1 text-sm font-semibold text-emerald-700">{formatNumber(inventoryCalculation.totalMeters)} m</p></div>
-                  </div>
-                </CardContent>
-              </Card>
+              {inventoryInlineError ? <div className="mb-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{inventoryInlineError}</div> : null}
+              <div className="grid gap-2 lg:grid-cols-[minmax(0,1.7fr)_110px_96px_170px_auto] xl:grid-cols-[minmax(0,1.9fr)_120px_104px_190px_auto]">
+                <div className="relative min-w-0">
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Rinde</label>
+                  <Input ref={inventorySearchInputRef} value={inventorySearch} onFocus={() => setInventorySearchOpen(true)} onBlur={() => { inventorySearchBlurTimer.current = window.setTimeout(() => setInventorySearchOpen(false), 120); }} onChange={(event) => { setInventorySearch(event.target.value); setInventorySearchOpen(true); if (inventorySelectedRinde && normalize(event.target.value) !== normalize(getReferenceLabel(inventorySelectedRinde))) setInventorySelectedRinde(null); }} placeholder="Buscar rinde..." className="h-10 rounded-2xl border-slate-200 bg-white text-sm shadow-none" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
+                  {inventorySearchOpen && inventorySuggestions.length > 0 ? <div className="absolute inset-x-0 z-30 mt-2 max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">{inventorySuggestions.map((item) => <button key={`${item.articleCode}-${item.referenceLabel || ""}`} type="button" className="flex w-full flex-col rounded-xl px-3 py-2 text-left hover:bg-emerald-50" onMouseDown={(event) => event.preventDefault()} onClick={() => { if (inventorySearchBlurTimer.current) window.clearTimeout(inventorySearchBlurTimer.current); handleSelectInventoryRinde(item); }}><span className="text-sm font-semibold text-slate-900">{getReferenceLabel(item) || item.articleCode}</span><span className="text-xs text-slate-500">{renderRindeMeta(item)}</span></button>)}</div> : null}
+                  <p className="mt-2 truncate text-xs text-slate-500">{inventorySelectedRinde ? renderRindeMeta(inventorySelectedRinde) : "Seleccioná un rinde para sumar la fila al inventario."}</p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Peso kg</label>
+                  <Input ref={pesoInputRef} value={inventoryPeso} onChange={(event) => setInventoryPeso(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); rollosInputRef.current?.focus(); rollosInputRef.current?.select(); } }} inputMode="decimal" placeholder="6,00" className="h-10 rounded-2xl bg-white" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Rollos</label>
+                  <Input ref={rollosInputRef} value={inventoryRollos} onChange={(event) => setInventoryRollos(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); upsertInventoryItemMutation.mutate(); } }} inputMode="numeric" placeholder="0" className="h-10 rounded-2xl bg-white" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-white px-3 py-2.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Total</p>
+                  <p className="mt-1 text-lg font-black leading-none text-slate-950">{formatNumber(inventoryCalculation.totalMeters)} m</p>
+                  <p className="mt-1 text-xs text-slate-500">Ab {formatNumber(inventoryCalculation.openMeters)} · Ce {formatNumber(inventoryCalculation.closedMeters)}</p>
+                </div>
+                <div className="flex gap-2 lg:flex-col">
+                  <Button type="button" className="h-10 flex-1 rounded-2xl bg-emerald-600 px-4 hover:bg-emerald-700" disabled={!currentSessionId || upsertInventoryItemMutation.isPending || !inventorySelectedRinde} onClick={() => upsertInventoryItemMutation.mutate()}>{upsertInventoryItemMutation.isPending ? "Guardando..." : editingItemId ? "Guardar" : "+ Agregar"}</Button>
+                  {(editingItemId || inventorySelectedRinde || inventoryPeso || inventoryRollos !== "0" || inventoryObservation) ? <Button type="button" variant="outline" className="h-10 rounded-2xl px-3" onClick={resetInventoryForm}><X className="h-4 w-4" /></Button> : null}
+                </div>
+              </div>
+              <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-500">{inventorySelectedRinde ? `${getReferenceLabel(inventorySelectedRinde) || inventorySelectedRinde.articleCode} · ${renderRindeMeta(inventorySelectedRinde)}` : "Elegí un rinde y seguí cargando la siguiente tela sin salir de esta barra."}</div>
+                <Input value={inventoryObservation} onChange={(event) => setInventoryObservation(event.target.value)} placeholder="Observación" className="h-10 rounded-2xl bg-white" disabled={!currentSessionId || inventorySessionQuery.isLoading} />
+              </div>
             </div>
           </div>
-          <Accordion type="multiple" value={inventoryMobileSections} onValueChange={setInventoryMobileSections} className="rounded-[24px] border border-slate-200 bg-white px-4 shadow-sm md:hidden" data-tour="rinde-inventory-summary-mobile"><AccordionItem value="summary"><AccordionTrigger className="py-4 text-left text-sm font-semibold text-slate-900 hover:no-underline"><div><p>{inventorySummary.rowCount} artículos · Total {formatNumber(inventorySummary.totalMeters)} m</p><p className="mt-1 text-xs font-normal text-slate-500">Abiertos {formatNumber(inventorySummary.openMeters)} m · Cerrados {formatNumber(inventorySummary.closedMeters)} m</p></div></AccordionTrigger><AccordionContent><div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"><p>{inventorySummary.closedRolls} rollos cerrados · Sesión {currentSessionId ? currentSessionId.slice(0, 8) : "sin iniciar"}</p><p>Excel y finalizar quedan disponibles arriba para cerrar el inventario cuando termines.</p></div></AccordionContent></AccordionItem></Accordion>
-          {inventorySessionQuery.isLoading && currentSessionId ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">Cargando inventario activo...</div> : null}
-          {inventorySessionQuery.isError && currentSessionId ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">No pudimos recuperar la sesión activa. Probá iniciar un inventario nuevo.</div> : null}
-          <div className="hidden overflow-hidden rounded-[24px] border border-slate-200 bg-white md:block" data-tour="rinde-inventory-list">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <span>Referencia | Peso kg | Abiertos | Rollos | Cerrados | Total | Obs.</span>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 md:hidden" data-tour="rinde-inventory-summary-mobile">
+            {inventorySummary.rowCount} registros · Total {formatNumber(inventorySummary.totalMeters)} m · Ab {formatNumber(inventorySummary.openMeters)} · Ce {formatNumber(inventorySummary.closedMeters)}
+          </div>
+
+          {inventorySessionQuery.isLoading && currentSessionId ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">Cargando inventario activo...</div> : null}
+          {inventorySessionQuery.isError && currentSessionId ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">No pudimos recuperar la sesión activa. Probá iniciar un inventario nuevo.</div> : null}
+
+          <div className="hidden overflow-hidden rounded-[20px] border border-slate-200 bg-white md:block" data-tour="rinde-inventory-list">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <span>Referencia | Peso | Abiertos | Rollos | Cerrados | Total | Obs.</span>
               <span>{inventorySummary.rowCount} filas</span>
             </div>
-            <div className="max-h-[28rem] overflow-auto">
+            <div className="max-h-[24rem] overflow-auto">
               <table className="min-w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-white text-slate-600">
                   <tr className="border-b border-slate-200">
-                    {['Referencia','Peso kg','Abiertos m','Rollos','Cerrados m','Total m','Obs.','Acciones'].map((label) => <th key={label} className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide">{label}</th>)}
+                    {['Referencia','Peso kg','Abiertos m','Rollos','Cerrados m','Total m','Obs.','Acciones'].map((label) => <th key={label} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide">{label}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {inventoryItems.length ? inventoryItems.map((item) => <tr key={item.id} className="border-b border-slate-100 align-middle hover:bg-slate-50/80"><td className="px-3 py-2.5 min-w-[240px]"><p className="font-semibold leading-tight text-slate-900">{item.referenceLabel}</p><p className="mt-0.5 text-[11px] leading-tight text-slate-500">{formatNumber(item.anchoCm, 0)} cm · {formatNumber(item.kgPorMetro, 4)} kg/m · {formatNumber(item.metrosReferencia)} m/rollo</p></td><td className="px-3 py-2.5 font-medium text-slate-700">{formatNumber(item.pesoKg)}</td><td className="px-3 py-2.5 font-medium text-slate-900">{formatNumber(item.metrosAbiertos)} m</td><td className="px-3 py-2.5 text-slate-700">{item.rollosCerrados}</td><td className="px-3 py-2.5 font-medium text-slate-900">{formatNumber(item.metrosCerrados)} m</td><td className="px-3 py-2.5 font-semibold text-emerald-700">{formatNumber(item.totalMetros)} m</td><td className="px-3 py-2.5 max-w-[180px] text-xs text-slate-600">{item.observacion || '—'}</td><td className="px-3 py-2.5"><div className="flex items-center gap-1"><Button type="button" size="sm" variant="ghost" className="h-9 w-9 rounded-full p-0" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" className="h-9 w-9 rounded-full p-0 text-rose-600 hover:text-rose-700" onClick={() => handleDeleteInventoryItem(item)}><Trash2 className="h-4 w-4" /></Button></div></td></tr>) : <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-500">Todavía no cargaste filas en este inventario.</td></tr>}
+                  {inventoryItems.length ? inventoryItems.map((item) => <tr key={item.id} className="border-b border-slate-100 align-middle hover:bg-slate-50/80"><td className="px-3 py-2 min-w-[220px]"><p className="font-semibold leading-tight text-slate-900">{item.referenceLabel}</p><p className="mt-0.5 truncate text-[11px] leading-tight text-slate-500">{formatNumber(item.anchoCm, 0)} cm · {formatNumber(item.kgPorMetro, 4)} kg/m · {formatNumber(item.metrosReferencia)} m/rollo</p></td><td className="px-3 py-2 font-medium text-slate-700">{formatNumber(item.pesoKg)}</td><td className="px-3 py-2 font-medium text-slate-900">{formatNumber(item.metrosAbiertos)} m</td><td className="px-3 py-2 text-slate-700">{item.rollosCerrados}</td><td className="px-3 py-2 font-medium text-slate-900">{formatNumber(item.metrosCerrados)} m</td><td className="px-3 py-2 font-semibold text-emerald-700">{formatNumber(item.totalMetros)} m</td><td className="px-3 py-2 max-w-[180px] truncate text-xs text-slate-600">{item.observacion || '—'}</td><td className="px-3 py-2"><div className="flex items-center gap-1"><Button type="button" size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0 text-rose-600 hover:text-rose-700" onClick={() => handleDeleteInventoryItem(item)}><Trash2 className="h-4 w-4" /></Button></div></td></tr>) : <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Todavía no cargaste filas en este inventario.</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
-          <div className="space-y-2 md:hidden" data-tour="rinde-inventory-list-mobile">
-            <div className="max-h-[25rem] overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-2.5">
-              {inventoryItems.length ? inventoryItems.map((item) => <div key={item.id} className="flex items-center justify-between gap-2 border-b border-slate-100 px-1 py-2.5 last:border-b-0"><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="truncate pr-2 text-sm font-semibold text-slate-900">{item.referenceLabel}</p><span className="shrink-0 text-sm font-semibold text-emerald-700">{formatNumber(item.totalMetros)} m</span></div><p className="mt-0.5 text-xs text-slate-500">{formatNumber(item.pesoKg)} kg · {item.rollosCerrados} rollos</p><p className="mt-0.5 text-xs text-slate-500">Abierto {formatNumber(item.metrosAbiertos)} · Cerrado {formatNumber(item.metrosCerrados)}</p>{item.observacion ? <p className="mt-0.5 truncate text-xs text-slate-400">{item.observacion}</p> : null}</div><div className="flex shrink-0 items-center gap-1"><Button type="button" size="sm" variant="ghost" className="h-11 w-11 rounded-full p-0" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" className="h-11 w-11 rounded-full p-0 text-rose-600 hover:text-rose-700" onClick={() => handleDeleteInventoryItem(item)}><Trash2 className="h-4 w-4" /></Button></div></div>) : <p className="py-6 text-center text-sm text-slate-500">Todavía no cargaste filas en este inventario.</p>}
+
+          <div className="md:hidden" data-tour="rinde-inventory-list-mobile">
+            <div className="max-h-[min(26vh,14rem)] overflow-y-auto rounded-[18px] border border-slate-200 bg-white p-2">
+              {inventoryItems.length ? inventoryItems.map((item) => <div key={item.id} className="flex items-start justify-between gap-2 border-b border-slate-100 px-1 py-2.5 last:border-b-0"><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="truncate pr-2 text-sm font-semibold text-slate-900">{item.referenceLabel}</p><span className="shrink-0 text-sm font-semibold text-emerald-700">{formatNumber(item.totalMetros)} m</span></div><p className="mt-0.5 text-xs text-slate-500">{formatNumber(item.pesoKg)} kg · {item.rollosCerrados} rollos</p><p className="mt-0.5 text-xs text-slate-500">Ab {formatNumber(item.metrosAbiertos)} · Ce {formatNumber(item.metrosCerrados)}</p>{item.observacion ? <p className="mt-0.5 truncate text-xs text-slate-400">{item.observacion}</p> : null}</div><div className="flex shrink-0 items-center gap-1"><Button type="button" size="sm" variant="ghost" className="h-10 w-10 rounded-full p-0" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button type="button" size="sm" variant="ghost" className="h-10 w-10 rounded-full p-0 text-rose-600 hover:text-rose-700" onClick={() => handleDeleteInventoryItem(item)}><Trash2 className="h-4 w-4" /></Button></div></div>) : <p className="py-6 text-center text-sm text-slate-500">Todavía no cargaste filas en este inventario.</p>}
             </div>
           </div>
         </div>
-      </section>
+      </section>      <Dialog open={finalizeInventoryOpen} onOpenChange={(open) => { if (!finalizeInventoryMutation.isPending) setFinalizeInventoryOpen(open); }}><DialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-[28px] border-slate-200 p-0"><div className="p-6"><DialogHeader><DialogTitle className="flex items-center gap-2 text-xl"><ClipboardList className="h-5 w-5 text-slate-900" /> Finalizar inventario</DialogTitle><DialogDescription className="space-y-2 pt-1 text-left"><span className="block text-sm font-medium text-slate-800">¿Finalizar el inventario de {selectedBranch || "esta sucursal"}?</span><span className="block text-sm text-slate-500">Una vez finalizado, esta sesión quedará cerrada y no se podrán agregar ni editar registros.</span></DialogDescription></DialogHeader><div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" autoFocus className="rounded-2xl" disabled={finalizeInventoryMutation.isPending} onClick={() => setFinalizeInventoryOpen(false)}>Cancelar</Button><Button type="button" className="rounded-2xl bg-slate-900 hover:bg-slate-800" disabled={!currentSessionId || !inventoryItems.length || finalizeInventoryMutation.isPending} onClick={() => finalizeInventoryMutation.mutate()}>{finalizeInventoryMutation.isPending ? "Finalizando..." : "Finalizar inventario"}</Button></div></div></DialogContent></Dialog>
+      <Dialog open={Boolean(deleteInventoryCandidate)} onOpenChange={(open) => { if (!open && !deleteInventoryItemMutation.isPending) setDeleteInventoryCandidate(null); }}><DialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-[28px] border-slate-200 p-0"><div className="p-6"><DialogHeader><DialogTitle className="flex items-center gap-2 text-xl"><Trash2 className="h-5 w-5 text-rose-600" /> Eliminar registro</DialogTitle><DialogDescription className="space-y-2 pt-1 text-left"><span className="block text-sm font-medium text-slate-800">¿Eliminar {deleteInventoryCandidate?.referenceLabel || "esta fila"} del inventario actual?</span><span className="block text-sm text-slate-500">Esta acción elimina únicamente esta fila.</span></DialogDescription></DialogHeader><div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" autoFocus className="rounded-2xl" disabled={deleteInventoryItemMutation.isPending} onClick={() => setDeleteInventoryCandidate(null)}>Cancelar</Button><Button type="button" className="rounded-2xl bg-rose-600 hover:bg-rose-700" disabled={!deleteInventoryCandidate || deleteInventoryItemMutation.isPending} onClick={() => deleteInventoryCandidate && deleteInventoryItemMutation.mutate(deleteInventoryCandidate.id)}>{deleteInventoryItemMutation.isPending ? "Eliminando..." : "Eliminar"}</Button></div></div></DialogContent></Dialog>
       <Dialog open={Boolean(deleteCandidate)} onOpenChange={(open) => { if (!open) setDeleteCandidate(null); }}><DialogContent className="max-w-md rounded-[28px] border-slate-200 p-0"><div className="p-6"><DialogHeader><DialogTitle className="flex items-center gap-2 text-xl"><Trash2 className="h-5 w-5 text-rose-600" /> ¿Eliminar este rinde?</DialogTitle><DialogDescription>Dejará de estar disponible para las sucursales.</DialogDescription></DialogHeader><div className="mt-5 flex flex-wrap justify-end gap-2"><Button type="button" variant="outline" className="rounded-2xl" onClick={() => setDeleteCandidate(null)}>Cancelar</Button><Button type="button" className="rounded-2xl bg-rose-600 hover:bg-rose-700" disabled={!deleteCandidate || deactivateMutation.isPending} onClick={() => deleteCandidate && deactivateMutation.mutate(deleteCandidate)}>{deactivateMutation.isPending ? "Eliminando..." : "Eliminar"}</Button></div></div></DialogContent></Dialog>
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}><DialogContent className="max-w-md rounded-[28px] border-slate-200 p-0"><div className="p-6"><DialogHeader><DialogTitle className="flex items-center gap-2 text-xl"><ShieldCheck className="h-5 w-5 text-emerald-700" /> Administrar rindes</DialogTitle><DialogDescription>Ingresá la contraseña del sector CDD para editar el maestro de rinde.</DialogDescription></DialogHeader><div className="mt-5 space-y-3"><Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Contraseña de CDD" className="h-12 rounded-2xl" /><Button type="button" className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700" disabled={authMutation.isPending} onClick={() => authMutation.mutate()}>{authMutation.isPending ? "Validando..." : "Validar acceso"}</Button></div></div></DialogContent></Dialog>
     </div>
   );
 }
+
+
 
