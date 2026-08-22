@@ -1,4 +1,5 @@
 const DROPBOX_FOLDER_PATH = '/Muestreos';
+const DROPBOX_LIST_PAGE_LIMIT = 100;
 
 export interface DropboxFile {
   id: string;
@@ -167,52 +168,74 @@ export async function listFiles(): Promise<DropboxFile[]> {
   }
 
   const accessToken = await getAccessToken();
-
-  const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      path: DROPBOX_FOLDER_PATH,
-      recursive: false,
-      include_media_info: false,
-      include_deleted: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    if (error.includes('path/not_found')) {
-      return [];
-    }
-    throw new Error(`Failed to list files: ${error}`);
-  }
-
-  const data = await response.json();
   const files: DropboxFile[] = [];
+  let hasMore = true;
+  let cursor: string | null = null;
 
-  // Process files without blocking on shared links (faster initial load)
-  for (const entry of data.entries) {
-    if (entry['.tag'] === 'file') {
-      files.push({
-        id: entry.id,
-        name: entry.name,
-        path: entry.path_display,
-        size: entry.size,
-        modified: entry.server_modified,
-      });
+  while (hasMore) {
+    const endpoint = cursor
+      ? 'https://api.dropboxapi.com/2/files/list_folder/continue'
+      : 'https://api.dropboxapi.com/2/files/list_folder';
+    const body = cursor
+      ? { cursor }
+      : {
+          path: DROPBOX_FOLDER_PATH,
+          recursive: false,
+          include_media_info: false,
+          include_deleted: false,
+        };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      if (!cursor && error.includes('path/not_found')) {
+        return [];
+      }
+      throw new Error(`Failed to list files: ${error}`);
     }
+
+    const data = await response.json();
+
+    for (const entry of data.entries ?? []) {
+      if (entry['.tag'] === 'file') {
+        files.push({
+          id: entry.id,
+          name: entry.name,
+          path: entry.path_display,
+          size: entry.size,
+          modified: entry.server_modified,
+        });
+      }
+    }
+
+    hasMore = data.has_more === true;
+    if (!hasMore) {
+      break;
+    }
+
+    if (!data.cursor) {
+      throw new Error('Failed to continue Dropbox file listing: missing cursor');
+    }
+
+    cursor = data.cursor;
   }
 
   files.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+  const latestFiles = files.slice(0, DROPBOX_LIST_PAGE_LIMIT);
 
   // Cache the result
-  cachedFileList = files;
+  cachedFileList = latestFiles;
   fileListCacheTime = Date.now();
 
-  return files;
+  return latestFiles;
 }
 
 // Pre-initialize token on server start
