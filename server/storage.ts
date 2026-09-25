@@ -408,21 +408,31 @@ export class PostgreSQLStorage implements IStorage {
           FROM codigo_base
           ORDER BY "Sucursal", codigo_base, "FechaMovimiento" DESC
         ),
+        ventas_normalizadas AS MATERIALIZED (
+          SELECT
+            v."Sucursal",
+            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            v."Fecha",
+            v."CantidadVenta",
+            v."ImporteConIVA",
+            v."PrecioConIVA"
+          FROM ventas_sucursales v
+          ${sucursal ? 'WHERE v."Sucursal" = $1' : ''}
+        ),
         ventas_periodo AS (
           -- Ventas desde el último ajuste hasta hoy, agrupadas por código base
           SELECT 
             v."Sucursal",
-            TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) as codigo_base,
+            v.codigo_base,
             SUM(v."CantidadVenta") as total_vendido,
             SUM(v."ImporteConIVA") as total_venta_valorizada,
             AVG(v."PrecioConIVA") as precio_promedio
-          FROM ventas_sucursales v
+          FROM ventas_normalizadas v
           INNER JOIN consolidado c 
             ON v."Sucursal" = c."Sucursal" 
-            AND TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', '')) = c.codigo_base
+            AND v.codigo_base = c.codigo_base
           WHERE v."Fecha" >= c.fecha_ultimo_ajuste
-          ${sucursal ? 'AND v."Sucursal" = $1' : ''}
-          GROUP BY v."Sucursal", TRIM(REGEXP_REPLACE(v."Codigo", '\\s*\\d{2}$', ''))
+          GROUP BY v."Sucursal", v.codigo_base
         )
         ,
         precios_historicos AS (

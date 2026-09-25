@@ -194,6 +194,10 @@ export default function ReportesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    setSearchTerm('');
+  }, [selectedSucursal, selectedPeriodo, fechaDesde, fechaHasta]);
+
   const getPeriodoLabel = () => {
     const periodo = PERIODOS.find(p => p.value === selectedPeriodo);
     return periodo?.description || 'Todo el historial';
@@ -358,6 +362,12 @@ export default function ReportesPage() {
     }
   });
 
+  const searchResults = searchTerm.trim() ? filteredData : [];
+  const scrollToResults = () => {
+    setDetalleExpanded(true);
+    window.setTimeout(() => document.querySelector('[data-testid="tabla-detalle"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+  };
+
   const totalValorizado = sanitizedAnalisis.resumen.reduce((sum, r) => sum + r.totalValorizado, 0) || 0;
   const totalVentas = sanitizedAnalisis.resumen.reduce((sum, r) => sum + r.totalVentas, 0) || 0;
   const articulosConAlerta = (analisis as any)?.totales?.totalAlertas || 0;
@@ -479,6 +489,29 @@ export default function ReportesPage() {
               <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
+          {searchTerm.trim() && (
+            <div className="col-span-full rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground" role="status" aria-live="polite">
+              {searchResults.length === 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>No encontramos artículos para &quot;{searchTerm.trim()}&quot;.</span>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setSearchTerm('')}>Limpiar búsqueda</Button>
+                </div>
+              ) : searchResults.length === 1 ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
+                  <div className="min-w-0">
+                    <p>1 artículo encontrado para &quot;{searchTerm.trim()}&quot;</p>
+                    <p className="truncate font-medium text-foreground"><strong>{searchResults[0].codigo}</strong> — {searchResults[0].articulo || 'Sin descripción'}</p>
+                  </div>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={scrollToResults}>Ver resultado ↓</Button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>{searchResults.length} artículos encontrados para &quot;{searchTerm.trim()}&quot;.</span>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={scrollToResults}>Ver resultados ↓</Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1019,7 +1052,7 @@ export default function ReportesPage() {
               </TableHeader>
               <TableBody>
                 {sortedData.slice(0, 100).map((item, idx) => (
-                  <TableRow key={`${item.sucursal}-${item.codigo}-${idx}`} className={item.alertaPerdida ? "bg-red-50 dark:bg-red-900/10" : ""}>
+                  <TableRow key={`${item.sucursal}-${item.codigo}-${idx}`} className={searchResults.length === 1 ? "bg-amber-100/80 ring-1 ring-amber-300 dark:bg-amber-900/30" : item.alertaPerdida ? "bg-red-50 dark:bg-red-900/10" : ""}>
                     <TableCell className="font-mono text-xs sm:text-sm p-2 sm:p-4">{item.codigo}</TableCell>
                     <TableCell className="max-w-[200px] truncate hidden sm:table-cell" title={item.articulo}>
                       {item.articulo || '-'}
