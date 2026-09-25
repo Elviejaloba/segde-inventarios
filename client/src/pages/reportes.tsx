@@ -675,7 +675,7 @@ export default function ReportesPage() {
                 const isNegative = diferencia < 0;
                 return (
                   <div className="mt-1 space-y-0.5">
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                    <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] sm:text-xs">
                       <span className="text-muted-foreground">vs 2025:</span>
                       <span className={`font-medium ${isNegative ? 'text-green-600' : isPositive ? 'text-red-600' : 'text-muted-foreground'}`}>
                         {isPositive ? '+' : ''}{formatCurrency(diferencia)}
@@ -715,7 +715,7 @@ export default function ReportesPage() {
                 const isNegative = diferencia < 0;
                 return (
                   <div className="mt-1 space-y-0.5">
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                    <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] sm:text-xs">
                       <span className="text-muted-foreground">vs 2025:</span>
                       <span className={`font-medium ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-muted-foreground'}`}>
                         {isPositive ? '+' : ''}{formatCurrency(diferencia)}
