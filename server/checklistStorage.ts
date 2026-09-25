@@ -310,7 +310,9 @@ function resolveAddedItemTarget(monthOrPeriod?: string) {
 }
 
 async function upsertChecklistState(branchCode: string, itemCode: string, periodKey: string | null, itemState: Partial<ChecklistItemState>) {
-  const normalizedCode = String(itemCode).trim();
+  // This is the same canonical key used when GET reconstructs checklist state.
+  // Persisting it here makes the PostgreSQL identity consistent with reads.
+  const normalizedCode = sanitizeChecklistCode(String(itemCode).trim());
   const lastUpdated = Number(itemState.lastUpdated || Date.now());
   const completed = itemState.completed === true;
   const hasStock = itemState.hasStock !== false;
