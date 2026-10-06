@@ -56,6 +56,17 @@ The system follows a hybrid architecture combining multiple technologies:
 4. **User Interactions**: Branch selections and item updates are synchronized across all connected clients
 5. **Reporting**: Streamlit applications generate visualizations and reports from PostgreSQL data
 
+## Checklist de Inventarios — reglas de planificación
+
+- **Unidad operativa:** la planificación usa `COD BASE`. Los códigos de artículo/color son variantes y no generan checks individuales; completar un COD BASE confirma toda su paleta asociada.
+- **Períodos e identidad:** un check se identifica por `sucursal + COD BASE + periodKey`. Para la campaña 2026: octubre `2026-10`, noviembre `2026-11` y diciembre `2026-12`.
+- **Planificación vs. estado:** `shared/calendario-semanal.ts` define qué COD BASE se solicitan. `checklist_item_states` conserva exclusivamente la interacción del usuario; nunca se precargan estados masivamente para mostrar artículos.
+- **Metadata y progreso:** “Sin ajuste +1 año” se consolida a nivel COD BASE y es solo una advertencia visual, no parte de la identidad. Sin Stock se persiste pero no suma; cumplimiento = COD BASE Completados / COD BASE Solicitados.
+- **Persistencia:** cada cambio usa PATCH individual con `periodKey`, PostgreSQL Railway y UPSERT productivo `(branch_code, period_scope, item_code)`, por lo que la actualización es multiusuario.
+- **Seguridad:** un preview o dataset auxiliar nunca puede reemplazar la identidad operativa ni enviar PATCH sin `periodKey`.
+- **Campaña Oct-Nov-Dic 2026:** 1.164 COD BASE — octubre 403, noviembre 386 y diciembre 375 — que cubren 4.532 variantes.
+- **Publicaciones:** usar stage selectivo, confirmar `main` y el commit que Railway desplegará; nunca usar `git add .` o `git add -A`, ni mezclar cambios locales preexistentes.
+
 ## External Dependencies
 
 ### Firebase Services
