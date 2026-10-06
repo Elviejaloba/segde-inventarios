@@ -5019,6 +5019,26 @@ export default function Home() {
       return;
     }
 
+    // Los calendarios operativos se persisten por período. Nunca permitir que
+    // un error de presentación termine escribiendo silenciosamente en __base__.
+    // Los checklists históricos/base continúan permitidos cuando su fuente
+    // activa no tiene identidad temporal.
+    const activePeriodKey = activeChecklistEntries.find((entry) => entry.periodKey)?.periodKey;
+    if (activePeriodKey && periodKey !== activePeriodKey) {
+      console.error('Checklist operativo sin periodKey válido', {
+        branch: selectedBranch,
+        code,
+        expectedPeriodKey: activePeriodKey,
+        receivedPeriodKey: periodKey,
+      });
+      toast({
+        title: 'No se pudo guardar el artículo',
+        description: 'El artículo no tiene el período operativo válido. No se realizó ningún cambio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const itemKey = getChecklistEntryKey(code, periodKey);
 
     const newItems = {
@@ -5163,21 +5183,32 @@ export default function Home() {
     all: 'Todos',
   };
 
-  const previewFamilyEntries = useMemo(() => PREVIEW_FAMILIAS_COMPLETAS
+  const previewFamilyMetadata = useMemo(() => new Map(PREVIEW_FAMILIAS_COMPLETAS
     .filter(([branch]) => branch === selectedBranch)
-    .map(([, family, code, sinAjuste1A, description]) => ({
+    .map(([, family, code, sinAjuste1A, description]) => [
       code,
-      mes: '',
-      semana: '',
-      family,
-      sinAjuste1A,
-      description,
-    })), [selectedBranch]);
+      { family, sinAjuste1A, description },
+    ] as const)), [selectedBranch]);
 
   const checklistSourceEntries = useMemo(() => {
-    if (previewFamilyEntries.length > 0) return previewFamilyEntries;
-    return activeChecklistEntries.length > 0 ? activeChecklistEntries : buildFallbackEntries(CODES);
-  }, [activeChecklistEntries, previewFamilyEntries]);
+    const operationalEntries = activeChecklistEntries.length > 0
+      ? activeChecklistEntries
+      : buildFallbackEntries(CODES);
+
+    // La identidad operativa siempre procede del calendario. El catálogo de
+    // preview sólo enriquece la presentación (familia y descripción) cuando
+    // coincide con una entrada real; no puede introducir artículos ni perder
+    // su periodKey.
+    return operationalEntries.map((entry) => {
+      const metadata = previewFamilyMetadata.get(entry.code);
+      return {
+        ...entry,
+        family: metadata?.family ?? getChecklistFamily(entry.code),
+        description: metadata?.description,
+        sinAjuste1A: entry.sinAjuste1A ?? metadata?.sinAjuste1A ?? false,
+      };
+    });
+  }, [activeChecklistEntries, previewFamilyMetadata]);
 
   const checklistSummary = useMemo(() => {
     const total = checklistSourceEntries.length;
