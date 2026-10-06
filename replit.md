@@ -67,6 +67,12 @@ The system follows a hybrid architecture combining multiple technologies:
 - **Campaña Oct-Nov-Dic 2026:** 1.164 COD BASE — octubre 403, noviembre 386 y diciembre 375 — que cubren 4.532 variantes.
 - **Publicaciones:** usar stage selectivo, confirmar `main` y el commit que Railway desplegará; nunca usar `git add .` o `git add -A`, ni mezclar cambios locales preexistentes.
 
+## Infraestructura productiva y conexiones
+
+- **Producción:** usa Railway PostgreSQL. `DATABASE_URL` apunta a la base de datos productiva de Railway.
+- **Conexión estándar:** `server/db.ts` crea el `pg` Pool que deben reutilizar los endpoints nuevos o corregidos mediante `pool.query(...)`.
+- **Neon:** no es infraestructura productiva vigente. Una referencia a Neon debe tratarse como posible código legado; no reactivarlo ni configurarlo automáticamente.
+- **Cambios de conexión:** antes de modificarlos, revisar el código productivo o Repomix actualizado. No crear conexiones paralelas ni cambiar `DATABASE_URL` sin autorización.
 ## External Dependencies
 
 ### Firebase Services

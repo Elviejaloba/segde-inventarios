@@ -704,9 +704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { neon } = await import("@neondatabase/serverless");
-      const sql = neon(process.env.DATABASE_URL!);
-      const result = await sql`
+      const result = await pool.query(`
         SELECT 
           (SELECT MAX("FechaMovimiento") FROM ajustes_sucursales)::text as ajustes_fecha,
           (SELECT MAX(updated_at) FROM costos_articulos)::text as costos_fecha,
@@ -715,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (SELECT COUNT(*) FROM costos_articulos)::text as costos_total,
           (SELECT COUNT(*) FROM ventas_sucursales)::text as ventas_total
       `;
-      res.json(result[0]);
+      res.json(result.rows[0]);
     } catch (error) {
       console.error('Error getting ultima actualizacion:', error);
       res.status(500).json({ error: 'Internal server error' });
