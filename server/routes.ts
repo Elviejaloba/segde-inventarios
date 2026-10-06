@@ -712,7 +712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (SELECT COUNT(*) FROM ajustes_sucursales)::text as ajustes_total,
           (SELECT COUNT(*) FROM costos_articulos)::text as costos_total,
           (SELECT COUNT(*) FROM ventas_sucursales)::text as ventas_total
-      `;
+      `);
       res.json(result.rows[0]);
     } catch (error) {
       console.error('Error getting ultima actualizacion:', error);
