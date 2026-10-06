@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
-import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
@@ -4767,6 +4767,10 @@ export default function Home() {
   const [selectedBranch, setSelectedBranch] = useState<Branch>();
   const [items, setItems] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(false);
+  const [savingItemKeys, setSavingItemKeys] = useState<Set<string>>(new Set());
+  const savingItemKeysRef = useRef<Set<string>>(new Set());
+  const [confirmedItemKeys, setConfirmedItemKeys] = useState<Set<string>>(new Set());
+  const confirmationTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [expandedSemanas, setExpandedSemanas] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
   const [checklistViewFilter, setChecklistViewFilter] = useState<ChecklistViewFilter>('pending');
@@ -4801,6 +4805,10 @@ export default function Home() {
   const [lastToastProgress, setLastToastProgress] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { data: branchesData } = useFirebaseData();
+
+  useEffect(() => () => {
+    Object.values(confirmationTimersRef.current).forEach(clearTimeout);
+  }, []);
 
   const { data: ultimaActualizacion } = useQuery<{ costos_fecha: string; ventas_fecha: string }>({
     queryKey: ['/api/ultima-actualizacion'],
@@ -5040,6 +5048,19 @@ export default function Home() {
     }
 
     const itemKey = getChecklistEntryKey(code, periodKey);
+    if (savingItemKeysRef.current.has(itemKey)) return;
+
+    savingItemKeysRef.current.add(itemKey);
+    setSavingItemKeys((current) => new Set(current).add(itemKey));
+    if (confirmationTimersRef.current[itemKey]) {
+      clearTimeout(confirmationTimersRef.current[itemKey]);
+      delete confirmationTimersRef.current[itemKey];
+    }
+    setConfirmedItemKeys((current) => {
+      const next = new Set(current);
+      next.delete(itemKey);
+      return next;
+    });
 
     const newItems = {
       ...items,
@@ -5086,6 +5107,16 @@ export default function Home() {
         periodKey,
       });
 
+      setConfirmedItemKeys((current) => new Set(current).add(itemKey));
+      confirmationTimersRef.current[itemKey] = setTimeout(() => {
+        setConfirmedItemKeys((current) => {
+          const next = new Set(current);
+          next.delete(itemKey);
+          return next;
+        });
+        delete confirmationTimersRef.current[itemKey];
+      }, 250);
+
       analytics.logAction('item_toggle', {
         branch: selectedBranch,
         code: itemKey,
@@ -5097,9 +5128,16 @@ export default function Home() {
       setItems(items);
       toast({
         title: "Error al guardar",
-        description: "Intente nuevamente",
+        description: "No se pudo guardar. Intentá nuevamente.",
         variant: "destructive",
         duration: 5000,
+      });
+    } finally {
+      savingItemKeysRef.current.delete(itemKey);
+      setSavingItemKeys((current) => {
+        const next = new Set(current);
+        next.delete(itemKey);
+        return next;
       });
     }
   };
@@ -5377,7 +5415,7 @@ export default function Home() {
             <CardContent className="space-y-3 px-4 pb-4 sm:space-y-4 sm:px-6 sm:pb-6">
               {/* Calendario con objetivos mensuales para T.Mendoza */}
               {(
-                <div className="space-y-2.5 sm:space-y-3">
+                <div className="space-y-2.5 sm:space-y-3" data-testid="checklist-header">
                   {/* Encabezado con título */}
                   <div className="hidden rounded-md border border-amber-200/80 bg-amber-50/70 px-2.5 py-1.5 sm:block sm:px-3 sm:py-2" data-testid="header-calendario">
                     <h3 className="text-sm font-semibold leading-tight text-slate-800 sm:text-base">{activeChecklistEntries.length} Artículos solicitados para realizar inventario</h3>
@@ -5400,7 +5438,7 @@ export default function Home() {
                         {/* Secci?n fija: objetivos y progreso */}
                         <div className="space-y-2 pb-1 pt-0.5 sm:space-y-2.5 sm:pb-2 sm:pt-1">
                         {mesesHistoricos.length > 0 && (
-                          <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs sm:px-3">
+                          <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs sm:px-3" data-testid="historial-periodos">
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-medium text-slate-700 sm:hidden">Historial · {mesesHistoricos.length} meses</span>
                               <span className="hidden font-medium text-slate-700 sm:inline">Historial anterior</span>
@@ -5606,6 +5644,7 @@ export default function Home() {
                                 <div key={group.family} className={`overflow-hidden rounded-md border ${isOpen ? 'border-primary/40 bg-primary/[0.03]' : 'border-slate-200 bg-white'}`}>
                                   <button
                                     type="button"
+                                    data-testid="familia-checklist"
                                     onClick={() => setOpenChecklistFamily(isOpen ? null : group.family)}
                                     className="w-full p-2 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:px-3 sm:py-2.5"
                                   >
@@ -5622,15 +5661,26 @@ export default function Home() {
                                   {isOpen && (
                                   <div className="grid grid-cols-1 gap-1 border-t border-slate-200 bg-slate-50/60 p-1.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                       {group.visibleEntries.map(entry => {
+                              const itemKey = getChecklistEntryKey(entry.code, entry.periodKey);
                               const state = getLocalItemState(items, entry.code, entry.periodKey);
                               const isCompleted = isChecklistCompleted(state);
                               const isNoStock = isChecklistNoStock(state);
-                              const itemStatusLabel = isCompleted ? 'Completado' : isNoStock ? 'Sin Stock' : 'Pendiente';
+                              const isSaving = savingItemKeys.has(itemKey);
+                              const isConfirmed = confirmedItemKeys.has(itemKey);
+                              const itemStatusLabel = isSaving
+                                ? 'Guardando...'
+                                : isCompleted
+                                  ? 'Completado'
+                                  : isNoStock
+                                    ? 'Sin Stock'
+                                    : 'Pendiente';
                               return (
                                 <div
-                                  key={getChecklistEntryKey(entry.code, entry.periodKey)}
-                                  className={`flex flex-col gap-2 rounded-md border px-2 py-1.5 transition-colors sm:flex-row sm:items-center sm:justify-between ${
-                                    isCompleted 
+                                  key={itemKey}
+                                  className={`flex flex-col gap-2 rounded-md border px-2 py-1.5 transition-colors duration-200 motion-reduce:transition-none sm:flex-row sm:items-center sm:justify-between ${
+                                    isSaving
+                                      ? 'border-sky-200 bg-sky-50/70'
+                                      : isCompleted
                                       ? 'border-emerald-200 bg-emerald-50/60'
                                       : isNoStock
                                         ? 'border-orange-200 bg-orange-50/60'
@@ -5643,29 +5693,40 @@ export default function Home() {
                                       <span className="block break-words text-[11px] leading-tight text-slate-500">{entry.description}</span>
                                     )}
                                     {entry.sinAjuste1A && (
-                                      <span className="mt-1 inline-flex w-fit rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800">Sin ajuste +1 año</span>
+                                      <span className="mt-1 inline-flex w-fit rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800" data-testid="badge-sin-ajuste">Sin ajuste +1 año</span>
                                     )}
-                                    <span className={`hidden text-[11px] font-medium sm:block ${
-                                      isCompleted ? 'text-emerald-700' : isNoStock ? 'text-orange-700' : 'text-slate-500'
+                                    <span data-testid="estado-guardado" aria-live="polite" aria-atomic="true" className={`mt-1 inline-flex min-h-5 items-center gap-1 text-[11px] font-medium ${
+                                      isSaving
+                                        ? 'text-sky-700'
+                                        : isCompleted
+                                          ? 'text-emerald-700'
+                                          : isNoStock
+                                            ? 'text-orange-700'
+                                            : 'text-slate-500'
                                     }`}>
+                                      {isSaving ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                                      ) : isCompleted ? (
+                                        <CheckCircle2 className={`h-3.5 w-3.5 ${isConfirmed ? 'scale-110 transition-transform duration-200 motion-reduce:transition-none' : ''}`} aria-hidden="true" />
+                                      ) : null}
                                       {itemStatusLabel}
                                     </span>
                                   </div>
                                   <div className="flex w-full shrink-0 gap-1 text-[11px] sm:w-auto sm:flex-col sm:text-[10px]">
-                                    <label className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded border border-emerald-100 px-2 text-emerald-700 sm:min-h-0 sm:justify-start sm:border-0 sm:px-0">
+                                    <label data-testid="accion-completado" className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded border border-emerald-100 px-2 text-emerald-700 sm:min-h-0 sm:justify-start sm:border-0 sm:px-0">
                                       <Checkbox
                                         checked={isCompleted}
                                         onCheckedChange={() => handleToggle(entry.code, 'completed', entry.periodKey)}
-                                        disabled={loading || isFirebaseReadOnly}
+                                        disabled={loading || isFirebaseReadOnly || isSaving}
                                         className="h-4 w-4"
                                       />
                                       <span>Completado</span>
                                     </label>
-                                    <label className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded border border-orange-100 px-2 text-orange-700 sm:min-h-0 sm:justify-start sm:border-0 sm:px-0">
+                                    <label data-testid="accion-sin-stock" className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded border border-orange-100 px-2 text-orange-700 sm:min-h-0 sm:justify-start sm:border-0 sm:px-0">
                                       <Checkbox
                                         checked={isNoStock}
                                         onCheckedChange={() => handleToggle(entry.code, 'hasStock', entry.periodKey)}
-                                        disabled={loading || isFirebaseReadOnly}
+                                        disabled={loading || isFirebaseReadOnly || isSaving}
                                         className="h-4 w-4"
                                       />
                                       <span>Sin Stock</span>

@@ -10,7 +10,7 @@ declare global {
 
 const isMobile = () => window.innerWidth < 640;
 
-export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
+export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde', checklistPrepared = false) {
   if (typeof window.driver === 'undefined' || !window.driver.js) {
     console.error('Driver.js not loaded');
     return;
@@ -18,6 +18,118 @@ export function startTour(page: 'home' | 'muestreos' | 'reportes' | 'rinde') {
 
   const navSide = isMobile() ? 'top' : 'bottom';
   const mobile = isMobile();
+  const isChecklist = page === 'home' && Boolean(document.querySelector('[data-testid="checklist-header"]'));
+
+  if (isChecklist && !checklistPrepared && !document.querySelector('[data-testid="accion-completado"]')) {
+    (document.querySelector('[data-testid="familia-checklist"]') as HTMLButtonElement | null)?.click();
+    window.requestAnimationFrame(() => startTour(page, true));
+    return;
+  }
+
+  if (isChecklist) {
+    const checklistSteps = [
+      {
+        element: '[data-testid="checklist-header"]',
+        popover: {
+          title: 'Checklist de la sucursal',
+          description: 'Acá encontrás los artículos solicitados para controlar en esta sucursal.',
+          side: mobile ? 'bottom' : 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '[data-testid="objetivos-mensuales"]',
+        popover: {
+          title: 'Período y progreso',
+          description: 'Ves el período actual, los artículos solicitados y tu avance. El porcentaje aumenta solo con Completados.',
+          side: mobile ? 'bottom' : 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '[data-testid="historial-periodos"]',
+        popover: {
+          title: 'Historial y próximos meses',
+          description: 'Consultá controles anteriores desde Historial y revisá los próximos períodos sin perder el foco actual.',
+          side: mobile ? 'bottom' : 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '[data-testid="items-lista"]',
+        popover: {
+          title: 'Familias de artículos',
+          description: 'Los artículos se organizan por TF, TV, SI u OT. Abrí una familia para ver sus artículos.',
+          side: mobile ? 'top' : 'left',
+          align: 'start'
+        }
+      },
+      {
+        element: '[data-testid="acciones-checklist"]',
+        popover: {
+          title: 'Buscar y filtrar',
+          description: 'Buscá código o descripción. Filtrá Pendientes, Completados, Sin Stock o Todos.',
+          side: mobile ? 'bottom' : 'right',
+          align: 'start'
+        }
+      },
+      ...(document.querySelector('[data-testid="badge-sin-ajuste"]') ? [{
+        element: '[data-testid="badge-sin-ajuste"]',
+        popover: {
+          title: 'Sin ajuste +1 año',
+          description: 'Indica que el artículo lleva más de un año sin ajuste y requiere atención especial.',
+          side: mobile ? 'top' : 'right',
+          align: 'start'
+        }
+      }] : []),
+      {
+        element: '[data-testid="accion-completado"]',
+        popover: {
+          title: 'Completado y Sin Stock',
+          description: 'Marcá Completado al terminar el control: sí suma al cumplimiento. Sin Stock queda registrado, pero no suma.',
+          side: mobile ? 'top' : 'left',
+          align: 'center'
+        }
+      },
+      {
+        element: '[data-testid="estado-guardado"]',
+        popover: {
+          title: 'Confirmación de guardado',
+          description: 'Al cambiar un artículo verás Guardando… y luego ✓ Completado o Sin Stock. Esperá la confirmación antes de tocarlo otra vez.',
+          side: mobile ? 'top' : 'left',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: 'Listo',
+          description: 'Podés comenzar el control de inventario.',
+          side: 'top',
+          align: 'center'
+        }
+      }
+    ];
+
+    const validChecklistSteps = checklistSteps.filter(step => !(step as any).element || document.querySelector((step as any).element));
+    const checklistDriver = window.driver.js.driver({
+      showProgress: true,
+      animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      allowClose: true,
+      overlayClickNext: false,
+      stagePadding: mobile ? 2 : 4,
+      stageRadius: 8,
+      popoverClass: 'driverjs-theme',
+      nextBtnText: mobile ? 'Siguiente ›' : 'Siguiente',
+      prevBtnText: mobile ? '‹ Atrás' : 'Atrás',
+      doneBtnText: 'Comenzar',
+      progressText: '{{current}} de {{total}}',
+      steps: validChecklistSteps
+    });
+
+    checklistDriver.drive();
+    return;
+  }
+
 
   const homeSteps = [
     ...(mobile ? [] : [
