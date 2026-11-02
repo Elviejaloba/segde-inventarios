@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
+import { displayBranchName } from "@/lib/branch-display";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { ComprobanteAnalysis } from "@shared/schema";
@@ -338,7 +339,7 @@ export default function ImportacionInventario() {
                   <SelectContent>
                     {AVAILABLE_BRANCHES.map((branch) => (
                       <SelectItem key={branch} value={branch} data-testid={`option-sucursal-${branch}`}>
-                        {branch}
+                        {displayBranchName(branch)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Branch, AVAILABLE_BRANCHES } from "@/lib/store";
+import { displayBranchName } from "@/lib/branch-display";
 import { MapPin, ChevronRight, X } from "lucide-react";
 
 interface BranchSelectorProps {
@@ -40,7 +41,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
           <SelectContent className="min-w-[320px] rounded-xl border border-primary/15 shadow-lg">
             {AVAILABLE_BRANCHES.map((branch) => (
               <SelectItem key={branch} value={branch}>
-                {branch}
+                {displayBranchName(branch)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -57,7 +58,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
             <span className="min-w-0 truncate text-base font-medium">
-              {value || "Selecciona Sucursal"}
+              {value ? displayBranchName(value) : "Selecciona Sucursal"}
             </span>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -88,7 +89,7 @@ export function BranchSelector({ value, onChange, hidden = false }: BranchSelect
                 }`}
               >
                 <MapPin className={`h-5 w-5 shrink-0 ${value === branch ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="min-w-0 break-words text-base leading-tight">{branch}</span>
+                <span className="min-w-0 break-words text-base leading-tight">{displayBranchName(branch)}</span>
                 {value === branch && (
                   <span className="ml-auto text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Actual</span>
                 )}

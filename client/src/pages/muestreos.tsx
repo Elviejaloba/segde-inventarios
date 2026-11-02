@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { API_BASE_URL, buildApiUrl } from "@/lib/api";
+import { displayBranchName } from "@/lib/branch-display";
 import { Upload, FileText, Download, ExternalLink, FolderOpen, RefreshCw, Eye, EyeOff, CheckCircle2, Loader2, AlertTriangle, ThumbsUp, Clock, Search, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -308,7 +309,7 @@ export default function MuestreosPage() {
       setUploadProgress(100);
       toast({
         title: "Archivo subido correctamente",
-        description: `El muestreo se carg\u00f3 correctamente para ${selectedBranch}.`,
+        description: `El muestreo se carg\u00f3 correctamente para ${displayBranchName(selectedBranch)}.`,
         variant: "success",
         duration: 3200,
       });
@@ -435,7 +436,7 @@ export default function MuestreosPage() {
                 <SelectContent>
                   {BRANCHES.map((branch) => (
                     <SelectItem key={branch} value={branch}>
-                      {branch}
+                      {displayBranchName(branch)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -529,7 +530,7 @@ export default function MuestreosPage() {
                   <SelectItem value="all">Todas</SelectItem>
                   {BRANCHES.map((branch) => (
                     <SelectItem key={branch} value={branch}>
-                      {branch}
+                      {displayBranchName(branch)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -585,7 +586,7 @@ export default function MuestreosPage() {
                           <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                             {file.sucursal && (
                               <span className="inline-flex items-center px-1 sm:px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] sm:text-xs font-medium">
-                                {file.sucursal}
+                                {displayBranchName(file.sucursal)}
                               </span>
                             )}
                             {codigoNombre && (

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useFirebaseData } from "@/hooks/use-firebase-data";
 import { ReportsView } from "@/components/reports-view";
+import { displayBranchName } from "@/lib/branch-display";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -248,7 +249,7 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                       <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2 text-sm font-semibold text-slate-700 sm:h-9">{index + 1}</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-2 py-4 align-middle sm:px-4 sm:py-5"><div className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{branch.id}</span><span className="hidden text-[11px] leading-tight text-slate-500 sm:block">Checklist y progreso de muestreo</span></div></TableCell>
+                  <TableCell className="px-2 py-4 align-middle sm:px-4 sm:py-5"><div className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{displayBranchName(branch.id)}</span><span className="hidden text-[11px] leading-tight text-slate-500 sm:block">Checklist y progreso de muestreo</span></div></TableCell>
                   <TableCell className="px-2 py-4 text-right align-middle sm:px-4 sm:py-5">
                     <div className="ml-auto flex w-full max-w-[220px] flex-col items-end gap-1.5 sm:max-w-[260px] sm:gap-2.5">
                       <div className="relative h-2.5 w-[92px] overflow-hidden rounded-full bg-emerald-100 sm:w-28">

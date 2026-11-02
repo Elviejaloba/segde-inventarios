@@ -27,6 +27,7 @@ import { useAjustesData, Temporada } from "@/hooks/use-ajustes-data";
 import { AjustesDashboard } from "@/components/ajustes-dashboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { BranchSelectorNew } from "@/components/branch-selector-new";
+import { displayBranchName } from "@/lib/branch-display";
 import { SeasonSelector } from "@/components/season-selector";
 import {
   Table,
@@ -358,7 +359,7 @@ export function ReportsView() {
               <span>
                 {selectedBranch === "Todas las Sucursales" 
                   ? "Vista consolidada de todas las sucursales"
-                  : `Filtrando: ${selectedBranch}`}
+                  : `Filtrando: ${displayBranchName(selectedBranch)}`}
                 {selectedSeason !== 'todas' && ` | Temporada: ${selectedSeason}`}
               </span>
             </div>
@@ -522,7 +523,7 @@ export function ReportsView() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-primary" />
-                        <span className="font-bold text-lg">{sucursalId}</span>
+                        <span className="font-bold text-lg">{displayBranchName(sucursalId)}</span>
                         {porcentaje === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
                       </div>
                       <Badge 

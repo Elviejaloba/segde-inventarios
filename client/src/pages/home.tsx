@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { BranchSelector } from "@/components/branch-selector";
+import { displayBranchName } from "@/lib/branch-display";
 import { ArrowLeft, PartyPopper, Trophy, Star, ArrowUp, Calendar, ChevronDown, ChevronRight, CheckCircle2, Search, X, Clock, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/dashboard";
@@ -5450,8 +5451,8 @@ export default function Home() {
           <Card>
             <CardHeader className="px-4 py-2.5 sm:px-6 sm:py-4">
               <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
-                <span className="sm:hidden">{selectedBranch}</span>
-                <span className="hidden sm:inline">Checklist de {selectedBranch}</span>
+                <span className="sm:hidden">{displayBranchName(selectedBranch)}</span>
+                <span className="hidden sm:inline">Checklist de {displayBranchName(selectedBranch)}</span>
                 {progress.completed === 100 && <Trophy className="h-5 w-5 text-yellow-500" />}
               </CardTitle>
               <p className="mt-0.5 text-xs font-medium text-slate-500 sm:hidden">
@@ -5467,7 +5468,7 @@ export default function Home() {
                     <h3 className="text-sm font-semibold leading-tight text-slate-800 sm:text-base">
                       {activeChecklistPeriod?.mes ?? currentCalendarMonth} {activeChecklistPeriod?.periodKey?.slice(0, 4)} · {activeChecklistEntries.length} Artículos solicitados para realizar inventario
                     </h3>
-                    <p className="mt-0.5 text-xs leading-tight text-slate-500 sm:mt-1 sm:text-sm">Selecciona los ítems que vayas completando - {selectedBranch}</p>
+                    <p className="mt-0.5 text-xs leading-tight text-slate-500 sm:mt-1 sm:text-sm">Selecciona los ítems que vayas completando - {displayBranchName(selectedBranch)}</p>
                   </div>
                   {/* Objetivos mensuales - el usuario elige cuáles items completar */}
                   {(() => {

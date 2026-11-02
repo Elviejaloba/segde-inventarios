@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AVAILABLE_BRANCHES } from "@/lib/store";
+import { displayBranchName } from "@/lib/branch-display";
 
 interface BranchSelectorNewProps {
   value: string;
@@ -31,7 +32,7 @@ export function BranchSelectorNew({ value, onChange, showPlaceholder = true }: B
           <SelectItem value="Todas las Sucursales">Todas las Sucursales</SelectItem>
           {AVAILABLE_BRANCHES.map((sucursal) => (
             <SelectItem key={sucursal} value={sucursal}>
-              {sucursal}
+              {displayBranchName(sucursal)}
             </SelectItem>
           ))}
         </SelectGroup>

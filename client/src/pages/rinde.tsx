@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { buildApiUrl } from "@/lib/api";
 import { AVAILABLE_BRANCHES, type Branch } from "@/lib/store";
+import { displayBranchName } from "@/lib/branch-display";
 import { useToast } from "@/hooks/use-toast";
 
 type Article = {
@@ -782,7 +783,7 @@ export default function RindePage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-lg font-bold text-slate-950 md:text-xl">Inventario actual</h3>
-                {selectedBranch ? <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{selectedBranch}</span> : null}
+                {selectedBranch ? <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{displayBranchName(selectedBranch)}</span> : null}
               </div>
               <p className="mt-1 text-xs text-slate-600">{inventoryCompactSummary}</p>
             </div>
@@ -798,7 +799,7 @@ export default function RindePage() {
                 <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Sucursal</label>
                 <select value={selectedBranch} onChange={(event) => { setSelectedBranch(event.target.value as Branch | ""); resetInventoryForm(); }} className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-none outline-none focus:border-emerald-500">
                   <option value="">Seleccionar sucursal...</option>
-                  {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
+                  {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{displayBranchName(branch)}</option>)}
                 </select>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
@@ -813,7 +814,7 @@ export default function RindePage() {
                   <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Sucursal</label>
                   <select value={selectedBranch} onChange={(event) => { setSelectedBranch(event.target.value as Branch | ""); resetInventoryForm(); }} className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-none outline-none focus:border-emerald-500">
                     <option value="">Seleccionar sucursal...</option>
-                    {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
+                    {AVAILABLE_BRANCHES.map((branch) => <option key={branch} value={branch}>{displayBranchName(branch)}</option>)}
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
