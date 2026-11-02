@@ -361,6 +361,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/reports/ajustes', async (req, res) => {
+    const reportCostsKey = req.header('x-report-costs-api-key') || undefined;
+    if (!process.env.REPORT_COSTS_API_KEY) {
+      res.status(503).json({ error: 'Consulta de reportes no configurada.' });
+      return;
+    }
+    if (!hasValidReportCostsKey(reportCostsKey)) {
+      res.status(401).json({ error: 'No autorizado.' });
+      return;
+    }
+    const { startDate, endDate, limit = 500, offset = 0 } = req.body || {};
+    if (typeof startDate !== 'string' || typeof endDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || !Number.isInteger(limit) || limit < 1 || limit > 1000 || !Number.isInteger(offset) || offset < 0) {
+      res.status(400).json({ error: 'Parámetros de paginación inválidos.' });
+      return;
+    }
+    try {
+      const [rows, total] = await Promise.all([
+        pool.query(
+          `SELECT id, "Sucursal", "Comprobante", "FechaMovimiento", "TipoMovimiento", "Codigo", "Articulo", "Diferencia"
+             FROM public.ajustes_sucursales
+            WHERE "FechaMovimiento" >= $1::date
+              AND "FechaMovimiento" < ($2::date + INTERVAL '1 day')
+              AND "Sucursal" <> 'CRISA 3'
+            ORDER BY "FechaMovimiento" ASC, id ASC
+            LIMIT $3 OFFSET $4`,
+          [startDate, endDate, limit, offset],
+        ),
+        pool.query(
+          `SELECT COUNT(*)::text AS total
+             FROM public.ajustes_sucursales
+            WHERE "FechaMovimiento" >= $1::date
+              AND "FechaMovimiento" < ($2::date + INTERVAL '1 day')
+              AND "Sucursal" <> 'CRISA 3'`,
+          [startDate, endDate],
+        ),
+      ]);
+      res.json({ ajustes: rows.rows, total: total.rows[0]?.total || '0' });
+    } catch (error) {
+      console.error('Error consultando ajustes para reporte:', error);
+      res.status(500).json({ error: 'No se pudieron consultar los ajustes para el reporte.' });
+    }
+  });
+
+  app.post('/api/reports/precios-historicos', async (req, res) => {
+    const reportCostsKey = req.header('x-report-costs-api-key') || undefined;
+    if (!process.env.REPORT_COSTS_API_KEY) {
+      res.status(503).json({ error: 'Consulta de reportes no configurada.' });
+      return;
+    }
+    if (!hasValidReportCostsKey(reportCostsKey)) {
+      res.status(401).json({ error: 'No autorizado.' });
+      return;
+    }
+    const pairs = req.body?.pairs;
+    if (!Array.isArray(pairs) || pairs.length === 0 || pairs.length > REPORT_COSTS_MAX_CODES || pairs.some((pair) => !pair || typeof pair.sucursal !== 'string' || typeof pair.codigo !== 'string' || !pair.sucursal || !pair.codigo || pair.sucursal.length > 120 || pair.codigo.length > 120)) {
+      res.status(400).json({ error: `pairs debe contener entre 1 y ${REPORT_COSTS_MAX_CODES} pares válidos.` });
+      return;
+    }
+    const uniquePairs = new Set(pairs.map((pair) => `${pair.sucursal}\u0000${pair.codigo}`));
+    if (uniquePairs.size !== pairs.length) {
+      res.status(400).json({ error: 'No se permiten pares duplicados.' });
+      return;
+    }
+    try {
+      const sucursales = pairs.map((pair) => pair.sucursal);
+      const codigos = pairs.map((pair) => pair.codigo);
+      const result = await pool.query(
+        `WITH requested AS (
+           SELECT * FROM UNNEST($1::text[], $2::text[]) AS r("Sucursal", "Codigo")
+         )
+         SELECT r."Sucursal" AS sucursal, r."Codigo" AS codigo,
+                AVG(v."PrecioConIVA")::text AS precio
+           FROM requested r
+           LEFT JOIN public.ventas_sucursales v
+             ON v."Sucursal" = r."Sucursal" AND v."Codigo" = r."Codigo"
+          GROUP BY r."Sucursal", r."Codigo"
+          ORDER BY r."Sucursal" COLLATE "C", r."Codigo" COLLATE "C"`,
+        [sucursales, codigos],
+      );
+      res.json({ precios: result.rows });
+    } catch (error) {
+      console.error('Error consultando precios históricos para reporte:', error);
+      res.status(500).json({ error: 'No se pudieron consultar los precios históricos para el reporte.' });
+    }
+  });
+
   app.get('/api/ajustes/valorizado', async (req, res) => {
     try {
       const { sucursal, periodo, fechaDesde, fechaHasta } = req.query;
