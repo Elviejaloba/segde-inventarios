@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, AlertCircle, RefreshCw, LineChart, FileText } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCw, LineChart, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { AVAILABLE_BRANCHES, Branch, SEASON_CODES_TEMPORADA_VERANO } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -19,15 +19,28 @@ interface DashboardProps {
   onBranchSelect?: (branch: string) => void;
 }
 
+function currentArgentinaPeriod() {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+  const value = (type: string) => parts.find((part) => part.type === type)?.value;
+  return `${value('year')}-${value('month')}`;
+}
+
 export function Dashboard({ onBranchSelect }: DashboardProps) {
   const { data, loading, error, refetch } = useFirebaseData();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [selectedView, setSelectedView] = useState<'ranking' | 'reporte'>('ranking');
+  const [showPreviousMonths, setShowPreviousMonths] = useState(false);
+  const [rankingPeriod, setRankingPeriod] = useState(currentArgentinaPeriod);
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setRankingPeriod(currentArgentinaPeriod()), 60_000);
+    return () => window.clearInterval(id);
   }, []);
 
   const handleRetry = async () => {
@@ -154,7 +167,26 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
     };
   });
 
-  const sortedBranches = [...branches].sort((a, b) => b.totalCompleted - a.totalCompleted);
+  const monthlyScore = (branch: typeof branches[number]) => {
+    const calendario = getCalendarioSucursal(branch.id as Branch);
+    if (!calendario) return null;
+    const entries = calendario.semanas
+      .filter((semana) => semana.periodKey === rankingPeriod)
+      .flatMap((semana) => semana.items.map((code) => ({ code, periodKey: semana.periodKey })));
+    if (entries.length === 0) return null;
+    const completed = entries.filter((entry) => isChecklistCompleted(getChecklistItemState(branch.branchData, entry.code, entry.periodKey))).length;
+    return { completed, total: entries.length, percent: (completed / entries.length) * 100 };
+  };
+  const sortedBranches = [...branches].sort((a, b) => {
+    const scoreA = monthlyScore(a);
+    const scoreB = monthlyScore(b);
+    if (!scoreA && !scoreB) return a.id.localeCompare(b.id, 'es');
+    if (!scoreA) return 1;
+    if (!scoreB) return -1;
+    if (scoreB.percent !== scoreA.percent) return scoreB.percent - scoreA.percent;
+    if (scoreB.completed !== scoreA.completed) return scoreB.completed - scoreA.completed;
+    return a.id.localeCompare(b.id, 'es');
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -333,15 +365,21 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                             obj: value.items,
                             completadosMes,
                             cumplido: completadosMes >= value.items,
+                            periodKey: value.periodKey,
+                            sortKey: value.sortKey,
                           };
                         });
+                      const primary = objetivos.filter((item) => item.periodKey && item.periodKey >= rankingPeriod).slice(0, 3);
+                      const primaryKeys = new Set(primary.map((item) => item.sortKey));
+                      const historical = objetivos.filter((item) => !primaryKeys.has(item.sortKey));
+                      const visible = showPreviousMonths ? [...historical, ...primary] : primary;
                       
                       return (
                         <div className="mt-2.5 ml-auto flex w-full max-w-[220px] flex-wrap justify-end gap-1.5 sm:max-w-[320px] sm:gap-2" data-testid="indicadores-meses-ranking">
-                          {objetivos.map(({ mes, obj, completadosMes, cumplido }) => {
+                          {visible.map(({ mes, obj, completadosMes, cumplido, sortKey }) => {
                             return (
                               <span 
-                                key={mes}
+                                key={sortKey}
                                 className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-tight whitespace-nowrap sm:px-3 sm:py-1.5 sm:text-[11px] ${
                                   cumplido 
                                     ? 'bg-emerald-500 text-white shadow-sm' 
@@ -355,6 +393,12 @@ export function Dashboard({ onBranchSelect }: DashboardProps) {
                               </span>
                             );
                           })}
+                          {historical.length > 0 && (
+                            <button type="button" className="text-[10px] text-slate-500 underline" onClick={(event) => { event.stopPropagation(); setShowPreviousMonths((value) => !value); }} aria-expanded={showPreviousMonths}>
+                              {showPreviousMonths ? 'Ocultar meses anteriores' : 'Ver meses anteriores'}
+                              {showPreviousMonths ? <ChevronUp className="ml-1 inline h-3 w-3" /> : <ChevronDown className="ml-1 inline h-3 w-3" />}
+                            </button>
+                          )}
                         </div>
                       );
                     })()}

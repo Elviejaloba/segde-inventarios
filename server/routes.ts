@@ -5,6 +5,7 @@ import { insertAjusteSchema, checklistAddedItemInputSchema, checklistBranchPatch
 import * as dropbox from './dropbox';
 import { addChecklistItem, deleteChecklistAddedItem, getChecklistBranch, getChecklistBranches, getChecklistRanking, primeChecklistRuntime, updateChecklistBranch, updateChecklistItem } from './checklistStorage';
 import multer from "multer";
+import { timingSafeEqual } from "crypto";
 import { enviarRecordatoriosMuestreo, enviarReporteSemanal, enviarMailPrueba } from "./emailScheduler";
 import { pool } from "./db";
 
@@ -12,6 +13,16 @@ const hasValidRindePassword = (password: string | undefined) => {
   const expected = process.env.RINDE_CDD_PASSWORD;
   if (!expected) return false;
   return password === expected;
+};
+
+const REPORT_COSTS_MAX_CODES = 1000;
+
+const hasValidReportCostsKey = (key: string | undefined) => {
+  const expected = process.env.REPORT_COSTS_API_KEY;
+  if (!expected || !key) return false;
+  const expectedBuffer = Buffer.from(expected);
+  const keyBuffer = Buffer.from(key);
+  return expectedBuffer.length === keyBuffer.length && timingSafeEqual(expectedBuffer, keyBuffer);
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -309,6 +320,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting ajustes stats:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/reports/costos', async (req, res) => {
+    const reportCostsKey = req.header('x-report-costs-api-key') || undefined;
+    if (!process.env.REPORT_COSTS_API_KEY) {
+      res.status(503).json({ error: 'Consulta de costos para reportes no configurada.' });
+      return;
+    }
+    if (!hasValidReportCostsKey(reportCostsKey)) {
+      res.status(401).json({ error: 'No autorizado.' });
+      return;
+    }
+    const codes = req.body?.codes;
+    if (!Array.isArray(codes) || codes.length === 0 || codes.length > REPORT_COSTS_MAX_CODES) {
+      res.status(400).json({ error: `codes debe contener entre 1 y ${REPORT_COSTS_MAX_CODES} códigos.` });
+      return;
+    }
+    if (codes.some((code) => typeof code !== 'string' || code.trim().length === 0 || code.length > 120 || code.includes('\0'))) {
+      res.status(400).json({ error: 'Código inválido.' });
+      return;
+    }
+    if (new Set(codes).size !== codes.length) {
+      res.status(400).json({ error: 'No se permiten códigos duplicados.' });
+      return;
+    }
+    try {
+      const result = await pool.query(
+        `SELECT "Codigo" AS codigo, "Costo"::text AS costo
+         FROM public.costos_articulos
+         WHERE "Codigo" = ANY($1::text[]) AND "Costo" > 0
+         ORDER BY "Codigo" COLLATE "C"`,
+        [codes],
+      );
+      res.json({ costos: result.rows });
+    } catch (error) {
+      console.error('Error consultando costos para reporte:', error);
+      res.status(500).json({ error: 'No se pudieron consultar los costos para el reporte.' });
     }
   });
 
