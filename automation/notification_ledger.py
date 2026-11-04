@@ -51,7 +51,7 @@ class NotificationLedger:
                 for key in keys:
                     cursor.execute(sql, (
                         key.notification_type, key.scheduled_for, key.period_key,
-                        key.branch_code or "", key.recipient, execution_id,
+                        key.branch_code or "", key.recipient, str(execution_id),
                     ))
                     reserved += int(cursor.fetchone() is not None)
                 if reserved != len(keys):
